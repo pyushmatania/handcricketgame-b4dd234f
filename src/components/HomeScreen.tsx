@@ -10,11 +10,11 @@ export default function HomeScreen({ onStart }: HomeScreenProps) {
       {/* Stadium gradient */}
       <div className="absolute inset-0 stadium-gradient pointer-events-none" />
 
-      {/* Floodlight glows */}
-      <div className="absolute top-0 left-0 w-48 h-48 pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(45 100% 85% / 0.08) 0%, transparent 70%)" }} />
-      <div className="absolute top-0 right-0 w-48 h-48 pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(45 100% 85% / 0.08) 0%, transparent 70%)" }} />
+      {/* Radiant accent glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 pointer-events-none"
+        style={{ background: "radial-gradient(circle, hsl(4 85% 58% / 0.08) 0%, transparent 70%)" }} />
+      <div className="absolute bottom-0 left-0 w-60 h-60 pointer-events-none"
+        style={{ background: "radial-gradient(circle, hsl(210 90% 56% / 0.06) 0%, transparent 70%)" }} />
 
       {/* Vignette */}
       <div className="absolute inset-0 vignette pointer-events-none" />
@@ -32,7 +32,7 @@ export default function HomeScreen({ onStart }: HomeScreenProps) {
           transition={{ delay: 0.2, duration: 0.5, type: "spring" }}
           className="mb-6"
         >
-          <div className="w-28 h-28 mx-auto rounded-full bg-primary/15 border-2 border-primary/30 flex items-center justify-center glow-primary mb-4">
+          <div className="w-28 h-28 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/10 border-2 border-primary/30 flex items-center justify-center glow-primary mb-4">
             <span className="text-6xl">🏏</span>
           </div>
           <h1 className="font-display text-3xl sm:text-4xl font-black text-foreground text-glow tracking-wider leading-tight">
@@ -58,8 +58,7 @@ export default function HomeScreen({ onStart }: HomeScreenProps) {
           transition={{ delay: 0.5 }}
           className="text-muted-foreground/60 text-sm mb-8 px-4"
         >
-          Use your camera & hand gestures to play cricket against the AI.
-          Show your fingers. Lock your shot. Score big.
+          Show your hand. Gestures auto-capture. Score big. Beat the AI.
         </motion.p>
 
         {/* Start button */}
@@ -69,7 +68,7 @@ export default function HomeScreen({ onStart }: HomeScreenProps) {
           transition={{ delay: 0.6 }}
           whileTap={{ scale: 0.95 }}
           onClick={onStart}
-          className="w-full max-w-xs mx-auto py-4 px-8 bg-primary text-primary-foreground font-display font-black text-base rounded-xl glow-primary transition-all hover:brightness-110 active:brightness-90 tracking-wider"
+          className="w-full max-w-xs mx-auto py-4 px-8 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-black text-base rounded-xl glow-primary transition-all hover:brightness-110 tracking-wider"
         >
           ⚡ ENTER THE STADIUM
         </motion.button>
@@ -82,11 +81,11 @@ export default function HomeScreen({ onStart }: HomeScreenProps) {
           className="mt-10 grid grid-cols-3 gap-2"
         >
           {[
-            { icon: "📸", label: "Live Camera", sub: "Back + Front" },
-            { icon: "✋", label: "Hand Gestures", sub: "AI Detection" },
-            { icon: "🏟️", label: "Stadium AR", sub: "Immersive Mode" },
+            { icon: "📸", label: "Live Camera", sub: "Auto Detect" },
+            { icon: "✋", label: "Auto Capture", sub: "No Buttons" },
+            { icon: "🏟️", label: "Stadium AR", sub: "Immersive" },
           ].map((f) => (
-            <div key={f.label} className="glass-premium p-3 text-center">
+            <div key={f.label} className="glass-score p-3 text-center">
               <div className="text-2xl mb-1">{f.icon}</div>
               <div className="text-[10px] text-foreground font-bold">{f.label}</div>
               <div className="text-[8px] text-muted-foreground/60">{f.sub}</div>
@@ -94,7 +93,7 @@ export default function HomeScreen({ onStart }: HomeScreenProps) {
           ))}
         </motion.div>
 
-        {/* Quick gesture hint */}
+        {/* Gesture hint */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

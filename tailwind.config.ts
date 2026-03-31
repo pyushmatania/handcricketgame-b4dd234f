@@ -8,9 +8,7 @@ export default {
     container: {
       center: true,
       padding: "1rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      screens: { "2xl": "1400px" },
     },
     extend: {
       fontFamily: {
@@ -55,6 +53,7 @@ export default {
         "score-gold": "hsl(var(--score-gold))",
         "out-red": "hsl(var(--out-red))",
         floodlight: "hsl(var(--floodlight))",
+        "neon-green": "hsl(var(--neon-green))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

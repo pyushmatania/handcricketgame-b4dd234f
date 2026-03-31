@@ -6,35 +6,17 @@ import { useState, useEffect } from "react";
 interface GestureDisplayProps {
   status: GestureStatus;
   detectedMove: Move | null;
-  lockedMove: Move | null;
+  capturedMove: Move | null;
   confidence: number;
   lastResult: BallResult | null;
-  onCapture: () => void;
-  canCapture: boolean;
   isBatting: boolean;
   hint: string;
   handDetected: boolean;
-  debugInfo: string;
+  compact?: boolean;
 }
 
 const moveEmoji: Record<string, string> = {
-  DEF: "✊",
-  "1": "☝️",
-  "2": "✌️",
-  "3": "🤟",
-  "4": "🖖",
-  "5": "🖐️",
-  "6": "6️⃣",
-};
-
-const moveNames: Record<string, string> = {
-  DEF: "DEFENSE",
-  "1": "SINGLE",
-  "2": "DOUBLE",
-  "3": "TRIPLE",
-  "4": "FOUR",
-  "5": "FIVE",
-  "6": "SIX",
+  DEF: "✊", "1": "☝️", "2": "✌️", "3": "🤟", "4": "🖖", "5": "🖐️", "6": "6️⃣",
 };
 
 function moveLabel(m: Move | null): string {
@@ -42,78 +24,36 @@ function moveLabel(m: Move | null): string {
   return m === "DEF" ? "DEF" : String(m);
 }
 
-function StatusIndicator({ status, handDetected }: { status: GestureStatus; handDetected: boolean }) {
-  const colors: Record<GestureStatus, string> = {
-    idle: "bg-muted-foreground",
-    loading_model: "bg-secondary animate-pulse",
-    camera_started: "bg-accent animate-pulse",
-    tracking_active: "bg-primary animate-pulse",
-    tracking_unavailable: "bg-out-red",
-    no_hand: "bg-out-red",
-    detecting: "bg-accent animate-pulse",
-    stable: "bg-primary animate-pulse-glow",
-  };
+function StatusDot({ status }: { status: GestureStatus }) {
+  const color =
+    status === "stable" ? "bg-primary" :
+    status === "captured" ? "bg-secondary" :
+    status === "detecting" || status === "cooldown" ? "bg-accent" :
+    status === "no_hand" || status === "tracking_unavailable" ? "bg-out-red" :
+    "bg-muted-foreground";
 
-  const labels: Record<GestureStatus, string> = {
-    idle: "Waiting to start tracking…",
-    loading_model: "Loading model…",
-    camera_started: "Camera started",
-    tracking_active: handDetected ? "Hand detected" : "Hand tracking active",
-    tracking_unavailable: "Hand tracking unavailable",
-    no_hand: "No hand detected",
-    detecting: handDetected ? "Detecting gesture…" : "Looking for hand…",
-    stable: "Stable — ready to lock!",
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className={`w-2 h-2 rounded-full ${colors[status]}`} />
-      <span className="text-xs text-muted-foreground font-semibold">
-        {labels[status]}
-      </span>
-    </div>
-  );
-}
-
-function StabilityBar({ confidence, status }: { confidence: number; status: GestureStatus }) {
-  if (status === "idle" || status === "loading_model") return null;
-
-  return (
-    <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-      <motion.div
-        className={`h-full rounded-full ${
-          status === "stable" ? "bg-primary" : status === "detecting" ? "bg-accent" : "bg-out-red"
-        }`}
-        initial={{ width: 0 }}
-        animate={{ width: `${Math.round(confidence * 100)}%` }}
-        transition={{ duration: 0.2 }}
-      />
-    </div>
-  );
+  return <div className={`w-2 h-2 rounded-full ${color} ${status === "stable" || status === "detecting" ? "animate-pulse" : ""}`} />;
 }
 
 export default function GestureDisplay({
   status,
   detectedMove,
-  lockedMove,
+  capturedMove,
   confidence,
   lastResult,
-  onCapture,
-  canCapture,
   isBatting,
   hint,
   handDetected,
-  debugInfo,
+  compact = false,
 }: GestureDisplayProps) {
-  const displayMove = lockedMove ?? detectedMove;
+  const displayMove = capturedMove ?? detectedMove;
   const [floatingScore, setFloatingScore] = useState<{ value: string; key: number } | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     if (lastResult) {
       if (lastResult.runs === "OUT") {
         setFloatingScore({ value: "OUT!", key: Date.now() });
-      } else if (lastResult.runs > 0) {
+      } else if (typeof lastResult.runs === "number" && lastResult.runs > 0) {
         setFloatingScore({ value: `+${lastResult.runs}`, key: Date.now() });
       }
       const timer = setTimeout(() => setFloatingScore(null), 1200);
@@ -121,35 +61,80 @@ export default function GestureDisplay({
     }
   }, [lastResult]);
 
+  if (compact) {
+    return (
+      <div className="space-y-1">
+        {/* Last result banner (compact) */}
+        <AnimatePresence mode="wait">
+          {lastResult && (
+            <motion.div
+              key={lastResult.description}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className={`rounded-lg px-3 py-2 text-center text-sm font-display font-bold bg-card/80 backdrop-blur-xl ${
+                lastResult.runs === "OUT" ? "text-out-red" : "text-foreground"
+              }`}
+            >
+              {lastResult.runs === "OUT" ? "🔴 OUT!" : lastResult.description}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Compact gesture strip */}
+        <div className="flex items-center justify-between bg-card/80 backdrop-blur-xl rounded-lg px-3 py-2 border border-glass">
+          <div className="flex items-center gap-2">
+            <StatusDot status={status} />
+            <span className="text-[10px] text-muted-foreground font-semibold">{hint}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Your move */}
+            <div className="flex items-center gap-1">
+              <span className="text-lg">{displayMove ? moveEmoji[String(displayMove)] || "—" : "—"}</span>
+              <span className="text-xs font-display font-bold text-primary">{moveLabel(displayMove)}</span>
+            </div>
+            {/* AI move */}
+            {lastResult && (
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] text-muted-foreground">vs</span>
+                <span className="text-lg">{moveEmoji[String(lastResult.aiMove)] || "🤖"}</span>
+                <span className="text-xs font-display font-bold text-accent">{moveLabel(lastResult.aiMove as Move)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      {/* Status bar */}
+      {/* Status + hint */}
       <div className="glass-premium px-3 py-2 flex items-center justify-between">
-        <StatusIndicator status={status} handDetected={handDetected} />
-        <StabilityBar confidence={confidence} status={status} />
+        <div className="flex items-center gap-2">
+          <StatusDot status={status} />
+          <span className="text-xs text-muted-foreground font-semibold">{hint}</span>
+        </div>
+        {/* Confidence bar */}
+        {status !== "idle" && status !== "loading_model" && (
+          <div className="w-14 h-1.5 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className={`h-full rounded-full ${
+                status === "stable" || status === "captured" ? "bg-primary" : status === "detecting" ? "bg-accent" : "bg-out-red"
+              }`}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.round(confidence * 100)}%` }}
+              transition={{ duration: 0.2 }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Guidance hint */}
-      {hint && status !== "stable" && !lockedMove && (
-        <div className="px-3 py-1.5 text-center">
-          <span className="text-[10px] text-accent font-semibold">{hint}</span>
-        </div>
-      )}
-
-      {/* Locked status */}
-      {lockedMove && (
-        <div className="px-3 py-1.5 text-center">
-          <span className="text-[10px] text-primary font-display font-bold tracking-wider">
-            🔒 Shot locked! Tap PLAY to confirm
-          </span>
-        </div>
-      )}
-
-      {/* Move cards + capture button */}
-      <div className="grid grid-cols-3 gap-2 relative">
+      {/* Move cards */}
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-2 relative">
         {/* Your move */}
-        <div className={`glass-premium p-3 text-center transition-all ${lockedMove ? "border-primary/40 glow-primary" : ""}`}>
-          <p className="text-[9px] text-muted-foreground mb-1 font-bold tracking-widest">
+        <div className={`glass-score p-3 text-center transition-all ${capturedMove ? "border-primary/40 glow-primary" : ""}`}>
+          <p className="text-[8px] text-muted-foreground mb-1 font-bold tracking-widest">
             {isBatting ? "YOUR SHOT" : "YOUR BOWL"}
           </p>
           <AnimatePresence mode="wait">
@@ -160,37 +145,58 @@ export default function GestureDisplay({
               exit={{ scale: 0.3, opacity: 0 }}
               className="text-3xl"
             >
-              {displayMove ? moveEmoji[String(displayMove)] || "❓" : "—"}
+              {displayMove ? moveEmoji[String(displayMove)] || "❓" : "✋"}
             </motion.div>
           </AnimatePresence>
-          <p className="text-sm font-display font-black text-primary mt-1">
-            {moveLabel(displayMove)}
-          </p>
-          {displayMove && (
-            <p className="text-[8px] text-muted-foreground/60 mt-0.5">
-              {moveNames[String(displayMove)]}
-            </p>
-          )}
+          <p className="text-sm font-display font-black text-primary mt-1">{moveLabel(displayMove)}</p>
+
+          {/* Capture flash */}
+          <AnimatePresence>
+            {status === "captured" && (
+              <motion.div
+                initial={{ opacity: 0.6 }}
+                animate={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className="absolute inset-0 rounded-2xl bg-primary/20 pointer-events-none"
+              />
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Capture button */}
-        <div className="flex flex-col items-center justify-center gap-1.5 relative">
-          <button
-            onClick={onCapture}
-            disabled={!canCapture}
-            className={`w-16 h-16 rounded-full font-display font-black text-[10px] tracking-wider transition-all ${
-              canCapture
-                ? lockedMove
-                  ? "bg-secondary text-secondary-foreground glow-secondary hover:brightness-110 active:scale-90"
-                  : "bg-primary text-primary-foreground glow-primary hover:brightness-110 active:scale-90"
-                : "bg-muted text-muted-foreground cursor-not-allowed"
-            }`}
-          >
-            {lockedMove ? "PLAY!" : "LOCK"}
-          </button>
-          <span className="text-[8px] text-muted-foreground/50 font-semibold">
-            {!canCapture && !lockedMove ? "Hold steady to lock" : lockedMove ? "Confirm play" : "Lock gesture"}
-          </span>
+        {/* Center result indicator */}
+        <div className="flex flex-col items-center justify-center gap-1 relative">
+          <AnimatePresence mode="wait">
+            {status === "captured" ? (
+              <motion.div
+                key="captured"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center"
+              >
+                <span className="text-[9px] font-display font-black text-primary-foreground">GO!</span>
+              </motion.div>
+            ) : status === "cooldown" ? (
+              <motion.div
+                key="cooldown"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                className="w-12 h-12 rounded-full bg-muted border border-glass flex items-center justify-center"
+              >
+                <span className="text-[10px] font-display font-bold text-muted-foreground">⏳</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="auto"
+                className="w-12 h-12 rounded-full border-2 border-dashed border-glass flex items-center justify-center"
+              >
+                <span className="text-[8px] font-display font-bold text-muted-foreground text-center leading-tight">
+                  AUTO
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Floating score */}
           <AnimatePresence>
@@ -202,7 +208,7 @@ export default function GestureDisplay({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1 }}
                 className={`absolute top-0 font-display font-black text-lg ${
-                  lastResult?.runs === "OUT" ? "text-out-red" : "text-primary"
+                  lastResult?.runs === "OUT" ? "text-out-red text-glow-red" : "text-primary text-glow"
                 }`}
               >
                 {floatingScore.value}
@@ -212,10 +218,10 @@ export default function GestureDisplay({
         </div>
 
         {/* AI move */}
-        <div className={`glass-premium p-3 text-center transition-all ${
-          lastResult?.runs === "OUT" ? "border-out-red/40" : ""
+        <div className={`glass-score p-3 text-center transition-all ${
+          lastResult?.runs === "OUT" ? "border-out-red/30" : ""
         }`}>
-          <p className="text-[9px] text-muted-foreground mb-1 font-bold tracking-widest">
+          <p className="text-[8px] text-muted-foreground mb-1 font-bold tracking-widest">
             {isBatting ? "AI BOWLS" : "AI BATS"}
           </p>
           <AnimatePresence mode="wait">
@@ -231,11 +237,6 @@ export default function GestureDisplay({
           <p className="text-sm font-display font-black text-accent mt-1">
             {lastResult ? moveLabel(lastResult.aiMove as Move) : "—"}
           </p>
-          {lastResult?.aiMove && (
-            <p className="text-[8px] text-muted-foreground/60 mt-0.5">
-              {moveNames[String(lastResult.aiMove)] || "SIX"}
-            </p>
-          )}
         </div>
       </div>
 
@@ -248,9 +249,7 @@ export default function GestureDisplay({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10 }}
             className={`broadcast-bar rounded-lg px-3 py-2 text-center text-sm font-bold ${
-              lastResult.runs === "OUT"
-                ? "text-out-red border-out-red/30 animate-shake"
-                : "text-foreground"
+              lastResult.runs === "OUT" ? "text-out-red animate-shake" : "text-foreground"
             }`}
           >
             {lastResult.runs === "OUT" ? (
@@ -263,27 +262,14 @@ export default function GestureDisplay({
       </AnimatePresence>
 
       {/* Gesture legend */}
-      <div className="flex items-center justify-center gap-3 py-1">
-        <span className="text-[8px] text-muted-foreground/40">✊ DEF</span>
-        <span className="text-[8px] text-muted-foreground/40">☝️ 1</span>
-        <span className="text-[8px] text-muted-foreground/40">✌️ 2</span>
-        <span className="text-[8px] text-muted-foreground/40">🤟 3</span>
-        <span className="text-[8px] text-muted-foreground/40">🖖 4</span>
-        <span className="text-[8px] text-muted-foreground/40">🖐️ 5</span>
+      <div className="flex items-center justify-center gap-3 py-0.5">
+        <span className="text-[8px] text-muted-foreground/30">✊ DEF</span>
+        <span className="text-[8px] text-muted-foreground/30">☝️ 1</span>
+        <span className="text-[8px] text-muted-foreground/30">✌️ 2</span>
+        <span className="text-[8px] text-muted-foreground/30">🤟 3</span>
+        <span className="text-[8px] text-muted-foreground/30">🖖 4</span>
+        <span className="text-[8px] text-muted-foreground/30">🖐️ 5</span>
       </div>
-
-      {/* Debug toggle */}
-      <button
-        onClick={() => setShowDebug(!showDebug)}
-        className="text-[8px] text-muted-foreground/30 self-center mx-auto block"
-      >
-        {showDebug ? "Hide debug" : "🔧"}
-      </button>
-      {showDebug && (
-        <div className="px-2 py-1 rounded bg-card/50 text-[8px] text-muted-foreground/50 font-mono break-all">
-          {debugInfo}
-        </div>
-      )}
     </div>
   );
 }
