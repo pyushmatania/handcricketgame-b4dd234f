@@ -39,7 +39,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const canCapture =
     game.phase !== "not_started" &&
     game.phase !== "finished" &&
-    (detection.detectedMove !== null || detection.lockedMove !== null);
+    (detection.status === "stable" || detection.lockedMove !== null);
 
   const handleStartNew = () => {
     resetGame();
@@ -131,6 +131,9 @@ export default function GameScreen({ onHome }: GameScreenProps) {
             onCapture={handleCapture}
             canCapture={canCapture}
             isBatting={game.isBatting}
+            hint={detection.hint}
+            handDetected={detection.handDetected}
+            debugInfo={detection.debugInfo}
           />
         )}
 

@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Move, BallResult } from "@/hooks/useHandCricket";
+import type { GestureStatus } from "@/hooks/useHandDetection";
 import { useState, useEffect } from "react";
 
 interface GestureDisplayProps {
-  status: string;
+  status: GestureStatus;
   detectedMove: Move | null;
   lockedMove: Move | null;
   confidence: number;
@@ -11,6 +12,9 @@ interface GestureDisplayProps {
   onCapture: () => void;
   canCapture: boolean;
   isBatting: boolean;
+  hint: string;
+  handDetected: boolean;
+  debugInfo: string;
 }
 
 const moveEmoji: Record<string, string> = {
@@ -38,6 +42,50 @@ function moveLabel(m: Move | null): string {
   return m === "DEF" ? "DEF" : String(m);
 }
 
+function StatusIndicator({ status, handDetected }: { status: GestureStatus; handDetected: boolean }) {
+  const colors: Record<GestureStatus, string> = {
+    loading: "bg-secondary animate-pulse",
+    ready: "bg-muted-foreground",
+    no_hand: "bg-out-red",
+    detecting: "bg-accent animate-pulse",
+    stable: "bg-primary animate-pulse-glow",
+  };
+
+  const labels: Record<GestureStatus, string> = {
+    loading: "Initializing hand tracking…",
+    ready: "Show your hand ✋",
+    no_hand: "No hand detected",
+    detecting: handDetected ? "Detecting gesture…" : "Looking for hand…",
+    stable: "Stable — ready to lock!",
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`w-2 h-2 rounded-full ${colors[status]}`} />
+      <span className="text-xs text-muted-foreground font-semibold">
+        {labels[status]}
+      </span>
+    </div>
+  );
+}
+
+function StabilityBar({ confidence, status }: { confidence: number; status: GestureStatus }) {
+  if (status === "loading" || status === "ready") return null;
+
+  return (
+    <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+      <motion.div
+        className={`h-full rounded-full ${
+          status === "stable" ? "bg-primary" : status === "detecting" ? "bg-accent" : "bg-out-red"
+        }`}
+        initial={{ width: 0 }}
+        animate={{ width: `${Math.round(confidence * 100)}%` }}
+        transition={{ duration: 0.2 }}
+      />
+    </div>
+  );
+}
+
 export default function GestureDisplay({
   status,
   detectedMove,
@@ -47,11 +95,14 @@ export default function GestureDisplay({
   onCapture,
   canCapture,
   isBatting,
+  hint,
+  handDetected,
+  debugInfo,
 }: GestureDisplayProps) {
   const displayMove = lockedMove ?? detectedMove;
   const [floatingScore, setFloatingScore] = useState<{ value: string; key: number } | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
-  // Floating score effect
   useEffect(() => {
     if (lastResult) {
       if (lastResult.runs === "OUT") {
@@ -66,34 +117,27 @@ export default function GestureDisplay({
 
   return (
     <div className="space-y-2">
-      {/* Detection status bar */}
+      {/* Status bar */}
       <div className="glass-premium px-3 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              status === "detected"
-                ? "bg-primary animate-pulse-glow"
-                : status === "no_hand"
-                ? "bg-out-red"
-                : status === "loading"
-                ? "bg-secondary animate-pulse"
-                : "bg-muted-foreground"
-            }`}
-          />
-          <span className="text-xs text-muted-foreground font-semibold">
-            {status === "loading" && "Initializing hand tracking…"}
-            {status === "ready" && "Show your hand ✋"}
-            {status === "no_hand" && "No hand detected"}
-            {status === "unclear" && "Unclear gesture — hold steady"}
-            {status === "detected" && (lockedMove ? "Shot locked! Tap PLAY" : `Ready: ${moveLabel(detectedMove)}`)}
+        <StatusIndicator status={status} handDetected={handDetected} />
+        <StabilityBar confidence={confidence} status={status} />
+      </div>
+
+      {/* Guidance hint */}
+      {hint && status !== "stable" && !lockedMove && (
+        <div className="px-3 py-1.5 text-center">
+          <span className="text-[10px] text-accent font-semibold">{hint}</span>
+        </div>
+      )}
+
+      {/* Locked status */}
+      {lockedMove && (
+        <div className="px-3 py-1.5 text-center">
+          <span className="text-[10px] text-primary font-display font-bold tracking-wider">
+            🔒 Shot locked! Tap PLAY to confirm
           </span>
         </div>
-        {status === "detected" && !lockedMove && (
-          <span className="text-[9px] text-primary font-display font-bold">
-            {Math.round(confidence * 100)}%
-          </span>
-        )}
-      </div>
+      )}
 
       {/* Move cards + capture button */}
       <div className="grid grid-cols-3 gap-2 relative">
@@ -139,7 +183,7 @@ export default function GestureDisplay({
             {lockedMove ? "PLAY!" : "LOCK"}
           </button>
           <span className="text-[8px] text-muted-foreground/50 font-semibold">
-            {lockedMove ? "Confirm play" : "Lock gesture"}
+            {!canCapture && !lockedMove ? "Hold steady to lock" : lockedMove ? "Confirm play" : "Lock gesture"}
           </span>
 
           {/* Floating score */}
@@ -221,6 +265,19 @@ export default function GestureDisplay({
         <span className="text-[8px] text-muted-foreground/40">🖖 4</span>
         <span className="text-[8px] text-muted-foreground/40">🖐️ 5</span>
       </div>
+
+      {/* Debug toggle */}
+      <button
+        onClick={() => setShowDebug(!showDebug)}
+        className="text-[8px] text-muted-foreground/30 self-center mx-auto block"
+      >
+        {showDebug ? "Hide debug" : "🔧"}
+      </button>
+      {showDebug && (
+        <div className="px-2 py-1 rounded bg-card/50 text-[8px] text-muted-foreground/50 font-mono break-all">
+          {debugInfo}
+        </div>
+      )}
     </div>
   );
 }
