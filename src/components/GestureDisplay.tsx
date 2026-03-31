@@ -44,16 +44,22 @@ function moveLabel(m: Move | null): string {
 
 function StatusIndicator({ status, handDetected }: { status: GestureStatus; handDetected: boolean }) {
   const colors: Record<GestureStatus, string> = {
-    loading: "bg-secondary animate-pulse",
-    ready: "bg-muted-foreground",
+    idle: "bg-muted-foreground",
+    loading_model: "bg-secondary animate-pulse",
+    camera_started: "bg-accent animate-pulse",
+    tracking_active: "bg-primary animate-pulse",
+    tracking_unavailable: "bg-out-red",
     no_hand: "bg-out-red",
     detecting: "bg-accent animate-pulse",
     stable: "bg-primary animate-pulse-glow",
   };
 
   const labels: Record<GestureStatus, string> = {
-    loading: "Initializing hand tracking…",
-    ready: "Show your hand ✋",
+    idle: "Waiting to start tracking…",
+    loading_model: "Loading model…",
+    camera_started: "Camera started",
+    tracking_active: handDetected ? "Hand detected" : "Hand tracking active",
+    tracking_unavailable: "Hand tracking unavailable",
     no_hand: "No hand detected",
     detecting: handDetected ? "Detecting gesture…" : "Looking for hand…",
     stable: "Stable — ready to lock!",
@@ -70,7 +76,7 @@ function StatusIndicator({ status, handDetected }: { status: GestureStatus; hand
 }
 
 function StabilityBar({ confidence, status }: { confidence: number; status: GestureStatus }) {
-  if (status === "loading" || status === "ready") return null;
+  if (status === "idle" || status === "loading_model") return null;
 
   return (
     <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
