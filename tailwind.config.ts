@@ -54,6 +54,7 @@ export default {
         glass: "hsl(var(--glass-border))",
         "score-gold": "hsl(var(--score-gold))",
         "out-red": "hsl(var(--out-red))",
+        floodlight: "hsl(var(--floodlight))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
