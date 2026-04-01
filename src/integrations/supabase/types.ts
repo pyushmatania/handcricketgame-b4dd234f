@@ -52,14 +52,17 @@ export type Database = {
       }
       multiplayer_games: {
         Row: {
+          abandoned_by: string | null
           created_at: string
           current_turn: number
           guest_id: string | null
           guest_move: string | null
+          guest_reserve_ms: number
           guest_score: number
           host_batting: boolean
           host_id: string
           host_move: string | null
+          host_reserve_ms: number
           host_score: number
           id: string
           innings: number
@@ -68,14 +71,17 @@ export type Database = {
           winner_id: string | null
         }
         Insert: {
+          abandoned_by?: string | null
           created_at?: string
           current_turn?: number
           guest_id?: string | null
           guest_move?: string | null
+          guest_reserve_ms?: number
           guest_score?: number
           host_batting?: boolean
           host_id: string
           host_move?: string | null
+          host_reserve_ms?: number
           host_score?: number
           id?: string
           innings?: number
@@ -84,14 +90,17 @@ export type Database = {
           winner_id?: string | null
         }
         Update: {
+          abandoned_by?: string | null
           created_at?: string
           current_turn?: number
           guest_id?: string | null
           guest_move?: string | null
+          guest_reserve_ms?: number
           guest_score?: number
           host_batting?: boolean
           host_id?: string
           host_move?: string | null
+          host_reserve_ms?: number
           host_score?: number
           id?: string
           innings?: number
@@ -103,6 +112,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          abandons: number
           avatar_url: string | null
           best_streak: number
           created_at: string
@@ -118,6 +128,7 @@ export type Database = {
           wins: number
         }
         Insert: {
+          abandons?: number
           avatar_url?: string | null
           best_streak?: number
           created_at?: string
@@ -133,6 +144,7 @@ export type Database = {
           wins?: number
         }
         Update: {
+          abandons?: number
           avatar_url?: string | null
           best_streak?: number
           created_at?: string
