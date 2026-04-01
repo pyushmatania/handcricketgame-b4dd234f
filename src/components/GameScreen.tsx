@@ -33,6 +33,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const cameraRef = useRef<CameraFeedHandle>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const { game, startGame, playBall, resetGame } = useHandCricket();
+  const { saveMatch } = useMatchSaver();
   const detection = useHandDetection(videoElementRef);
   const [tossChoice, setTossChoice] = useState<null | boolean>(null);
   const [stadiumMode, setStadiumMode] = useState(true);
@@ -40,6 +41,15 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const [filter, setFilter] = useState<CameraFilter>("broadcast");
   const [gloveStyle, setGloveStyle] = useState<GloveStyle>("cricket");
   const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const savedRef = useRef(false);
+
+  // Auto-save match when game finishes
+  useEffect(() => {
+    if (game.phase === "finished" && !savedRef.current) {
+      savedRef.current = true;
+      saveMatch(game, "ar");
+    }
+  }, [game.phase, game, saveMatch]);
 
   const handleVideoReady = useCallback(
     (video: HTMLVideoElement) => {
