@@ -53,6 +53,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   const handleStartNew = () => {
     resetGame();
     setLastPlayed(null);
+    savedRef.current = false;
   };
 
   return (
