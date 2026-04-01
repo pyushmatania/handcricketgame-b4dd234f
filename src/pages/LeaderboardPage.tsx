@@ -164,7 +164,7 @@ export default function LeaderboardPage() {
         from_user_id: user.id,
         to_user_id: friendId,
       } as any);
-      navigate("/game/multiplayer");
+      navigate(`/game/multiplayer?game=${(game as any).id}`);
     }
   };
 
