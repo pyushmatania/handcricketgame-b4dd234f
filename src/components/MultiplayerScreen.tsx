@@ -84,12 +84,19 @@ export default function MultiplayerScreen({ onHome }: Props) {
     }
   }, [user, navigate]);
 
-  // Load lobby
+  // Load lobby & tick timers
   useEffect(() => {
     if (phase !== "lobby") return;
     loadGames();
-    const interval = setInterval(loadGames, 3000);
-    return () => clearInterval(interval);
+    const loadInterval = setInterval(loadGames, 5000);
+    // Tick lobby game timers every second
+    const tickInterval = setInterval(() => {
+      setGames(prev => prev
+        .map(g => ({ ...g, time_left_ms: Math.max(0, GAME_EXPIRY_MS - (Date.now() - new Date(g.created_at || "").getTime())) }))
+        .filter(g => g.time_left_ms > 0)
+      );
+    }, 1000);
+    return () => { clearInterval(loadInterval); clearInterval(tickInterval); };
   }, [phase]);
 
   // Subscribe to game changes
