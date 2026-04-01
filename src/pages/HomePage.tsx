@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import ParticleField from "@/components/ParticleField";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
+import { PLAYER_IMAGES } from "@/components/PlayerCard";
 
 interface ProfileData {
   total_matches: number;
