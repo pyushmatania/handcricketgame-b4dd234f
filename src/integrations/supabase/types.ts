@@ -132,28 +132,17 @@ export type Database = {
           current_turn: number
           guest_id: string | null
           guest_move: string | null
-          guest_move_submitted_at: string | null
           guest_reserve_ms: number
           guest_score: number
           host_batting: boolean
           host_id: string
           host_move: string | null
-          host_move_submitted_at: string | null
           host_reserve_ms: number
           host_score: number
           id: string
           innings: number
-          innings_number: number
-          game_type: string
-          phase: string
-          phase_started_at: string | null
-          round_result_payload: Json | null
-          room_code: string
-          started_at: string | null
           status: string
           target_guest_id: string | null
-          turn_deadline_at: string | null
-          turn_number: number
           updated_at: string
           winner_id: string | null
         }
@@ -163,28 +152,17 @@ export type Database = {
           current_turn?: number
           guest_id?: string | null
           guest_move?: string | null
-          guest_move_submitted_at?: string | null
           guest_reserve_ms?: number
           guest_score?: number
           host_batting?: boolean
           host_id: string
           host_move?: string | null
-          host_move_submitted_at?: string | null
           host_reserve_ms?: number
           host_score?: number
           id?: string
           innings?: number
-          innings_number?: number
-          game_type?: string
-          phase?: string
-          phase_started_at?: string | null
-          round_result_payload?: Json | null
-          room_code?: string
-          started_at?: string | null
           status?: string
           target_guest_id?: string | null
-          turn_deadline_at?: string | null
-          turn_number?: number
           updated_at?: string
           winner_id?: string | null
         }
@@ -194,28 +172,17 @@ export type Database = {
           current_turn?: number
           guest_id?: string | null
           guest_move?: string | null
-          guest_move_submitted_at?: string | null
           guest_reserve_ms?: number
           guest_score?: number
           host_batting?: boolean
           host_id?: string
           host_move?: string | null
-          host_move_submitted_at?: string | null
           host_reserve_ms?: number
           host_score?: number
           id?: string
           innings?: number
-          innings_number?: number
-          game_type?: string
-          phase?: string
-          phase_started_at?: string | null
-          round_result_payload?: Json | null
-          room_code?: string
-          started_at?: string | null
           status?: string
           target_guest_id?: string | null
-          turn_deadline_at?: string | null
-          turn_number?: number
           updated_at?: string
           winner_id?: string | null
         }
