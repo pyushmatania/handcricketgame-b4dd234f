@@ -98,13 +98,34 @@ export default function MatchInviteNotification() {
 
   const acceptInvite = async (invite: Invite) => {
     if (!user) return;
-    await supabase.from("match_invites").update({ status: "accepted" } as any).eq("id", invite.id);
-    await supabase
+    const { data: joinedGame } = await supabase
       .from("multiplayer_games")
       .update({ guest_id: user.id, status: "toss" } as any)
-      .eq("id", invite.game_id);
+      .eq("id", invite.game_id)
+      .is("guest_id", null)
+      .eq("status", "waiting")
+      .select("id, host_id, guest_id, status")
+      .maybeSingle();
+
+    let finalGameId: string | null = (joinedGame as any)?.id ?? null;
+
+    if (!finalGameId) {
+      const { data: existingGame } = await supabase
+        .from("multiplayer_games")
+        .select("id, host_id, guest_id, status")
+        .eq("id", invite.game_id)
+        .maybeSingle();
+
+      if (existingGame && (((existingGame as any).guest_id === user.id) || ((existingGame as any).host_id === user.id))) {
+        finalGameId = (existingGame as any).id;
+      }
+    }
+
+    if (!finalGameId) return;
+
+    await supabase.from("match_invites").update({ status: "accepted" } as any).eq("id", invite.id);
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-    navigate("/game/multiplayer");
+    navigate(`/game/multiplayer?game=${finalGameId}`);
   };
 
   const declineInvite = async (invite: Invite) => {
