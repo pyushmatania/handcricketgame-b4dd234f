@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import PageTransition from "@/components/PageTransition";
 import HomePage from "./pages/HomePage";
 import PlayPage from "./pages/PlayPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -16,6 +18,24 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function AnimatedRoutes() {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+        <Route path="/play" element={<PageTransition><PlayPage /></PageTransition>} />
+        <Route path="/game/:mode" element={<GamePage />} />
+        <Route path="/profile" element={<PageTransition><ProfilePage /></PageTransition>} />
+        <Route path="/leaderboard" element={<PageTransition><LeaderboardPage /></PageTransition>} />
+        <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
+        <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -24,16 +44,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/play" element={<PlayPage />} />
-              <Route path="/game/:mode" element={<GamePage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/leaderboard" element={<LeaderboardPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AnimatedRoutes />
           </BrowserRouter>
         </TooltipProvider>
       </SettingsProvider>
