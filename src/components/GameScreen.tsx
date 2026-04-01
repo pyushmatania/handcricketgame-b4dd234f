@@ -37,6 +37,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const { game, startGame, playBall, resetGame } = useHandCricket();
   const { saveMatch } = useMatchSaver();
+  const { soundEnabled, hapticsEnabled, commentaryEnabled } = useSettings();
   const detection = useHandDetection(videoElementRef);
   const [tossChoice, setTossChoice] = useState<null | boolean>(null);
   const [stadiumMode, setStadiumMode] = useState(true);
@@ -44,15 +45,51 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const [filter, setFilter] = useState<CameraFilter>("broadcast");
   const [gloveStyle, setGloveStyle] = useState<GloveStyle>("cricket");
   const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const [commentary, setCommentary] = useState<string | null>(null);
   const savedRef = useRef(false);
+  const prevPhaseRef = useRef(game.phase);
 
   // Auto-save match when game finishes
   useEffect(() => {
     if (game.phase === "finished" && !savedRef.current) {
       savedRef.current = true;
       saveMatch(game, "ar");
+      if (game.result === "win") { if (soundEnabled) SFX.win(); if (hapticsEnabled) Haptics.success(); }
+      else if (game.result === "loss") { if (soundEnabled) SFX.loss(); if (hapticsEnabled) Haptics.error(); }
     }
   }, [game.phase, game, saveMatch]);
+
+  // Innings change sound
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = game.phase;
+    if (prev !== game.phase && game.phase !== "not_started" && game.phase !== "finished") {
+      if (soundEnabled) SFX.gameStart();
+      if (commentaryEnabled) {
+        setCommentary(getInningsChangeCommentary(game));
+        setTimeout(() => setCommentary(null), 3000);
+      }
+    }
+  }, [game.phase]);
+
+  // Ball result sounds & commentary
+  useEffect(() => {
+    if (!game.lastResult) return;
+    const r = game.lastResult;
+    if (soundEnabled) SFX.batHit();
+    if (r.runs === "OUT") {
+      setTimeout(() => { if (soundEnabled) SFX.out(); if (hapticsEnabled) Haptics.out(); }, 150);
+    } else if (typeof r.runs === "number") {
+      const abs = Math.abs(r.runs);
+      if (abs === 6) setTimeout(() => { if (soundEnabled) SFX.six(); if (hapticsEnabled) Haptics.heavy(); }, 100);
+      else if (abs === 4) setTimeout(() => { if (soundEnabled) SFX.four(); if (hapticsEnabled) Haptics.medium(); }, 100);
+      else { if (soundEnabled) SFX.runs(abs); if (hapticsEnabled) Haptics.light(); }
+    }
+    if (commentaryEnabled) {
+      setCommentary(getCommentary({ game, result: r }));
+      setTimeout(() => setCommentary(null), 2500);
+    }
+  }, [game.lastResult]);
 
   const handleVideoReady = useCallback(
     (video: HTMLVideoElement) => {
