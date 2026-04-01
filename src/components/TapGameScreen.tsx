@@ -20,9 +20,19 @@ const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
 
 export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   const { game, startGame, playBall, resetGame } = useHandCricket();
+  const { saveMatch } = useMatchSaver();
   const [lastPlayed, setLastPlayed] = useState<Move | null>(null);
   const [cooldown, setCooldown] = useState(false);
   const [showExplosion, setShowExplosion] = useState<{ emoji: string; key: number } | null>(null);
+  const savedRef = useRef(false);
+
+  // Auto-save match when game finishes
+  useEffect(() => {
+    if (game.phase === "finished" && !savedRef.current) {
+      savedRef.current = true;
+      saveMatch(game, "tap");
+    }
+  }, [game.phase, game, saveMatch]);
 
   const handleMove = (move: Move) => {
     if (cooldown || game.phase === "not_started" || game.phase === "finished") return;
