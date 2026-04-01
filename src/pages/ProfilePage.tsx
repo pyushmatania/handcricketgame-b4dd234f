@@ -239,9 +239,43 @@ export default function ProfilePage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
           <div className="flex items-center gap-4 relative z-10">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
-                <span className="text-3xl">{user ? "🏏" : "👤"}</span>
-              </div>
+              <button
+                onClick={() => user && fileInputRef.current?.click()}
+                className="relative group"
+                disabled={uploading}
+              >
+                <PlayerAvatar
+                  avatarUrl={profile?.avatar_url}
+                  avatarIndex={profile?.avatar_index ?? 0}
+                  size="lg"
+                />
+                {user && (
+                  <div className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-[8px] font-display font-bold text-white tracking-wider">
+                      {uploading ? "..." : "EDIT"}
+                    </span>
+                  </div>
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !user) return;
+                  setUploading(true);
+                  const ext = file.name.split(".").pop();
+                  const path = `${user.id}/avatar.${ext}`;
+                  await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+                  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                  const avatarUrl = urlData.publicUrl + "?t=" + Date.now();
+                  await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("user_id", user.id);
+                  setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : prev);
+                  setUploading(false);
+                }}
+              />
               {user && (
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-gradient-to-br from-neon-green to-neon-green/70 border border-neon-green/50 flex items-center justify-center">
                   <span className="text-[8px] font-bold text-white">✓</span>
