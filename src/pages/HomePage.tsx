@@ -28,10 +28,10 @@ interface RecentMatch {
 }
 
 const PLAYERS = [
-  { name: "Virat Kohli", number: "18", role: "Batsman", emoji: "🏏", color: "from-primary/30 to-primary/10" },
-  { name: "MS Dhoni", number: "7", role: "Captain", emoji: "🧤", color: "from-secondary/30 to-secondary/10" },
-  { name: "Rohit Sharma", number: "45", role: "Opener", emoji: "🏏", color: "from-accent/30 to-accent/10" },
-  { name: "Jasprit Bumrah", number: "93", role: "Bowler", emoji: "🎯", color: "from-neon-green/30 to-neon-green/10" },
+  { name: "Virat Kohli", number: "18", role: "Batsman", id: "kohli", color: "from-primary/30 to-primary/10" },
+  { name: "MS Dhoni", number: "7", role: "Captain", id: "dhoni", color: "from-secondary/30 to-secondary/10" },
+  { name: "Rohit Sharma", number: "45", role: "Opener", id: "rohit", color: "from-accent/30 to-accent/10" },
+  { name: "Jasprit Bumrah", number: "93", role: "Bowler", id: "bumrah", color: "from-neon-green/30 to-neon-green/10" },
 ];
 
 const QUICK_MODES = [
