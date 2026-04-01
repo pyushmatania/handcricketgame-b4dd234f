@@ -8,6 +8,8 @@ import { speakCommentary, playCrowdForResult, CrowdSFX } from "@/lib/voiceCommen
 import { useSettings } from "@/contexts/SettingsContext";
 import ScoreBoard from "./ScoreBoard";
 import RulesSheet from "./RulesSheet";
+import OddEvenToss from "./OddEvenToss";
+import CelebrationEffects from "./CelebrationEffects";
 
 interface TapGameScreenProps {
   onHome: () => void;
