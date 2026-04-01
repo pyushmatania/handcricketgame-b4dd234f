@@ -1,25 +1,73 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 
-const STATS = [
-  { label: "Matches", value: "0", icon: "🏏" },
-  { label: "Wins", value: "0", icon: "🏆" },
-  { label: "Losses", value: "0", icon: "💔" },
-  { label: "Win Rate", value: "—", icon: "📊" },
-  { label: "High Score", value: "—", icon: "⭐" },
-  { label: "Streak", value: "0", icon: "🔥" },
+const ACHIEVEMENTS = [
+  { icon: "🏏", title: "First Match", desc: "Play your first match", key: "first_match", check: (p: any) => p.total_matches >= 1 },
+  { icon: "🏆", title: "First Win", desc: "Win your first match", key: "first_win", check: (p: any) => p.wins >= 1 },
+  { icon: "🔥", title: "On Fire", desc: "Win 3 in a row", key: "on_fire", check: (p: any) => p.best_streak >= 3 },
+  { icon: "💯", title: "Century", desc: "Score 100+ in a match", key: "century", check: (p: any) => p.high_score >= 100 },
+  { icon: "🎯", title: "10 Wins", desc: "Win 10 matches", key: "ten_wins", check: (p: any) => p.wins >= 10 },
+  { icon: "⚡", title: "Veteran", desc: "Play 50 matches", key: "veteran", check: (p: any) => p.total_matches >= 50 },
 ];
 
-const ACHIEVEMENTS = [
-  { icon: "🏏", title: "First Match", desc: "Play your first match", unlocked: false },
-  { icon: "🏆", title: "First Win", desc: "Win your first match", unlocked: false },
-  { icon: "🔥", title: "On Fire", desc: "Win 3 in a row", unlocked: false },
-  { icon: "💯", title: "Century", desc: "Score 100+ in a match", unlocked: false },
-  { icon: "🎯", title: "Perfect Bowl", desc: "Bowl out AI for 0", unlocked: false },
-  { icon: "⚡", title: "Speed Demon", desc: "Win in under 10 balls", unlocked: false },
-];
+interface ProfileData {
+  display_name: string;
+  total_matches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  high_score: number;
+  current_streak: number;
+  best_streak: number;
+}
 
 export default function ProfilePage() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("display_name, total_matches, wins, losses, draws, high_score, current_streak, best_streak")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) setProfile(data);
+      });
+  }, [user]);
+
+  const winRate = profile && profile.total_matches > 0
+    ? Math.round((profile.wins / profile.total_matches) * 100) + "%"
+    : "—";
+
+  const stats = profile
+    ? [
+        { label: "Matches", value: String(profile.total_matches), icon: "🏏" },
+        { label: "Wins", value: String(profile.wins), icon: "🏆" },
+        { label: "Losses", value: String(profile.losses), icon: "💔" },
+        { label: "Win Rate", value: winRate, icon: "📊" },
+        { label: "High Score", value: String(profile.high_score), icon: "⭐" },
+        { label: "Streak", value: String(profile.best_streak), icon: "🔥" },
+      ]
+    : [
+        { label: "Matches", value: "0", icon: "🏏" },
+        { label: "Wins", value: "0", icon: "🏆" },
+        { label: "Losses", value: "0", icon: "💔" },
+        { label: "Win Rate", value: "—", icon: "📊" },
+        { label: "High Score", value: "—", icon: "⭐" },
+        { label: "Streak", value: "0", icon: "🔥" },
+      ];
+
+  const unlockedCount = profile
+    ? ACHIEVEMENTS.filter((a) => a.check(profile)).length
+    : 0;
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden pb-24">
       <div className="absolute inset-0 stadium-gradient pointer-events-none" />
@@ -34,24 +82,41 @@ export default function ProfilePage() {
         >
           <div className="relative inline-block">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 border-2 border-primary/40 flex items-center justify-center">
-              <span className="text-3xl">👤</span>
+              <span className="text-3xl">{user ? "🏏" : "👤"}</span>
             </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-muted border border-glass flex items-center justify-center">
-              <span className="text-xs">✏️</span>
-            </div>
+            {user && (
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-neon-green border border-neon-green/50 flex items-center justify-center">
+                <span className="text-[8px]">✓</span>
+              </div>
+            )}
           </div>
           <h1 className="font-display text-lg font-black text-foreground tracking-wider mt-3">
-            PLAYER
+            {profile?.display_name || "PLAYER"}
           </h1>
-          <p className="text-[10px] text-muted-foreground font-display mt-1">
-            Sign in to save your progress
-          </p>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            className="mt-3 px-6 py-2.5 bg-gradient-to-r from-primary/20 to-accent/10 text-primary font-display font-bold text-xs rounded-xl border border-primary/30 tracking-wider"
-          >
-            🔐 SIGN IN
-          </motion.button>
+          {user ? (
+            <div className="mt-2 space-y-1">
+              <p className="text-[9px] text-muted-foreground font-display">{user.email}</p>
+              <button
+                onClick={async () => { await signOut(); navigate("/"); }}
+                className="text-[9px] text-out-red/70 font-display tracking-wider"
+              >
+                SIGN OUT
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-[10px] text-muted-foreground font-display mt-1">
+                Sign in to save your progress
+              </p>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate("/auth")}
+                className="mt-3 px-6 py-2.5 bg-gradient-to-r from-primary/20 to-accent/10 text-primary font-display font-bold text-xs rounded-xl border border-primary/30 tracking-wider"
+              >
+                🔐 SIGN IN
+              </motion.button>
+            </>
+          )}
         </motion.div>
 
         {/* Stats grid */}
@@ -68,7 +133,7 @@ export default function ProfilePage() {
             </h2>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {STATS.map((s, i) => (
+            {stats.map((s, i) => (
               <motion.div
                 key={s.label}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -100,30 +165,38 @@ export default function ProfilePage() {
               ACHIEVEMENTS
             </h2>
             <span className="text-[8px] text-muted-foreground/50 font-display">
-              0 / {ACHIEVEMENTS.length}
+              {unlockedCount} / {ACHIEVEMENTS.length}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {ACHIEVEMENTS.map((a, i) => (
-              <motion.div
-                key={a.title}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 + i * 0.05 }}
-                className={`glass-score p-3 relative overflow-hidden ${!a.unlocked ? "opacity-40" : ""}`}
-              >
-                <span className="text-xl block mb-1">{a.icon}</span>
-                <span className="font-display text-[10px] font-bold text-foreground block">
-                  {a.title}
-                </span>
-                <span className="text-[8px] text-muted-foreground">{a.desc}</span>
-                {!a.unlocked && (
-                  <div className="absolute top-2 right-2">
-                    <span className="text-[7px] text-muted-foreground/50 font-display">🔒</span>
-                  </div>
-                )}
-              </motion.div>
-            ))}
+            {ACHIEVEMENTS.map((a, i) => {
+              const unlocked = profile ? a.check(profile) : false;
+              return (
+                <motion.div
+                  key={a.title}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 + i * 0.05 }}
+                  className={`glass-score p-3 relative overflow-hidden ${!unlocked ? "opacity-40" : ""}`}
+                >
+                  <span className="text-xl block mb-1">{a.icon}</span>
+                  <span className="font-display text-[10px] font-bold text-foreground block">
+                    {a.title}
+                  </span>
+                  <span className="text-[8px] text-muted-foreground">{a.desc}</span>
+                  {!unlocked && (
+                    <div className="absolute top-2 right-2">
+                      <span className="text-[7px] text-muted-foreground/50 font-display">🔒</span>
+                    </div>
+                  )}
+                  {unlocked && (
+                    <div className="absolute top-2 right-2">
+                      <span className="text-[7px] text-neon-green font-display">✅</span>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       </div>

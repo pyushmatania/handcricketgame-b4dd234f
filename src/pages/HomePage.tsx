@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import ParticleField from "@/components/ParticleField";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
 
-const QUICK_STATS = [
-  { label: "MATCHES", value: "0", icon: "🏏", color: "text-primary" },
-  { label: "WINS", value: "0", icon: "🏆", color: "text-secondary" },
-  { label: "HIGH SCORE", value: "—", icon: "⭐", color: "text-score-gold" },
-];
+interface QuickStat {
+  label: string;
+  value: string;
+  icon: string;
+  color: string;
+}
 
 const MODES = [
   { icon: "📸", label: "AR Mode", desc: "Hand gesture tracking", mode: "ar", gradient: "from-primary/20 to-primary/5", border: "border-primary/20" },
@@ -20,13 +23,36 @@ const MODES = [
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [quickStats, setQuickStats] = useState<QuickStat[]>([
+    { label: "MATCHES", value: "0", icon: "🏏", color: "text-primary" },
+    { label: "WINS", value: "0", icon: "🏆", color: "text-secondary" },
+    { label: "HIGH SCORE", value: "—", icon: "⭐", color: "text-score-gold" },
+  ]);
 
-  // Check if first visit
   useEffect(() => {
     const seen = localStorage.getItem("hc_onboarding_done");
     if (!seen) setShowOnboarding(true);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("total_matches, wins, high_score")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setQuickStats([
+            { label: "MATCHES", value: String(data.total_matches), icon: "🏏", color: "text-primary" },
+            { label: "WINS", value: String(data.wins), icon: "🏆", color: "text-secondary" },
+            { label: "HIGH SCORE", value: data.high_score > 0 ? String(data.high_score) : "—", icon: "⭐", color: "text-score-gold" },
+          ]);
+        }
+      });
+  }, [user]);
 
   const completeOnboarding = () => {
     localStorage.setItem("hc_onboarding_done", "1");
@@ -103,7 +129,7 @@ export default function HomePage() {
           transition={{ delay: 0.4 }}
           className="grid grid-cols-3 gap-2 mb-6"
         >
-          {QUICK_STATS.map((s, i) => (
+          {quickStats.map((s, i) => (
             <motion.div
               key={s.label}
               initial={{ opacity: 0, y: 10 }}
