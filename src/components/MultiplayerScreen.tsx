@@ -20,6 +20,11 @@ const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
 const BALL_TIMER_MS = 3000;
 const RESERVE_TIMER_MS = 10000;
 const GAME_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const MOVE_SETS: Record<GameType, { move: Move; emoji: string; label: string; color: string }[]> = {
+  ar: MOVES,
+  tap: MOVES.filter((m) => m.move !== "DEF"),
+  tournament: MOVES,
+};
 
 type GameStatus = "waiting" | "toss" | "playing" | "finished" | "abandoned" | "cancelled";
 type Phase = "lobby" | "waiting" | "toss" | "playing" | "finished";
@@ -145,33 +150,23 @@ export default function MultiplayerScreen({ onHome }: Props) {
       return null;
     }
 
-    const { data: joinedGame } = await supabase
-      .from("multiplayer_games")
-      .update({ guest_id: user.id, status: "toss", started_at: new Date().toISOString() } as any)
-      .eq("id", gameId)
-      .is("guest_id", null)
-      .eq("status", "waiting")
-      .or(`target_guest_id.is.null,target_guest_id.eq.${user.id}`)
-      .select()
-      .maybeSingle();
-
-    if (joinedGame) {
+    const { data: joinResult } = await supabase.rpc("join_multiplayer_room", { p_game_id: gameId });
+    const status = (joinResult as any)?.status;
+    const joinedGame = (joinResult as any)?.game as MultiplayerGame | undefined;
+    if (status === "joined" || status === "rejoined" || status === "host") {
       setJoinState("idle");
-      return joinedGame as unknown as MultiplayerGame;
+      return joinedGame ?? game;
+    }
+    if (status === "not_found" || status === "closed") {
+      setJoinState("expired");
+      return null;
+    }
+    if (status === "full") {
+      setJoinState("full");
+      return null;
     }
 
-    const { data: refreshedGame } = await supabase
-      .from("multiplayer_games")
-      .select("*")
-      .eq("id", gameId)
-      .maybeSingle();
-
-    if (refreshedGame && ((refreshedGame as any).guest_id === user.id || (refreshedGame as any).host_id === user.id)) {
-      setJoinState("idle");
-      return refreshedGame as unknown as MultiplayerGame;
-    }
-
-    setJoinState("full");
+    setJoinState("failed");
     return null;
   }, [user]);
 
@@ -546,6 +541,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const isAbandoned = currentGame?.status === "abandoned";
   const abandonedByMe = currentGame?.abandoned_by === user?.id;
   const modeLabel = currentGame ? gameTypeLabel(currentGame.game_type) : "DUEL";
+  const currentMoves = currentGame ? MOVE_SETS[currentGame.game_type] : MOVES;
 
   if (!user) return null;
 
@@ -876,7 +872,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                   {isBatting ? "⚡ CHOOSE YOUR SHOT" : "🎯 CHOOSE YOUR BOWL"}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {MOVES.map((m) => (
+                  {currentMoves.map((m) => (
                     <motion.button key={m.label} whileTap={{ scale: 0.8 }} onClick={() => submitMove(m.move)} disabled={cooldown}
                       className={`py-5 rounded-2xl font-display font-bold text-sm flex flex-col items-center gap-1.5 transition-all border ${
                         cooldown ? "opacity-30 cursor-not-allowed border-transparent bg-muted/30" : `${m.color} text-foreground`
