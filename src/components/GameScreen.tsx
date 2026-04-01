@@ -67,8 +67,12 @@ export default function GameScreen({ onHome }: GameScreenProps) {
     if (prev !== game.phase && game.phase !== "not_started" && game.phase !== "finished") {
       if (soundEnabled) SFX.gameStart();
       if (commentaryEnabled) {
-        setCommentary(getInningsChangeCommentary(game));
+        const text = getInningsChangeCommentary(game);
+        setCommentary(text);
+        if (voiceEnabled) speakCommentary(text, true);
         setTimeout(() => setCommentary(null), 3000);
+      }
+      if (crowdEnabled) CrowdSFX.ambientMurmur(2);
       }
     }
   }, [game.phase]);
