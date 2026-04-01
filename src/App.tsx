@@ -15,6 +15,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import GamePage from "./pages/GamePage";
 import AuthPage from "./pages/AuthPage";
 import SettingsPage from "./pages/SettingsPage";
+import FriendsPage from "./pages/FriendsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ function AnimatedRoutes() {
       <Route path="/leaderboard" element={<PageTransition><LeaderboardPage /></PageTransition>} />
       <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
       <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />
+      <Route path="/friends" element={<PageTransition><FriendsPage /></PageTransition>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
