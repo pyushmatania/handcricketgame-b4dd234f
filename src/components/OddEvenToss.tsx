@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SFX } from "@/lib/sounds";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const HAND_EMOJIS: Record<number, string> = {
   1: "☝️", 2: "✌️", 3: "🤟", 4: "🖖", 5: "🖐️", 6: "👍",
@@ -10,24 +12,28 @@ interface OddEvenTossProps {
   playerName?: string;
   opponentName?: string;
   isMultiplayer?: boolean;
+  onTossComplete?: (tossWinner: string, battingFirst: string) => void;
 }
 
 type OddEven = "odd" | "even";
 
-export default function OddEvenToss({ onResult, playerName = "You", opponentName = "AI", isMultiplayer = false }: OddEvenTossProps) {
+export default function OddEvenToss({ onResult, playerName = "You", opponentName = "AI", isMultiplayer = false, onTossComplete }: OddEvenTossProps) {
   const [step, setStep] = useState<"choose_oe" | "choose_number" | "reveal" | "pick_innings">("choose_oe");
   const [playerChoice, setPlayerChoice] = useState<OddEven | null>(null);
   const [playerNumber, setPlayerNumber] = useState<number | null>(null);
   const [aiNumber, setAiNumber] = useState<number | null>(null);
   const [tossWon, setTossWon] = useState<boolean | null>(null);
   const [revealStep, setRevealStep] = useState(0);
+  const { soundEnabled } = useSettings();
 
   const handleChooseOddEven = (choice: OddEven) => {
+    if (soundEnabled) SFX.tossSelect();
     setPlayerChoice(choice);
     setStep("choose_number");
   };
 
   const handleChooseNumber = (num: number) => {
+    if (soundEnabled) SFX.tossHandPick();
     setPlayerNumber(num);
     const ai = Math.floor(Math.random() * 6) + 1;
     setAiNumber(ai);
@@ -39,14 +45,37 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
     setStep("reveal");
     setRevealStep(0);
 
+    // Dramatic reveal sequence with sounds
+    setTimeout(() => {
+      if (soundEnabled) SFX.tossRevealBuild();
+    }, 200);
     setTimeout(() => setRevealStep(1), 600);
-    setTimeout(() => setRevealStep(2), 1200);
-    setTimeout(() => setRevealStep(3), 1800);
+    setTimeout(() => {
+      setRevealStep(2);
+      if (soundEnabled) SFX.tossReveal();
+    }, 1200);
+    setTimeout(() => {
+      setRevealStep(3);
+      if (soundEnabled) {
+        if (won) SFX.tossWon();
+        else SFX.tossLost();
+      }
+    }, 1800);
     if (!won) {
       setTimeout(() => {
-        onResult(Math.random() > 0.5);
+        const aiBatsFirst = Math.random() > 0.5;
+        const battingFirstName = aiBatsFirst ? opponentName : playerName;
+        onTossComplete?.(opponentName, battingFirstName);
+        onResult(aiBatsFirst ? false : true);
       }, 3200);
     }
+  };
+
+  const handleInningsChoice = (batFirst: boolean) => {
+    if (soundEnabled) SFX.tossSelect();
+    const battingFirstName = batFirst ? playerName : opponentName;
+    onTossComplete?.(playerName, battingFirstName);
+    onResult(batFirst);
   };
 
   const winnerName = tossWon ? playerName : opponentName;
@@ -77,7 +106,6 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
             </div>
             <p className="text-[11px] text-muted-foreground">Pick your call for the toss</p>
 
-            {/* Hand gesture animation instead of coin */}
             <div className="flex items-center justify-center gap-4 py-2">
               <motion.div
                 animate={{ y: [0, -8, 0], rotate: [-5, 5, -5] }}
@@ -260,15 +288,15 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
                   <div className="flex gap-3">
                     <motion.button
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => onResult(true)}
+                      onClick={() => handleInningsChoice(true)}
                       className="flex-1 py-3.5 bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(217_91%_60%/0.25)] border border-primary/30"
                     >
                       🏏 BAT FIRST
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => onResult(false)}
-                      className="flex-1 py-3.5 bg-gradient-to-br from-accent to-accent/70 text-accent-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(168_80%_50%/0.2)] border border-accent/30"
+                      onClick={() => handleInningsChoice(false)}
+                      className="flex-1 py-3.5 bg-gradient-to-br from-accent to-accent/70 text-accent-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(217_91%_60%/0.2)] border border-accent/30"
                     >
                       🎯 BOWL FIRST
                     </motion.button>
