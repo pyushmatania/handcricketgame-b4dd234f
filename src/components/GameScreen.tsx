@@ -387,14 +387,14 @@ export default function GameScreen({ onHome }: GameScreenProps) {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleStartNew}
-              className="flex-1 py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl glow-primary tracking-wider"
+              className="flex-1 py-3 bg-gradient-to-r from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl tracking-wider shadow-[0_0_20px_hsl(217_91%_60%/0.2)] border border-primary/30"
             >
               ⚡ NEW MATCH
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={onHome}
-              className="flex-1 py-3 bg-muted text-foreground font-display font-bold rounded-2xl tracking-wider"
+              className="flex-1 py-3 glass-premium text-foreground font-display font-bold rounded-2xl tracking-wider border border-primary/10"
             >
               HOME
             </motion.button>
