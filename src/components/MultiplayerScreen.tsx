@@ -459,11 +459,11 @@ export default function MultiplayerScreen({ onHome }: Props) {
     setRoomCodeError(null);
     setJoinState("joining");
 
-    const { data } = await supabase
-      .from("multiplayer_games")
+    const { data } = await (supabase
+      .from("multiplayer_games") as any)
       .select("*")
       .in("status", ["waiting", "toss", "playing"])
-      .eq("room_code" as any, normalizedCode)
+      .eq("room_code", normalizedCode)
       .or(`target_guest_id.is.null,target_guest_id.eq.${user.id}`)
       .limit(1)
       .maybeSingle();
