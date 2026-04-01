@@ -156,18 +156,29 @@ export default function MultiplayerScreen({ onHome }: Props) {
       return null;
     }
 
-    const { data: joinResult } = await supabase.rpc("join_multiplayer_room", { p_game_id: gameId });
-    const status = (joinResult as any)?.status;
-    const joinedGame = (joinResult as any)?.game as MultiplayerGame | undefined;
-    if (status === "joined" || status === "rejoined" || status === "host") {
-      setJoinState("idle");
-      return joinedGame ?? game;
-    }
-    if (status === "not_found" || status === "closed") {
-      setJoinState("expired");
+    const { error: joinError } = await supabase
+      .from("multiplayer_games")
+      .update({ guest_id: user!.id, status: "toss" } as any)
+      .eq("id", gameId)
+      .eq("status", "waiting")
+      .is("guest_id", null);
+
+    if (joinError) {
+      setJoinState("failed");
       return null;
     }
-    if (status === "full") {
+
+    const { data: updatedGame } = await supabase
+      .from("multiplayer_games")
+      .select("*")
+      .eq("id", gameId)
+      .maybeSingle();
+
+    if (updatedGame && (updatedGame as any).guest_id === user!.id) {
+      setJoinState("idle");
+      return updatedGame as any as MultiplayerGame;
+    }
+    if ((updatedGame as any)?.guest_id && (updatedGame as any).guest_id !== user!.id) {
       setJoinState("full");
       return null;
     }

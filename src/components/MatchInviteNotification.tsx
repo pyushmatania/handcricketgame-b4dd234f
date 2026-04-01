@@ -134,11 +134,15 @@ export default function MatchInviteNotification() {
       }
 
       if (!g.guest_id && g.status === "waiting") {
-        const { data: joinResult } = await supabase.rpc("join_multiplayer_room", { p_game_id: invite.game_id });
-        const status = (joinResult as any)?.status;
-        const joinedGame = (joinResult as any)?.game;
-        if (status === "joined" || status === "rejoined" || status === "host") {
-          finalGameId = joinedGame?.id ?? null;
+        const { error: joinError } = await supabase
+          .from("multiplayer_games")
+          .update({ guest_id: user.id, status: "toss" } as any)
+          .eq("id", invite.game_id)
+          .eq("status", "waiting")
+          .is("guest_id", null);
+
+        if (!joinError) {
+          finalGameId = invite.game_id;
         }
       }
 
