@@ -127,11 +127,11 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
   const phaseRef = useRef<GamePhase>("idle");
   const prevLandmarksRef = useRef<V3[] | null>(null);
   const fistFrameCount = useRef(0);
-  const detectUntilRef = useRef(0);
   const predictionBufferRef = useRef<RawGesture[]>([]);
   const unlockAtRef = useRef(0);
   const onAutoCaptureRef = useRef<((move: Move) => void) | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastCapturedGesture = useRef<RawGesture | null>(null);
 
   const setPhase = useCallback((phase: GamePhase, hint: string, extra?: Partial<HandDetectionState>) => {
     phaseRef.current = phase;
