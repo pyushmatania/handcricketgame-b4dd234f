@@ -31,6 +31,7 @@ type Tab = "friends" | "requests" | "add";
 
 export default function FriendsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("friends");
   const [friends, setFriends] = useState<FriendProfile[]>([]);
   const [incoming, setIncoming] = useState<FriendRequest[]>([]);
