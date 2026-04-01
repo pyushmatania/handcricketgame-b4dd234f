@@ -195,8 +195,29 @@ export default function MultiplayerScreen({ onHome }: Props) {
   };
 
   const loadGames = async () => {
-    const { data } = await supabase.from("multiplayer_games").select("*").eq("status", "waiting").order("created_at", { ascending: false }).limit(10);
-    if (data) setGames(data as unknown as MultiplayerGame[]);
+    const { data } = await supabase.from("multiplayer_games").select("*").eq("status", "waiting").order("created_at", { ascending: false }).limit(20);
+    if (!data || !data.length) { setGames([]); return; }
+    // Filter expired games
+    const now = Date.now();
+    const validGames = (data as any[]).filter(g => {
+      const age = now - new Date(g.created_at).getTime();
+      return age < GAME_EXPIRY_MS;
+    });
+    if (!validGames.length) { setGames([]); return; }
+    // Fetch host profiles
+    const hostIds = [...new Set(validGames.map(g => g.host_id))];
+    const { data: profiles } = await supabase.from("profiles").select("user_id, display_name, avatar_index, wins, total_matches").in("user_id", hostIds);
+    const profileMap: Record<string, any> = {};
+    if (profiles) profiles.forEach((p: any) => { profileMap[p.user_id] = p; });
+    const lobbyGames: LobbyGame[] = validGames.map(g => ({
+      ...g,
+      host_name: profileMap[g.host_id]?.display_name || "Player",
+      host_avatar_index: profileMap[g.host_id]?.avatar_index || 0,
+      host_wins: profileMap[g.host_id]?.wins || 0,
+      host_total_matches: profileMap[g.host_id]?.total_matches || 0,
+      time_left_ms: Math.max(0, GAME_EXPIRY_MS - (now - new Date(g.created_at).getTime())),
+    }));
+    setGames(lobbyGames);
   };
 
   const loadOpponentName = async (game: MultiplayerGame) => {
