@@ -21,20 +21,17 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function AnimatedRoutes() {
-  const location = useLocation();
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
-        <Route path="/play" element={<PageTransition><PlayPage /></PageTransition>} />
-        <Route path="/game/:mode" element={<GamePage />} />
-        <Route path="/profile" element={<PageTransition><ProfilePage /></PageTransition>} />
-        <Route path="/leaderboard" element={<PageTransition><LeaderboardPage /></PageTransition>} />
-        <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
-        <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AnimatePresence>
+    <Routes>
+      <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+      <Route path="/play" element={<PageTransition><PlayPage /></PageTransition>} />
+      <Route path="/game/:mode" element={<GamePage />} />
+      <Route path="/profile" element={<PageTransition><ProfilePage /></PageTransition>} />
+      <Route path="/leaderboard" element={<PageTransition><LeaderboardPage /></PageTransition>} />
+      <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
+      <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 
