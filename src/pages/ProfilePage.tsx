@@ -254,7 +254,8 @@ export default function ProfilePage() {
     : 0;
 
   const level = profile ? Math.floor(profile.total_matches / 5) + 1 : 1;
-  const unlockedCount = profile ? ACHIEVEMENTS.filter((a) => a.check(profile)).length : 0;
+  const unlockedCount = profile ? ACHIEVEMENTS.filter((a) => a.check(profile, advancedStats)).length : 0;
+  const [achieveFilter, setAchieveFilter] = useState<string>("All");
 
   const tabs: { key: TabType; label: string; icon: string }[] = [
     { key: "stats", label: "STATS", icon: "📊" },
