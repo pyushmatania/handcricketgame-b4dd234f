@@ -27,14 +27,13 @@ function moveLabel(m: Move | null): string {
 function StatusDot({ status }: { status: GestureStatus }) {
   const color =
     status === "captured" ? "bg-secondary" :
-    status === "detecting" ? "bg-accent" :
-    status === "wait_for_motion" ? "bg-primary" :
+    status === "tracking_active" ? "bg-primary" :
     status === "cooldown" || status === "result" ? "bg-accent" :
     status === "wait_for_fist" || status === "countdown" ? "bg-primary" :
     status === "tracking_unavailable" ? "bg-out-red" :
     "bg-muted-foreground";
 
-  return <div className={`w-2 h-2 rounded-full ${color} ${status === "detecting" || status === "wait_for_motion" ? "animate-pulse" : ""}`} />;
+  return <div className={`w-2 h-2 rounded-full ${color} ${status === "tracking_active" ? "animate-pulse" : ""}`} />;
 }
 
 export default function GestureDisplay({
