@@ -205,7 +205,7 @@ export default function ProfilePage() {
   const tabs: { key: TabType; label: string; icon: string }[] = [
     { key: "stats", label: "STATS", icon: "📊" },
     { key: "matches", label: "MATCHES", icon: "🏏" },
-    { key: "squad", label: "SQUAD", icon: "⭐" },
+    { key: "friends", label: "FRIENDS", icon: "👥" },
   ];
 
   const StatRow = ({ icon, label, value, color }: { icon: string; label: string; value: string | number; color?: string }) => (
