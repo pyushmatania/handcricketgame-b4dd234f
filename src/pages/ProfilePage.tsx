@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
-import PlayerCard, { INDIAN_LEGENDS } from "@/components/PlayerCard";
+import PlayerCard, { INDIAN_LEGENDS, type PlayerInfo } from "@/components/PlayerCard";
+import PlayerDetailModal from "@/components/PlayerDetailModal";
 
 interface MatchRecord {
   id: string;
