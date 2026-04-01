@@ -76,6 +76,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const handleStartNew = () => {
     resetGame();
     setTossChoice(null);
+    savedRef.current = false;
   };
 
   const toggleImmersive = () => setImmersive(!immersive);
