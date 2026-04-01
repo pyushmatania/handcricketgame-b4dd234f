@@ -141,6 +141,9 @@ export type Database = {
           host_score: number
           id: string
           innings: number
+          game_type: string
+          room_code: string
+          started_at: string | null
           status: string
           target_guest_id: string | null
           updated_at: string
@@ -161,6 +164,9 @@ export type Database = {
           host_score?: number
           id?: string
           innings?: number
+          game_type?: string
+          room_code?: string
+          started_at?: string | null
           status?: string
           target_guest_id?: string | null
           updated_at?: string
@@ -181,6 +187,9 @@ export type Database = {
           host_score?: number
           id?: string
           innings?: number
+          game_type?: string
+          room_code?: string
+          started_at?: string | null
           status?: string
           target_guest_id?: string | null
           updated_at?: string

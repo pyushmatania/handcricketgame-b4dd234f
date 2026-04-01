@@ -47,6 +47,7 @@ interface ArchivedSeason {
   season_start: string;
   season_end: string;
 }
+type GameType = "ar" | "tap" | "tournament";
 
 const getWeekRange = (weeksAgo = 0) => {
   const now = new Date();
@@ -100,6 +101,7 @@ export default function LeaderboardPage() {
   const [archivedSeasons, setArchivedSeasons] = useState<ArchivedSeason[]>([]);
   const [viewingArchive, setViewingArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<any[]>([]);
+  const [challengeGameType, setChallengeGameType] = useState<GameType>("ar");
 
   useEffect(() => {
     if (mainTab === "global" || mainTab === "rage") loadGlobal();
@@ -155,7 +157,7 @@ export default function LeaderboardPage() {
     if (!user) return;
     const { data: game } = await supabase
       .from("multiplayer_games")
-      .insert({ host_id: user.id, target_guest_id: friendId, host_reserve_ms: 10000, guest_reserve_ms: 10000 } as any)
+      .insert({ host_id: user.id, target_guest_id: friendId, game_type: challengeGameType, host_reserve_ms: 10000, guest_reserve_ms: 10000 } as any)
       .select()
       .single();
     if (game) {
@@ -499,16 +501,34 @@ export default function LeaderboardPage() {
                   <p className="text-[10px] text-muted-foreground mt-1">Play multiplayer against friends to build H2H stats</p>
                 </div>
               ) : (
-                rivalFriends.map((f, i) => (
-                  <motion.div
-                    key={f.user_id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.06 }}
-                  >
-                    <RivalryCard friend={f} onChallenge={challengeFriend} />
-                  </motion.div>
-                ))
+                <>
+                  <div className="glass-premium rounded-xl p-2.5 mb-2">
+                    <p className="text-[8px] text-muted-foreground font-display tracking-widest mb-2">BATTLE GAME TYPE</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(["ar", "tap", "tournament"] as GameType[]).map((gt) => (
+                        <button
+                          key={gt}
+                          onClick={() => setChallengeGameType(gt)}
+                          className={`py-1.5 rounded-lg text-[8px] font-display font-bold uppercase tracking-wider border ${
+                            challengeGameType === gt ? "bg-primary/20 text-primary border-primary/40" : "bg-muted/30 text-muted-foreground border-border/40"
+                          }`}
+                        >
+                          {gt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {rivalFriends.map((f, i) => (
+                    <motion.div
+                      key={f.user_id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.06 }}
+                    >
+                      <RivalryCard friend={f} onChallenge={challengeFriend} />
+                    </motion.div>
+                  ))}
+                </>
               )}
             </motion.div>
           )}

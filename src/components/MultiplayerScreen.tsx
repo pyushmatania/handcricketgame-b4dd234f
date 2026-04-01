@@ -21,8 +21,9 @@ const BALL_TIMER_MS = 3000;
 const RESERVE_TIMER_MS = 10000;
 const GAME_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
-type GameStatus = "waiting" | "toss" | "playing" | "finished" | "abandoned";
+type GameStatus = "waiting" | "toss" | "playing" | "finished" | "abandoned" | "cancelled";
 type Phase = "lobby" | "waiting" | "toss" | "playing" | "finished";
+type GameType = "ar" | "tap" | "tournament";
 
 interface MultiplayerGame {
   id: string;
@@ -38,6 +39,9 @@ interface MultiplayerGame {
   innings: number;
   host_batting: boolean;
   winner_id: string | null;
+  game_type: GameType;
+  room_code: string;
+  started_at?: string | null;
   host_reserve_ms: number;
   guest_reserve_ms: number;
   abandoned_by: string | null;
@@ -62,6 +66,11 @@ function statusToPhase(status: GameStatus): Phase {
   if (status === "playing") return "playing";
   return "finished";
 }
+function gameTypeLabel(gameType: GameType): string {
+  if (gameType === "tap") return "TAP DUEL";
+  if (gameType === "tournament") return "TOURNAMENT DUEL";
+  return "AR DUEL";
+}
 
 export default function MultiplayerScreen({ onHome }: Props) {
   const { user } = useAuth();
@@ -78,6 +87,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [joinState, setJoinState] = useState<"idle" | "joining" | "failed" | "full" | "expired">("idle");
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [roomCodeError, setRoomCodeError] = useState<string | null>(null);
+  const [selectedGameType, setSelectedGameType] = useState<GameType>("ar");
 
   // Timer state
   const [ballTimer, setBallTimer] = useState(BALL_TIMER_MS);
@@ -137,7 +147,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
     const { data: joinedGame } = await supabase
       .from("multiplayer_games")
-      .update({ guest_id: user.id, status: "toss" } as any)
+      .update({ guest_id: user.id, status: "toss", started_at: new Date().toISOString() } as any)
       .eq("id", gameId)
       .is("guest_id", null)
       .eq("status", "waiting")
@@ -374,7 +384,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const createGame = async () => {
     if (!user) return;
     const { data } = await supabase.from("multiplayer_games")
-      .insert({ host_id: user.id, host_reserve_ms: RESERVE_TIMER_MS, guest_reserve_ms: RESERVE_TIMER_MS } as any)
+      .insert({ host_id: user.id, game_type: selectedGameType, host_reserve_ms: RESERVE_TIMER_MS, guest_reserve_ms: RESERVE_TIMER_MS } as any)
       .select().single();
     if (data) {
       const g = data as unknown as MultiplayerGame;
@@ -414,11 +424,11 @@ export default function MultiplayerScreen({ onHome }: Props) {
       .from("multiplayer_games")
       .select("*")
       .in("status", ["waiting", "toss", "playing"])
+      .eq("room_code", normalizedCode)
       .or(`target_guest_id.is.null,target_guest_id.eq.${user.id}`)
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    const matched = (data as any[] | null)?.find((g) => (g.id as string).slice(0, 8).toUpperCase() === normalizedCode);
+      .limit(1)
+      .maybeSingle();
+    const matched = data as any;
     if (!matched) {
       setJoinState("idle");
       setRoomCodeError("Invalid code or room expired.");
@@ -433,7 +443,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
     const joined = await joinExistingGame(matched.id);
     if (!joined) {
-      setRoomCodeError(joinState === "full" ? "Room is already full." : "Failed to join room.");
+      setRoomCodeError("Failed to join room.");
       return;
     }
 
@@ -535,6 +545,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const reservePct = (reserveTime / RESERVE_TIMER_MS) * 100;
   const isAbandoned = currentGame?.status === "abandoned";
   const abandonedByMe = currentGame?.abandoned_by === user?.id;
+  const modeLabel = currentGame ? gameTypeLabel(currentGame.game_type) : "DUEL";
 
   if (!user) return null;
 
@@ -584,6 +595,20 @@ export default function MultiplayerScreen({ onHome }: Props) {
             {lobbyTab === "create" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
                 <div className="glass-premium rounded-xl p-3 space-y-1.5">
+                  <span className="font-display text-[9px] font-bold text-muted-foreground tracking-widest">🎮 GAME TYPE</span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["ar", "tap", "tournament"] as GameType[]).map((gt) => (
+                      <button
+                        key={gt}
+                        onClick={() => setSelectedGameType(gt)}
+                        className={`py-2 rounded-lg text-[9px] font-display font-bold uppercase tracking-wider border ${
+                          selectedGameType === gt ? "bg-primary/20 text-primary border-primary/40" : "bg-muted/30 text-muted-foreground border-border/40"
+                        }`}
+                      >
+                        {gt}
+                      </button>
+                    ))}
+                  </div>
                   <span className="font-display text-[9px] font-bold text-muted-foreground tracking-widest">⏱️ TIMER RULES</span>
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-secondary/20 flex items-center justify-center"><span className="text-[8px]">⏳</span></div>
@@ -704,7 +729,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
             <div className="glass-premium rounded-2xl p-4 w-full max-w-xs text-center space-y-2">
               <span className="font-display text-[8px] text-muted-foreground tracking-[0.3em]">MATCH CODE</span>
               <p className="font-mono text-lg font-bold text-primary tracking-widest">
-                {currentGame?.id.slice(0, 8).toUpperCase()}
+                {currentGame?.room_code}
               </p>
               <div className="flex items-center justify-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
@@ -734,6 +759,9 @@ export default function MultiplayerScreen({ onHome }: Props) {
         {/* TOSS PHASE */}
         {phase === "toss" && currentGame && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex-1 flex flex-col justify-center">
+            <p className="text-center text-[10px] text-muted-foreground font-display mb-3 tracking-widest">
+              PRE-MATCH COMMENTARY • {modeLabel}
+            </p>
             <OddEvenToss
               onResult={handleTossResult}
               playerName={myName}
@@ -877,6 +905,9 @@ export default function MultiplayerScreen({ onHome }: Props) {
                 {abandonedByMe ? "You ran out of time" : "Your opponent ran out of time"}
               </p>
             )}
+            <p className="text-[10px] text-muted-foreground font-display tracking-wider">
+              POST-MATCH WRAP • {modeLabel}
+            </p>
             <div className="glass-score p-4 w-full max-w-xs">
               <div className="flex justify-between">
                 <div className="text-center flex-1">

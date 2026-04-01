@@ -136,7 +136,7 @@ export default function MatchInviteNotification() {
       if (!g.guest_id && g.status === "waiting") {
         const { data: joinedGame } = await supabase
           .from("multiplayer_games")
-          .update({ guest_id: user.id, status: "toss" } as any)
+          .update({ guest_id: user.id, status: "toss", started_at: new Date().toISOString() } as any)
           .eq("id", invite.game_id)
           .is("guest_id", null)
           .eq("status", "waiting")

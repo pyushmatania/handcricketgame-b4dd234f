@@ -19,6 +19,7 @@ interface FriendProfile {
   avatar_url?: string | null;
   avatar_index?: number;
 }
+type GameType = "ar" | "tap" | "tournament";
 
 interface FriendRequest {
   id: string;
@@ -44,6 +45,7 @@ export default function FriendsPage() {
   const [searchResults, setSearchResults] = useState<FriendProfile[]>([]);
   const [myCode, setMyCode] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [challengeGameType, setChallengeGameType] = useState<GameType>("ar");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -187,7 +189,7 @@ export default function FriendsPage() {
     if (!user) return;
     const { data: game } = await supabase
       .from("multiplayer_games")
-      .insert({ host_id: user.id, target_guest_id: friendId, host_reserve_ms: 10000, guest_reserve_ms: 10000 } as any)
+      .insert({ host_id: user.id, target_guest_id: friendId, game_type: challengeGameType, host_reserve_ms: 10000, guest_reserve_ms: 10000 } as any)
       .select()
       .single();
     if (game) {
@@ -272,6 +274,23 @@ export default function FriendsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <div className="glass-premium rounded-xl p-2.5 mb-3">
+          <p className="text-[8px] text-muted-foreground font-display tracking-widest mb-2">BATTLE GAME TYPE</p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {(["ar", "tap", "tournament"] as GameType[]).map((gt) => (
+              <button
+                key={gt}
+                onClick={() => setChallengeGameType(gt)}
+                className={`py-1.5 rounded-lg text-[8px] font-display font-bold uppercase tracking-wider border ${
+                  challengeGameType === gt ? "bg-primary/20 text-primary border-primary/40" : "bg-muted/30 text-muted-foreground border-border/40"
+                }`}
+              >
+                {gt}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <AnimatePresence mode="wait">
           {/* FRIENDS LIST */}
