@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AVATAR_PRESETS } from "@/lib/avatars";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import OddEvenToss from "./OddEvenToss";
@@ -28,6 +28,7 @@ interface MultiplayerGame {
   id: string;
   host_id: string;
   guest_id: string | null;
+  target_guest_id: string | null;
   status: GameStatus;
   host_score: number;
   guest_score: number;
@@ -55,9 +56,17 @@ interface Props {
   onHome: () => void;
 }
 
+function statusToPhase(status: GameStatus): Phase {
+  if (status === "waiting") return "waiting";
+  if (status === "toss") return "toss";
+  if (status === "playing") return "playing";
+  return "finished";
+}
+
 export default function MultiplayerScreen({ onHome }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [phase, setPhase] = useState<Phase>("lobby");
   const [games, setGames] = useState<LobbyGame[]>([]);
   const [lobbyTab, setLobbyTab] = useState<"join" | "create">("join");
@@ -74,6 +83,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ballTimerStartRef = useRef<number | null>(null);
   const reserveUsedRef = useRef(0);
+  const hydratedGameIdRef = useRef<string | null>(null);
+  const gameIdFromQuery = searchParams.get("game");
 
   useEffect(() => {
     if (!user) navigate("/auth");
@@ -83,6 +94,40 @@ export default function MultiplayerScreen({ onHome }: Props) {
         .then(({ data }) => { if (data) setMyName(data.display_name); });
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user || !gameIdFromQuery) return;
+    if (hydratedGameIdRef.current === gameIdFromQuery) return;
+    hydratedGameIdRef.current = gameIdFromQuery;
+
+    const hydrateGame = async () => {
+      const { data } = await supabase
+        .from("multiplayer_games")
+        .select("*")
+        .eq("id", gameIdFromQuery)
+        .maybeSingle();
+
+      if (!data) return;
+
+      const game = data as unknown as MultiplayerGame;
+      const isParticipant =
+        game.host_id === user.id ||
+        game.guest_id === user.id ||
+        (game.guest_id === null && game.target_guest_id === user.id);
+
+      if (!isParticipant) return;
+
+      setCurrentGame(game);
+      setPhase(statusToPhase(game.status));
+      const isHostGame = game.host_id === user.id;
+      setReserveTime(isHostGame ? game.host_reserve_ms : game.guest_reserve_ms);
+      if (game.guest_id) {
+        loadOpponentName(game);
+      }
+    };
+
+    void hydrateGame();
+  }, [user, gameIdFromQuery]);
 
   // Load lobby & tick timers
   useEffect(() => {
@@ -112,22 +157,18 @@ export default function MultiplayerScreen({ onHome }: Props) {
           const updated = payload.new as MultiplayerGame;
           setCurrentGame(updated);
 
+          const nextPhase = statusToPhase(updated.status);
+          setPhase(nextPhase);
+
+          if (updated.guest_id) {
+            loadOpponentName(updated);
+          }
+
           if (updated.host_move && updated.guest_move) {
             resolveTurn(updated);
           }
 
-          // Guest joined -> go to toss
-          if (updated.status === "toss" && phase === "waiting") {
-            setPhase("toss");
-            loadOpponentName(updated);
-          }
-          // Game started playing (after toss)
-          if (updated.status === "playing" && (phase === "toss" || phase === "waiting")) {
-            setPhase("playing");
-            loadOpponentName(updated);
-          }
-          if (updated.status === "finished" || updated.status === "abandoned") {
-            setPhase("finished");
+          if (nextPhase === "finished") {
             stopTimer();
           }
         }
@@ -135,7 +176,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [currentGame?.id, phase]);
+  }, [currentGame?.id]);
 
   // Timer management
   const myMove = currentGame ? (user?.id === currentGame.host_id ? currentGame.host_move : currentGame.guest_move) : null;
@@ -241,23 +282,46 @@ export default function MultiplayerScreen({ onHome }: Props) {
       .insert({ host_id: user.id, host_reserve_ms: RESERVE_TIMER_MS, guest_reserve_ms: RESERVE_TIMER_MS } as any)
       .select().single();
     if (data) {
-      setCurrentGame(data as unknown as MultiplayerGame);
-      setPhase("waiting");
+      const g = data as unknown as MultiplayerGame;
+      setCurrentGame(g);
+      setPhase(statusToPhase(g.status));
       setReserveTime(RESERVE_TIMER_MS);
+      navigate(`/game/multiplayer?game=${g.id}`, { replace: true });
     }
   };
 
   const joinGame = async (gameId: string) => {
     if (!user) return;
-    const { data } = await supabase.from("multiplayer_games")
+    const { data: joinedGame } = await supabase
+      .from("multiplayer_games")
       .update({ guest_id: user.id, status: "toss" } as any)
-      .eq("id", gameId).select().single();
-    if (data) {
-      const g = data as unknown as MultiplayerGame;
+      .eq("id", gameId)
+      .is("guest_id", null)
+      .eq("status", "waiting")
+      .select()
+      .maybeSingle();
+
+    let game = joinedGame as MultiplayerGame | null;
+
+    if (!game) {
+      const { data: existingGame } = await supabase
+        .from("multiplayer_games")
+        .select("*")
+        .eq("id", gameId)
+        .maybeSingle();
+
+      if (existingGame && ((existingGame as any).guest_id === user.id || (existingGame as any).host_id === user.id)) {
+        game = existingGame as unknown as MultiplayerGame;
+      }
+    }
+
+    if (game) {
+      const g = game as MultiplayerGame;
       setCurrentGame(g);
-      setPhase("toss");
+      setPhase(statusToPhase(g.status));
       setReserveTime(g.guest_reserve_ms);
       loadOpponentName(g);
+      navigate(`/game/multiplayer?game=${g.id}`, { replace: true });
     }
   };
 
@@ -503,7 +567,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
               ))}
             </div>
 
-            <button onClick={() => { setPhase("lobby"); setCurrentGame(null); }}
+            <button onClick={() => { setPhase("lobby"); setCurrentGame(null); navigate("/game/multiplayer", { replace: true }); }}
               className="text-[10px] text-out-red/70 font-display mt-4 tracking-wider">
               CANCEL MATCH
             </button>
@@ -670,7 +734,12 @@ export default function MultiplayerScreen({ onHome }: Props) {
             </div>
             <div className="flex gap-3 w-full max-w-xs">
               <motion.button whileTap={{ scale: 0.95 }}
-                onClick={() => { setPhase("lobby"); setCurrentGame(null); setReserveTime(RESERVE_TIMER_MS); }}
+                onClick={() => {
+                  setPhase("lobby");
+                  setCurrentGame(null);
+                  setReserveTime(RESERVE_TIMER_MS);
+                  navigate("/game/multiplayer", { replace: true });
+                }}
                 className="flex-1 py-3.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl glow-primary tracking-wider">
                 ⚡ PLAY AGAIN
               </motion.button>
