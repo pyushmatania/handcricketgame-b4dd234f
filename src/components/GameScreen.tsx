@@ -48,6 +48,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
     [detection]
   );
 
+  // Wire auto-capture only during active game phases
   useEffect(() => {
     if (game.phase !== "not_started" && game.phase !== "finished") {
       detection.setOnAutoCapture((move) => playBall(move));
@@ -55,6 +56,13 @@ export default function GameScreen({ onHome }: GameScreenProps) {
       detection.setOnAutoCapture(null);
     }
   }, [game.phase, detection.setOnAutoCapture, playBall]);
+
+  // When a new game starts, reset detection to fist-wait
+  useEffect(() => {
+    if (game.phase !== "not_started" && game.phase !== "finished" && detection.resetToFist) {
+      detection.resetToFist();
+    }
+  }, [game.phase === "not_started"]);
 
   const handleStartNew = () => {
     resetGame();
@@ -221,7 +229,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           )}
         </div>
 
-        {/* Toss */}
+      {/* Toss */}
         {game.phase === "not_started" && tossChoice === null && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-score p-5 text-center space-y-4">
             <div className="flex items-center justify-center gap-2 mb-1">
@@ -244,6 +252,31 @@ export default function GameScreen({ onHome }: GameScreenProps) {
                 🎯 BOWL FIRST
               </button>
             </div>
+          </motion.div>
+        )}
+
+        {/* Phase-based countdown overlay */}
+        <AnimatePresence>
+          {detection.phase === "countdown" && detection.countdownValue && (
+            <motion.div
+              key={detection.countdownValue}
+              initial={{ scale: 2, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className="glass-score p-6 text-center"
+            >
+              <p className="font-display text-5xl font-black text-primary text-glow">{detection.countdownValue}</p>
+              <p className="text-xs text-muted-foreground mt-2 font-semibold">Get ready…</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Fist prompt */}
+        {detection.phase === "wait_for_fist" && game.phase !== "not_started" && game.phase !== "finished" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-score p-5 text-center space-y-2">
+            <p className="text-3xl">✊</p>
+            <p className="font-display text-sm font-black text-foreground tracking-wider">Show FIST to start</p>
+            <p className="text-[10px] text-muted-foreground">Make a fist and hold steady</p>
           </motion.div>
         )}
 
