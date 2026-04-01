@@ -1,0 +1,24 @@
+{
+  "name": "Hand Cricket - AR Edition",
+  "short_name": "Hand Cricket",
+  "description": "Play hand cricket with AR hand tracking or tap controls. Daily challenges, tournaments, and real-time multiplayer.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0c14",
+  "theme_color": "#e04040",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

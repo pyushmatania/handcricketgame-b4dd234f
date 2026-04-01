@@ -28,6 +28,42 @@ const MODES = [
     border: "border-accent/20",
   },
   {
+    id: "daily",
+    icon: "📅",
+    title: "DAILY CHALLENGE",
+    subtitle: "New Target Every Day",
+    description: "Beat today's target score. One shot per day — share your result!",
+    gradient: "from-score-gold to-score-gold/60",
+    glow: "",
+    accent: "text-score-gold",
+    bg: "bg-score-gold/5",
+    border: "border-score-gold/20",
+  },
+  {
+    id: "multiplayer",
+    icon: "⚔️",
+    title: "MULTIPLAYER",
+    subtitle: "Real-Time PvP",
+    description: "Challenge friends in real-time hand cricket matches online.",
+    gradient: "from-secondary to-secondary/60",
+    glow: "glow-secondary",
+    accent: "text-secondary",
+    bg: "bg-secondary/5",
+    border: "border-secondary/20",
+  },
+  {
+    id: "tournament",
+    icon: "🏆",
+    title: "TOURNAMENT",
+    subtitle: "5-Round Bracket",
+    description: "Battle through 5 AI opponents of increasing difficulty to become champion.",
+    gradient: "from-score-gold to-secondary/60",
+    glow: "",
+    accent: "text-score-gold",
+    bg: "bg-score-gold/5",
+    border: "border-score-gold/20",
+  },
+  {
     id: "practice",
     icon: "🎯",
     title: "PRACTICE",
@@ -38,19 +74,6 @@ const MODES = [
     accent: "text-neon-green",
     bg: "bg-neon-green/5",
     border: "border-neon-green/20",
-  },
-  {
-    id: "multiplayer",
-    icon: "⚔️",
-    title: "MULTIPLAYER",
-    subtitle: "Coming Soon",
-    description: "Challenge your friends in real-time hand cricket matches.",
-    gradient: "from-muted-foreground to-muted-foreground/60",
-    glow: "",
-    accent: "text-muted-foreground",
-    bg: "bg-muted/30",
-    border: "border-glass",
-    disabled: true,
   },
 ];
 
@@ -83,13 +106,10 @@ export default function PlayPage() {
               key={mode.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              whileTap={mode.disabled ? {} : { scale: 0.97 }}
-              onClick={() => !mode.disabled && navigate(`/game/${mode.id}`)}
-              disabled={mode.disabled}
-              className={`w-full ${mode.bg} border ${mode.border} rounded-2xl p-4 flex items-start gap-4 text-left transition-all ${
-                mode.disabled ? "opacity-30 cursor-not-allowed" : "active:scale-[0.98]"
-              }`}
+              transition={{ delay: i * 0.08 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate(`/game/${mode.id}`)}
+              className={`w-full ${mode.bg} border ${mode.border} rounded-2xl p-4 flex items-start gap-4 text-left transition-all active:scale-[0.98]`}
             >
               <div
                 className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${mode.gradient} flex items-center justify-center shrink-0 ${mode.glow}`}
@@ -97,16 +117,9 @@ export default function PlayPage() {
                 <span className="text-2xl">{mode.icon}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-sm font-black text-foreground tracking-wider">
-                    {mode.title}
-                  </span>
-                  {mode.disabled && (
-                    <span className="text-[7px] font-display font-bold text-secondary bg-secondary/20 px-1.5 py-0.5 rounded-full">
-                      SOON
-                    </span>
-                  )}
-                </div>
+                <span className="font-display text-sm font-black text-foreground tracking-wider">
+                  {mode.title}
+                </span>
                 <span className={`text-[10px] ${mode.accent} font-display font-bold block mt-0.5`}>
                   {mode.subtitle}
                 </span>
@@ -114,33 +127,10 @@ export default function PlayPage() {
                   {mode.description}
                 </span>
               </div>
-              {!mode.disabled && (
-                <span className="text-muted-foreground/40 mt-3">→</span>
-              )}
+              <span className="text-muted-foreground/40 mt-3">→</span>
             </motion.button>
           ))}
         </div>
-
-        {/* Tournament teaser */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-6 glass-premium p-4 text-center relative overflow-hidden"
-        >
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent"
-            animate={{ x: ["-100%", "200%"] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          />
-          <span className="text-2xl block mb-2 relative z-10">🏟️</span>
-          <p className="font-display text-xs font-bold text-foreground tracking-wider relative z-10">
-            TOURNAMENT MODE
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-1 relative z-10">
-            Best of 3 / Best of 5 series — coming next update!
-          </p>
-        </motion.div>
       </div>
 
       <BottomNav />
