@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,20 +20,17 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function AnimatedRoutes() {
-  const location = useLocation();
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
-        <Route path="/play" element={<PageTransition><PlayPage /></PageTransition>} />
-        <Route path="/game/:mode" element={<GamePage />} />
-        <Route path="/profile" element={<PageTransition><ProfilePage /></PageTransition>} />
-        <Route path="/leaderboard" element={<PageTransition><LeaderboardPage /></PageTransition>} />
-        <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
-        <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AnimatePresence>
+    <Routes>
+      <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+      <Route path="/play" element={<PageTransition><PlayPage /></PageTransition>} />
+      <Route path="/game/:mode" element={<GamePage />} />
+      <Route path="/profile" element={<PageTransition><ProfilePage /></PageTransition>} />
+      <Route path="/leaderboard" element={<PageTransition><LeaderboardPage /></PageTransition>} />
+      <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
+      <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 
