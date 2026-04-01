@@ -60,8 +60,5 @@ const App = () => {
   );
 };
 
-export default App;
-  </QueryClientProvider>
-);
 
 export default App;
