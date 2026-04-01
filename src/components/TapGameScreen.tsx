@@ -24,6 +24,7 @@ const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
 export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   const { game, startGame, playBall, resetGame } = useHandCricket();
   const { saveMatch } = useMatchSaver();
+  const { soundEnabled, hapticsEnabled, commentaryEnabled } = useSettings();
   const [lastPlayed, setLastPlayed] = useState<Move | null>(null);
   const [cooldown, setCooldown] = useState(false);
   const [showExplosion, setShowExplosion] = useState<{ emoji: string; key: number } | null>(null);
