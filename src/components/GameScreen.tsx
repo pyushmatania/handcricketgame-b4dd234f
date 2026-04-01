@@ -16,6 +16,8 @@ import { SFX, Haptics } from "@/lib/sounds";
 import { getCommentary, getInningsChangeCommentary } from "@/lib/commentary";
 import { speakCommentary, playCrowdForResult, CrowdSFX } from "@/lib/voiceCommentary";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GameScreenProps {
   onHome: () => void;
@@ -64,8 +66,22 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const [pendingBatFirst, setPendingBatFirst] = useState<boolean | null>(null);
   const postMatchShownRef = useRef(false);
 
-  const playerName = "You";
+  const { user } = useAuth();
+  const [playerName, setPlayerName] = useState("You");
   const opponentName = "AI";
+
+  // Fetch display name from profile
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.display_name) setPlayerName(data.display_name);
+      });
+  }, [user]);
 
   // Handle toss complete -> show pre-match ceremony
   const handleTossComplete = (tossWinner: string, battingFirst: string) => {
