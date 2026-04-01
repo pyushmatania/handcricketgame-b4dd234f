@@ -93,8 +93,8 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   };
 
   const handleStart = (batFirst: boolean) => {
-    SFX.gameStart();
-    Haptics.medium();
+    if (soundEnabled) SFX.gameStart();
+    if (hapticsEnabled) Haptics.medium();
     startGame(batFirst);
   };
 
