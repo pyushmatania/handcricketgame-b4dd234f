@@ -308,12 +308,12 @@ export default function MultiplayerScreen({ onHome }: Props) {
     if (currentGame.phase === "pre_round_countdown" && currentGame.phase_started_at) {
       const ms = Date.now() - new Date(currentGame.phase_started_at).getTime();
       if (ms >= 3000) {
-        supabase.from("multiplayer_games").update({
-          phase: "action_window" as any,
+        (supabase.from("multiplayer_games") as any).update({
+          phase: "action_window",
           phase_started_at: new Date().toISOString(),
           turn_deadline_at: new Date(Date.now() + RESERVE_TIMER_MS).toISOString(),
-          status: "playing" as any,
-        } as any).eq("id", currentGame.id).eq("phase" as any, "pre_round_countdown");
+          status: "playing",
+        }).eq("id", currentGame.id).eq("phase", "pre_round_countdown");
       }
     }
     if (currentGame.phase === "action_window" && currentGame.turn_deadline_at && Date.now() >= new Date(currentGame.turn_deadline_at).getTime()) {
