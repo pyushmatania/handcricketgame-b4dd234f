@@ -39,6 +39,8 @@ export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [matches, setMatches] = useState<MatchRecord[]>([]);
+  const [showAllMatches, setShowAllMatches] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -49,6 +51,16 @@ export default function ProfilePage() {
       .single()
       .then(({ data }) => {
         if (data) setProfile(data);
+      });
+
+    supabase
+      .from("matches")
+      .select("id, mode, user_score, ai_score, result, balls_played, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        if (data) setMatches(data);
       });
   }, [user]);
 
