@@ -78,7 +78,7 @@ interface ProfileData {
   abandons: number;
 }
 
-type TabType = "stats" | "matches" | "squad";
+type TabType = "stats" | "matches" | "friends";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
