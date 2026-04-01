@@ -463,7 +463,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
       .from("multiplayer_games")
       .select("*")
       .in("status", ["waiting", "toss", "playing"])
-      .eq("room_code", normalizedCode)
+      .eq("room_code" as any, normalizedCode)
       .or(`target_guest_id.is.null,target_guest_id.eq.${user.id}`)
       .limit(1)
       .maybeSingle();
