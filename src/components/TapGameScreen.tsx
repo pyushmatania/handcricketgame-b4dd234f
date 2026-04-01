@@ -12,13 +12,13 @@ interface TapGameScreenProps {
   onHome: () => void;
 }
 
-const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
-  { move: "DEF", emoji: "✊", label: "DEF", color: "border-accent/30 bg-accent/5" },
-  { move: 1, emoji: "☝️", label: "1", color: "border-primary/30 bg-primary/5" },
-  { move: 2, emoji: "✌️", label: "2", color: "border-neon-green/30 bg-neon-green/5" },
-  { move: 3, emoji: "🤟", label: "3", color: "border-secondary/30 bg-secondary/5" },
-  { move: 4, emoji: "🖖", label: "4", color: "border-score-gold/30 bg-score-gold/5" },
-  { move: 6, emoji: "👍", label: "6", color: "border-primary/40 bg-primary/10" },
+const MOVES: { move: Move; emoji: string; label: string; color: string; glow: string }[] = [
+  { move: "DEF", emoji: "✊", label: "DEF", color: "from-accent/20 to-accent/5 border-accent/25", glow: "shadow-[0_0_15px_hsl(168_80%_50%/0.15)]" },
+  { move: 1, emoji: "☝️", label: "1", color: "from-primary/20 to-primary/5 border-primary/25", glow: "shadow-[0_0_15px_hsl(217_91%_60%/0.15)]" },
+  { move: 2, emoji: "✌️", label: "2", color: "from-neon-green/20 to-neon-green/5 border-neon-green/25", glow: "shadow-[0_0_15px_hsl(142_71%_45%/0.15)]" },
+  { move: 3, emoji: "🤟", label: "3", color: "from-secondary/20 to-secondary/5 border-secondary/25", glow: "shadow-[0_0_15px_hsl(45_93%_58%/0.15)]" },
+  { move: 4, emoji: "🖖", label: "4", color: "from-secondary/25 to-secondary/10 border-secondary/30", glow: "shadow-[0_0_20px_hsl(45_93%_58%/0.2)]" },
+  { move: 6, emoji: "👍", label: "6", color: "from-primary/25 to-primary/10 border-primary/30", glow: "shadow-[0_0_20px_hsl(217_91%_60%/0.25)]" },
 ];
 
 export default function TapGameScreen({ onHome }: TapGameScreenProps) {
@@ -32,7 +32,6 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   const savedRef = useRef(false);
   const prevPhaseRef = useRef(game.phase);
 
-  // Auto-save match when game finishes
   useEffect(() => {
     if (game.phase === "finished" && !savedRef.current) {
       savedRef.current = true;
@@ -42,7 +41,6 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
     }
   }, [game.phase, game, saveMatch]);
 
-  // Detect innings change
   useEffect(() => {
     const prev = prevPhaseRef.current;
     prevPhaseRef.current = game.phase;
@@ -55,7 +53,6 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
     }
   }, [game.phase]);
 
-  // Play sound effects on ball result
   useEffect(() => {
     if (!game.lastResult) return;
     const r = game.lastResult;
@@ -110,14 +107,24 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
       <div className="absolute inset-0 stadium-gradient pointer-events-none" />
       <div className="absolute inset-0 vignette pointer-events-none" />
 
-      {/* Top bar */}
+      {/* Top ambient glow */}
+      <div
+        className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.06) 0%, transparent 70%)" }}
+      />
+
+      {/* Premium top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2">
-        <button onClick={onHome} className="text-muted-foreground hover:text-foreground text-sm font-bold active:scale-95 transition-transform">
-          ← Back
-        </button>
-        <div className="flex items-center gap-2">
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={onHome}
+          className="w-9 h-9 rounded-xl glass-premium flex items-center justify-center text-sm active:scale-95 transition-transform"
+        >
+          ←
+        </motion.button>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass-card">
           <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-          <span className="font-display text-[9px] tracking-[0.15em] text-accent font-bold">TAP MODE</span>
+          <span className="font-display text-[9px] tracking-[0.2em] text-accent font-bold">TAP MODE</span>
         </div>
         <RulesSheet />
       </div>
@@ -129,14 +136,23 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-score p-6 text-center space-y-5 mt-8"
+            className="glass-premium rounded-2xl p-6 text-center space-y-5 mt-8 relative overflow-hidden"
           >
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-accent/10 to-transparent rounded-bl-full" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-primary/10 to-transparent rounded-tr-full" />
+
             <motion.div
               animate={{ rotate: [0, -5, 5, 0], scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-accent/20 to-primary/10 border border-accent/30 flex items-center justify-center"
+              className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-accent/20 to-primary/10 border border-accent/30 flex items-center justify-center relative"
             >
               <span className="text-4xl">👆</span>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute inset-0 rounded-2xl border border-accent/20"
+              />
             </motion.div>
             <div>
               <p className="font-display text-sm font-black text-foreground tracking-wider">CHOOSE YOUR INNINGS</p>
@@ -144,11 +160,11 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
             </div>
             <div className="flex gap-3">
               <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleStart(true)}
-                className="flex-1 py-4 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl text-sm glow-primary">
+                className="flex-1 py-4 bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(217_91%_60%/0.25)] border border-primary/30">
                 🏏 BAT FIRST
               </motion.button>
               <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleStart(false)}
-                className="flex-1 py-4 bg-gradient-to-br from-accent to-accent/80 text-accent-foreground font-display font-bold rounded-2xl text-sm glow-accent">
+                className="flex-1 py-4 bg-gradient-to-br from-accent to-accent/70 text-accent-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(168_80%_50%/0.2)] border border-accent/30">
                 🎯 BOWL FIRST
               </motion.button>
             </div>
@@ -165,10 +181,11 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              className="broadcast-bar px-4 py-2.5 rounded-xl text-center"
+              className="glass-card rounded-xl px-4 py-2.5 text-center flex items-center justify-center gap-2"
             >
+              <span className="text-xs">📢</span>
               <p className="font-display text-[10px] font-bold text-foreground tracking-wider">
-                📢 {commentary}
+                {commentary}
               </p>
             </motion.div>
           )}
@@ -182,21 +199,26 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
               initial={{ opacity: 0, scale: 0.8, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="glass-score p-4 text-center relative overflow-hidden"
+              className="glass-premium rounded-2xl p-4 text-center relative overflow-hidden"
             >
+              {/* Flash overlay */}
               <motion.div
                 initial={{ opacity: 0.4 }}
                 animate={{ opacity: 0 }}
                 transition={{ duration: 0.6 }}
-                className={`absolute inset-0 ${game.lastResult.runs === "OUT" ? "bg-out-red/20" : "bg-primary/10"}`}
+                className={`absolute inset-0 ${game.lastResult.runs === "OUT" ? "bg-out-red/15" : "bg-primary/10"}`}
               />
               <div className="flex items-center justify-center gap-8 relative z-10">
                 <div className="text-center">
-                  <p className="text-[7px] text-muted-foreground font-bold tracking-widest mb-1">YOU</p>
-                  <motion.p initial={{ rotateY: 90 }} animate={{ rotateY: 0 }} className="text-4xl">
-                    {MOVES.find((m) => m.move === game.lastResult?.userMove)?.emoji || "❓"}
-                  </motion.p>
-                  <p className="text-xs font-display font-bold text-primary mt-1">
+                  <p className="text-[7px] text-muted-foreground font-bold tracking-[0.2em] mb-1">YOU</p>
+                  <motion.div
+                    initial={{ rotateY: 90 }}
+                    animate={{ rotateY: 0 }}
+                    className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center mx-auto"
+                  >
+                    <span className="text-3xl">{MOVES.find((m) => m.move === game.lastResult?.userMove)?.emoji || "❓"}</span>
+                  </motion.div>
+                  <p className="text-[10px] font-display font-bold text-primary mt-1.5 tracking-wider">
                     {game.lastResult.userMove === "DEF" ? "DEF" : game.lastResult.userMove}
                   </p>
                 </div>
@@ -204,20 +226,26 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", delay: 0.15 }}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center font-display font-black text-sm ${
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center font-display font-black text-sm ${
                     game.lastResult.runs === "OUT"
-                      ? "bg-out-red/20 border-2 border-out-red/40 text-out-red"
-                      : "bg-primary/20 border-2 border-primary/40 text-primary"
+                      ? "bg-gradient-to-br from-out-red/20 to-out-red/10 border-2 border-out-red/30 text-out-red"
+                      : "bg-gradient-to-br from-neon-green/20 to-neon-green/10 border-2 border-neon-green/30 text-neon-green"
                   }`}
+                  style={{ textShadow: "0 0 15px currentColor" }}
                 >
                   {game.lastResult.runs === "OUT" ? "OUT" : `+${game.lastResult.runs}`}
                 </motion.div>
                 <div className="text-center">
-                  <p className="text-[7px] text-muted-foreground font-bold tracking-widest mb-1">AI</p>
-                  <motion.p initial={{ rotateY: -90 }} animate={{ rotateY: 0 }} transition={{ delay: 0.1 }} className="text-4xl">
-                    {MOVES.find((m) => m.move === game.lastResult?.aiMove)?.emoji || "🤖"}
-                  </motion.p>
-                  <p className="text-xs font-display font-bold text-accent mt-1">
+                  <p className="text-[7px] text-muted-foreground font-bold tracking-[0.2em] mb-1">AI</p>
+                  <motion.div
+                    initial={{ rotateY: -90 }}
+                    animate={{ rotateY: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/20 flex items-center justify-center mx-auto"
+                  >
+                    <span className="text-3xl">{MOVES.find((m) => m.move === game.lastResult?.aiMove)?.emoji || "🤖"}</span>
+                  </motion.div>
+                  <p className="text-[10px] font-display font-bold text-accent mt-1.5 tracking-wider">
                     {game.lastResult.aiMove === "DEF" ? "DEF" : game.lastResult.aiMove}
                   </p>
                 </div>
@@ -244,7 +272,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
               )}
             </AnimatePresence>
 
-            <p className="text-center text-[8px] text-muted-foreground font-display mb-2 tracking-widest">
+            <p className="text-center text-[8px] text-muted-foreground font-display mb-2 tracking-[0.2em]">
               {game.isBatting ? "⚡ TAP YOUR SHOT" : "🎯 TAP YOUR BOWL"}
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -254,12 +282,12 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
                   whileTap={{ scale: 0.8 }}
                   onClick={() => handleMove(m.move)}
                   disabled={cooldown}
-                  className={`relative py-5 rounded-2xl font-display font-bold text-sm flex flex-col items-center gap-1.5 transition-all border ${
+                  className={`relative py-5 rounded-2xl font-display font-bold text-sm flex flex-col items-center gap-1.5 transition-all border backdrop-blur-sm ${
                     cooldown
-                      ? "opacity-30 cursor-not-allowed border-transparent bg-muted/30"
+                      ? "opacity-30 cursor-not-allowed border-transparent bg-muted/20"
                       : lastPlayed === m.move
-                      ? "border-primary/50 bg-primary/15 text-primary glow-primary"
-                      : `${m.color} text-foreground`
+                      ? `bg-gradient-to-br ${m.color} text-foreground ${m.glow} border-primary/40`
+                      : `bg-gradient-to-br ${m.color} text-foreground ${m.glow}`
                   }`}
                 >
                   <span className="text-3xl">{m.emoji}</span>
@@ -281,29 +309,28 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
         {/* Game over */}
         {game.phase === "finished" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 mt-4">
-            {/* Final commentary */}
-            <div className="broadcast-bar px-4 py-3 rounded-xl text-center">
+            <div className="glass-card rounded-xl px-4 py-3 text-center">
               <p className="font-display text-xs font-bold text-foreground tracking-wider">
                 {game.result === "win" ? "🏆 CHAMPION! What a performance!" : game.result === "loss" ? "Better luck next time!" : "🤝 A TIE! What a match!"}
               </p>
             </div>
             <div className="flex gap-3">
               <motion.button whileTap={{ scale: 0.95 }} onClick={handleStartNew}
-                className="flex-1 py-3.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl glow-primary tracking-wider">
+                className="flex-1 py-3.5 bg-gradient-to-r from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl tracking-wider shadow-[0_0_20px_hsl(217_91%_60%/0.2)] border border-primary/30">
                 ⚡ NEW MATCH
               </motion.button>
               <motion.button whileTap={{ scale: 0.95 }} onClick={onHome}
-                className="flex-1 py-3.5 bg-muted text-foreground font-display font-bold rounded-2xl tracking-wider">
+                className="flex-1 py-3.5 glass-premium text-foreground font-display font-bold rounded-2xl tracking-wider border border-primary/10">
                 HOME
               </motion.button>
             </div>
           </motion.div>
         )}
 
-        {/* Reset during game */}
+        {/* Reset */}
         {game.phase !== "not_started" && game.phase !== "finished" && (
           <button onClick={handleStartNew}
-            className="text-[10px] text-muted-foreground/50 underline self-center mt-1 active:scale-95 font-display tracking-wider">
+            className="text-[10px] text-muted-foreground/40 underline self-center mt-1 active:scale-95 font-display tracking-wider">
             Reset Match
           </button>
         )}
