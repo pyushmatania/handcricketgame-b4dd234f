@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      friend_requests: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          status: string
+          to_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          status?: string
+          to_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          status?: string
+          to_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      friends: {
+        Row: {
+          created_at: string
+          friend_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           ai_score: number
@@ -121,6 +169,7 @@ export type Database = {
           draws: number
           high_score: number
           id: string
+          invite_code: string
           losses: number
           total_matches: number
           updated_at: string
@@ -137,6 +186,7 @@ export type Database = {
           draws?: number
           high_score?: number
           id?: string
+          invite_code?: string
           losses?: number
           total_matches?: number
           updated_at?: string
@@ -153,6 +203,7 @@ export type Database = {
           draws?: number
           high_score?: number
           id?: string
+          invite_code?: string
           losses?: number
           total_matches?: number
           updated_at?: string
@@ -166,7 +217,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_friend_request: {
+        Args: { request_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
