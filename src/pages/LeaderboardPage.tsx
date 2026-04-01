@@ -95,7 +95,37 @@ export default function LeaderboardPage() {
     if (data) setFriendLeaders(data as unknown as LeaderEntry[]);
   };
 
+  const loadRivalFriends = async () => {
+    if (!user) return;
+    const { data: friendRows } = await supabase.from("friends").select("friend_id").eq("user_id", user.id);
+    if (!friendRows || !friendRows.length) { setRivalFriends([]); return; }
+    const ids = friendRows.map((f: any) => f.friend_id);
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, abandons")
+      .in("user_id", ids);
+    if (data) setRivalFriends(data as unknown as FriendProfile[]);
+  };
+
+  const challengeFriend = async (friendId: string) => {
+    if (!user) return;
+    const { data: game } = await supabase
+      .from("multiplayer_games")
+      .insert({ host_id: user.id, target_guest_id: friendId, host_reserve_ms: 10000, guest_reserve_ms: 10000 } as any)
+      .select()
+      .single();
+    if (game) {
+      await supabase.from("match_invites").insert({
+        game_id: (game as any).id,
+        from_user_id: user.id,
+        to_user_id: friendId,
+      } as any);
+      navigate("/game/multiplayer");
+    }
+  };
+
   const getBadge = (rank: number) => {
+
     if (rank === 1) return "🥇";
     if (rank === 2) return "🥈";
     if (rank === 3) return "🥉";
