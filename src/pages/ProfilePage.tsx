@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
-import PlayerCard, { INDIAN_LEGENDS } from "@/components/PlayerCard";
+import PlayerCard, { INDIAN_LEGENDS, type PlayerInfo } from "@/components/PlayerCard";
+import PlayerDetailModal from "@/components/PlayerDetailModal";
 
 interface MatchRecord {
   id: string;
@@ -45,6 +46,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>("stats");
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerInfo | null>(null);
 
   const getTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -373,7 +375,7 @@ export default function ProfilePage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {INDIAN_LEGENDS.map((player, i) => (
-                  <PlayerCard key={player.id} player={player} size="sm" delay={i * 0.1} />
+                  <PlayerCard key={player.id} player={player} size="sm" delay={i * 0.1} onTap={setSelectedPlayer} />
                 ))}
               </div>
             </motion.div>
@@ -382,6 +384,9 @@ export default function ProfilePage() {
       </div>
 
       <BottomNav />
+      {selectedPlayer && (
+        <PlayerDetailModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+      )}
     </div>
   );
 }

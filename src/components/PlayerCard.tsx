@@ -86,9 +86,10 @@ interface PlayerCardProps {
   size?: "sm" | "md" | "lg";
   showStats?: boolean;
   delay?: number;
+  onTap?: (player: PlayerInfo) => void;
 }
 
-export default function PlayerCard({ player, size = "md", showStats = true, delay = 0 }: PlayerCardProps) {
+export default function PlayerCard({ player, size = "md", showStats = true, delay = 0, onTap }: PlayerCardProps) {
   const img = PLAYER_IMAGES[player.id];
   const sizeClasses = {
     sm: "h-32 w-24",
@@ -100,8 +101,10 @@ export default function PlayerCard({ player, size = "md", showStats = true, dela
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
+      whileTap={onTap ? { scale: 0.95 } : undefined}
+      onClick={() => onTap?.(player)}
       transition={{ delay, duration: 0.5, type: "spring", stiffness: 100 }}
-      className={`relative glass-premium rounded-2xl overflow-hidden ${player.glowColor} group`}
+      className={`relative glass-premium rounded-2xl overflow-hidden ${player.glowColor} group ${onTap ? "cursor-pointer active:brightness-110" : ""}`}
     >
       {/* Rating badge */}
       <div className="absolute top-2 left-2 z-10">

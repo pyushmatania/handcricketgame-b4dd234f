@@ -7,7 +7,8 @@ import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import ParticleField from "@/components/ParticleField";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
-import { PLAYER_IMAGES } from "@/components/PlayerCard";
+import { PLAYER_IMAGES, INDIAN_LEGENDS, type PlayerInfo } from "@/components/PlayerCard";
+import PlayerDetailModal from "@/components/PlayerDetailModal";
 
 interface ProfileData {
   total_matches: number;
@@ -55,6 +56,7 @@ export default function HomePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [recentMatch, setRecentMatch] = useState<RecentMatch | null>(null);
   const [activePlayer, setActivePlayer] = useState(0);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerInfo | null>(null);
 
   useEffect(() => {
     const seen = localStorage.getItem("hc_onboarding_done");
@@ -121,7 +123,11 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="glass-premium p-4 mb-4 relative overflow-hidden"
+          className="glass-premium p-4 mb-4 relative overflow-hidden cursor-pointer"
+          onClick={() => {
+            const legend = INDIAN_LEGENDS.find(l => l.id === PLAYERS[activePlayer].id);
+            if (legend) setSelectedPlayer(legend);
+          }}
         >
           {/* Decorative background number */}
           <AnimatePresence mode="wait">
@@ -430,6 +436,9 @@ export default function HomePage() {
       </div>
 
       <BottomNav />
+      {selectedPlayer && (
+        <PlayerDetailModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+      )}
     </div>
   );
 }
