@@ -75,6 +75,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [myName, setMyName] = useState("You");
   const [cooldown, setCooldown] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [joinState, setJoinState] = useState<"idle" | "joining" | "failed" | "full" | "expired">("idle");
 
   // Timer state
   const [ballTimer, setBallTimer] = useState(BALL_TIMER_MS);
@@ -84,6 +85,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const ballTimerStartRef = useRef<number | null>(null);
   const reserveUsedRef = useRef(0);
   const hydratedGameIdRef = useRef<string | null>(null);
+  const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
 
   useEffect(() => {
@@ -95,57 +97,85 @@ export default function MultiplayerScreen({ onHome }: Props) {
     }
   }, [user, navigate]);
 
+  const joinExistingGame = useCallback(async (gameId: string) => {
+    if (!user) return null;
+
+    const { data: existingGame } = await supabase
+      .from("multiplayer_games")
+      .select("*")
+      .eq("id", gameId)
+      .maybeSingle();
+
+    if (!existingGame) {
+      setJoinState("expired");
+      return null;
+    }
+
+    const game = existingGame as unknown as MultiplayerGame;
+
+    if (game.status === "finished" || game.status === "abandoned") {
+      setJoinState("expired");
+      return null;
+    }
+
+    if (game.host_id === user.id || game.guest_id === user.id) {
+      setJoinState("idle");
+      return game;
+    }
+
+    if (game.guest_id && game.guest_id !== user.id) {
+      setJoinState("full");
+      return null;
+    }
+
+    if (game.status !== "waiting") {
+      setJoinState("failed");
+      return null;
+    }
+
+    const { data: joinedGame } = await supabase
+      .from("multiplayer_games")
+      .update({ guest_id: user.id, status: "toss" } as any)
+      .eq("id", gameId)
+      .is("guest_id", null)
+      .eq("status", "waiting")
+      .or(`target_guest_id.is.null,target_guest_id.eq.${user.id}`)
+      .select()
+      .maybeSingle();
+
+    if (joinedGame) {
+      setJoinState("idle");
+      return joinedGame as unknown as MultiplayerGame;
+    }
+
+    const { data: refreshedGame } = await supabase
+      .from("multiplayer_games")
+      .select("*")
+      .eq("id", gameId)
+      .maybeSingle();
+
+    if (refreshedGame && ((refreshedGame as any).guest_id === user.id || (refreshedGame as any).host_id === user.id)) {
+      setJoinState("idle");
+      return refreshedGame as unknown as MultiplayerGame;
+    }
+
+    setJoinState("full");
+    return null;
+  }, [user]);
+
   useEffect(() => {
     if (!user || !gameIdFromQuery) return;
     if (hydratedGameIdRef.current === gameIdFromQuery) return;
     hydratedGameIdRef.current = gameIdFromQuery;
 
     const hydrateGame = async () => {
-      const { data } = await supabase
-        .from("multiplayer_games")
-        .select("*")
-        .eq("id", gameIdFromQuery)
-        .maybeSingle();
-
-      if (!data) return;
-
-      let game = data as unknown as MultiplayerGame;
-
-      const canAutoJoinFromInvite =
-        game.guest_id === null &&
-        game.status === "waiting" &&
-        game.host_id !== user.id &&
-        (game.target_guest_id === null || game.target_guest_id === user.id);
-
-      if (canAutoJoinFromInvite) {
-        const { data: joinedGame } = await supabase
-          .from("multiplayer_games")
-          .update({ guest_id: user.id, status: "toss" } as any)
-          .eq("id", game.id)
-          .is("guest_id", null)
-          .eq("status", "waiting")
-          .select()
-          .maybeSingle();
-
-        if (joinedGame) {
-          game = joinedGame as unknown as MultiplayerGame;
-        } else {
-          const { data: refreshedGame } = await supabase
-            .from("multiplayer_games")
-            .select("*")
-            .eq("id", game.id)
-            .maybeSingle();
-
-          if (refreshedGame) {
-            game = refreshedGame as unknown as MultiplayerGame;
-          }
-        }
-      }
+      setJoinState("joining");
+      const game = await joinExistingGame(gameIdFromQuery);
+      if (!game) return;
 
       const isParticipant =
         game.host_id === user.id ||
-        game.guest_id === user.id ||
-        (game.guest_id === null && game.target_guest_id === user.id);
+        game.guest_id === user.id;
 
       if (!isParticipant) return;
 
@@ -159,7 +189,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
     };
 
     void hydrateGame();
-  }, [user, gameIdFromQuery]);
+  }, [user, gameIdFromQuery, joinExistingGame]);
 
   // Load lobby & tick timers
   useEffect(() => {
@@ -335,29 +365,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
   const joinGame = async (gameId: string) => {
     if (!user) return;
-    const { data: joinedGame } = await supabase
-      .from("multiplayer_games")
-      .update({ guest_id: user.id, status: "toss" } as any)
-      .eq("id", gameId)
-      .is("guest_id", null)
-      .eq("status", "waiting")
-      .select()
-      .maybeSingle();
-
-    let game = joinedGame as MultiplayerGame | null;
-
-    if (!game) {
-      const { data: existingGame } = await supabase
-        .from("multiplayer_games")
-        .select("*")
-        .eq("id", gameId)
-        .maybeSingle();
-
-      if (existingGame && ((existingGame as any).guest_id === user.id || (existingGame as any).host_id === user.id)) {
-        game = existingGame as unknown as MultiplayerGame;
-      }
-    }
-
+    setJoinState("joining");
+    const game = await joinExistingGame(gameId);
     if (game) {
       const g = game as MultiplayerGame;
       setCurrentGame(g);
@@ -398,6 +407,9 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
   const resolveTurn = async (game: MultiplayerGame) => {
     if (!user || user.id !== game.host_id) return;
+    const turnKey = `${game.id}-${game.current_turn}-${game.host_move}-${game.guest_move}`;
+    if (resolvedTurnRef.current === turnKey) return;
+    resolvedTurnRef.current = turnKey;
     const hostMove = game.host_move!;
     const guestMove = game.guest_move!;
     const battingIsHost = game.host_batting;
@@ -445,7 +457,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
       host_score: newHostScore, guest_score: newGuestScore, host_move: null, guest_move: null,
       current_turn: game.current_turn + 1, innings: newInnings, host_batting: newHostBatting,
       status: newStatus as any, winner_id: newWinner,
-    }).eq("id", game.id);
+    }).eq("id", game.id).eq("current_turn", game.current_turn).eq("host_move", hostMove).eq("guest_move", guestMove);
   };
 
   const isHost = currentGame && user?.id === currentGame.host_id;
@@ -529,11 +541,17 @@ export default function MultiplayerScreen({ onHome }: Props) {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
                 {(() => {
                   const joinable = games.filter(g => g.host_id !== user.id);
+                  const joinFeedback =
+                    joinState === "joining" ? "Joining..." :
+                    joinState === "failed" ? "Failed to join this match" :
+                    joinState === "full" ? "Game already full" :
+                    joinState === "expired" ? "Invite/match expired" : "";
                   if (joinable.length === 0) return (
                     <div className="glass-score p-6 text-center">
                       <span className="text-3xl block mb-2">🏟️</span>
                       <p className="text-xs text-muted-foreground">No open matches right now</p>
                       <p className="text-[9px] text-muted-foreground mt-1">Switch to Create tab to start one!</p>
+                      {joinFeedback && <p className="text-[9px] text-out-red mt-2">{joinFeedback}</p>}
                     </div>
                   );
                   return joinable.map((g) => {
@@ -545,6 +563,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     const urgent = g.time_left_ms < 60000;
                     return (
                       <motion.button key={g.id} whileTap={{ scale: 0.97 }} onClick={() => joinGame(g.id)}
+                        disabled={joinState === "joining"}
                         className="w-full glass-score p-3 flex items-center gap-3 text-left rounded-2xl border border-border/30">
                         <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${avatar.gradient} flex items-center justify-center shadow-lg`}>
                           <span className="text-lg">{avatar.emoji}</span>
@@ -566,6 +585,11 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     );
                   });
                 })()}
+                {joinState !== "idle" && joinState !== "joining" && games.length > 0 && (
+                  <p className="text-[9px] text-out-red text-center pt-1">
+                    {joinState === "failed" ? "Failed to join this match." : joinState === "full" ? "Game already full." : "Invite/match expired."}
+                  </p>
+                )}
               </motion.div>
             )}
           </motion.div>

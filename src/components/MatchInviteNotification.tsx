@@ -31,6 +31,7 @@ export default function MatchInviteNotification() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [joiningInviteId, setJoiningInviteId] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -42,6 +43,11 @@ export default function MatchInviteNotification() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "match_invites", filter: `to_user_id=eq.${user.id}` },
+        () => loadPendingInvites()
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "match_invites", filter: `to_user_id=eq.${user.id}` },
         () => loadPendingInvites()
       )
       .subscribe();
@@ -98,34 +104,74 @@ export default function MatchInviteNotification() {
 
   const acceptInvite = async (invite: Invite) => {
     if (!user) return;
-    const { data: joinedGame } = await supabase
-      .from("multiplayer_games")
-      .update({ guest_id: user.id, status: "toss" } as any)
-      .eq("id", invite.game_id)
-      .is("guest_id", null)
-      .eq("status", "waiting")
-      .select("id, host_id, guest_id, status")
-      .maybeSingle();
-
-    let finalGameId: string | null = (joinedGame as any)?.id ?? null;
-
-    if (!finalGameId) {
+    setJoiningInviteId(invite.id);
+    try {
       const { data: existingGame } = await supabase
         .from("multiplayer_games")
-        .select("id, host_id, guest_id, status")
+        .select("id, host_id, guest_id, status, target_guest_id")
         .eq("id", invite.game_id)
         .maybeSingle();
 
-      if (existingGame && (((existingGame as any).guest_id === user.id) || ((existingGame as any).host_id === user.id))) {
-        finalGameId = (existingGame as any).id;
+      if (!existingGame) {
+        await supabase.from("match_invites").update({ status: "expired" } as any).eq("id", invite.id);
+        setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+        return;
       }
+
+      const g = existingGame as any;
+      let finalGameId: string | null = null;
+
+      if (g.status === "finished" || g.status === "abandoned") {
+        await supabase.from("match_invites").update({ status: "expired" } as any).eq("id", invite.id);
+        setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+        return;
+      }
+
+      if (g.guest_id && g.guest_id !== user.id && g.host_id !== user.id) {
+        await supabase.from("match_invites").update({ status: "declined" } as any).eq("id", invite.id);
+        setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+        return;
+      }
+
+      if (!g.guest_id && g.status === "waiting") {
+        const { data: joinedGame } = await supabase
+          .from("multiplayer_games")
+          .update({ guest_id: user.id, status: "toss" } as any)
+          .eq("id", invite.game_id)
+          .is("guest_id", null)
+          .eq("status", "waiting")
+          .or(`target_guest_id.is.null,target_guest_id.eq.${user.id}`)
+          .select("id, host_id, guest_id, status")
+          .maybeSingle();
+
+        finalGameId = (joinedGame as any)?.id ?? null;
+      }
+
+      if (!finalGameId) {
+        const { data: refreshedGame } = await supabase
+          .from("multiplayer_games")
+          .select("id, host_id, guest_id, status")
+          .eq("id", invite.game_id)
+          .maybeSingle();
+
+        if (
+          refreshedGame &&
+          (((refreshedGame as any).guest_id === user.id) || ((refreshedGame as any).host_id === user.id)) &&
+          (refreshedGame as any).status !== "finished" &&
+          (refreshedGame as any).status !== "abandoned"
+        ) {
+          finalGameId = (refreshedGame as any).id;
+        }
+      }
+
+      if (!finalGameId) return;
+
+      await supabase.from("match_invites").update({ status: "accepted" } as any).eq("id", invite.id);
+      setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+      navigate(`/game/multiplayer?game=${finalGameId}`, { replace: true });
+    } finally {
+      setJoiningInviteId(null);
     }
-
-    if (!finalGameId) return;
-
-    await supabase.from("match_invites").update({ status: "accepted" } as any).eq("id", invite.id);
-    setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-    navigate(`/game/multiplayer?game=${finalGameId}`);
   };
 
   const declineInvite = async (invite: Invite) => {
@@ -168,10 +214,11 @@ export default function MatchInviteNotification() {
               <div className="flex gap-2 mt-3">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
+                  disabled={joiningInviteId === inv.id}
                   onClick={() => acceptInvite(inv)}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-neon-green/20 to-neon-green/10 border border-neon-green/30 font-display text-[9px] font-bold text-neon-green tracking-wider"
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-neon-green/20 to-neon-green/10 border border-neon-green/30 font-display text-[9px] font-bold text-neon-green tracking-wider disabled:opacity-50"
                 >
-                  ✓ ACCEPT
+                  {joiningInviteId === inv.id ? "JOINING..." : "✓ ACCEPT"}
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
