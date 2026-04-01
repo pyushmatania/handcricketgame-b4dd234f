@@ -169,9 +169,9 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.3 + i * 0.15, type: "spring", damping: 10 }}
-                        className="w-14 h-14 mx-auto mb-2 rounded-full bg-gradient-to-br from-primary/30 to-primary/5 border-2 border-primary/30 flex items-center justify-center relative"
+                        className="w-14 h-14 mx-auto mb-2 rounded-full bg-gradient-to-br from-primary/30 to-primary/5 border-2 border-primary/30 flex items-center justify-center relative overflow-hidden"
                       >
-                        <span className="text-2xl">{player.emoji}</span>
+                        <img src={PLAYER_IMAGES[player.id]} alt={player.name} className="w-full h-full object-cover object-top" />
                         {/* Glow ring */}
                         <motion.div
                           animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
