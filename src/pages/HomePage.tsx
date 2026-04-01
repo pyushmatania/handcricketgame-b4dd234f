@@ -1,37 +1,59 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
+import TopStatusBar from "@/components/TopStatusBar";
 import ParticleField from "@/components/ParticleField";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
 
-interface QuickStat {
-  label: string;
-  value: string;
-  icon: string;
-  color: string;
+interface ProfileData {
+  total_matches: number;
+  wins: number;
+  losses: number;
+  high_score: number;
+  current_streak: number;
+  best_streak: number;
 }
 
-const MODES = [
-  { icon: "📸", label: "AR Mode", desc: "Hand gesture tracking", mode: "ar", gradient: "from-primary/20 to-primary/5", border: "border-primary/20" },
-  { icon: "👆", label: "Tap Mode", desc: "Quick tap gameplay", mode: "tap", gradient: "from-accent/20 to-accent/5", border: "border-accent/20" },
-  { icon: "📅", label: "Daily", desc: "Daily target challenge", mode: "daily", gradient: "from-score-gold/20 to-score-gold/5", border: "border-score-gold/20" },
-  { icon: "⚔️", label: "Multiplayer", desc: "Real-time PvP", mode: "multiplayer", gradient: "from-secondary/20 to-secondary/5", border: "border-secondary/20" },
-  { icon: "🏆", label: "Tournament", desc: "5-round bracket", mode: "tournament", gradient: "from-score-gold/20 to-score-gold/5", border: "border-score-gold/20" },
-  { icon: "🎯", label: "Practice", desc: "Learn gestures", mode: "practice", gradient: "from-neon-green/20 to-neon-green/5", border: "border-neon-green/20" },
+interface RecentMatch {
+  id: string;
+  mode: string;
+  user_score: number;
+  ai_score: number;
+  result: string;
+  created_at: string;
+}
+
+const PLAYERS = [
+  { name: "Virat Kohli", number: "18", role: "Batsman", emoji: "🏏", color: "from-primary/30 to-primary/10" },
+  { name: "MS Dhoni", number: "7", role: "Captain", emoji: "🧤", color: "from-secondary/30 to-secondary/10" },
+  { name: "Rohit Sharma", number: "45", role: "Opener", emoji: "🏏", color: "from-accent/30 to-accent/10" },
+  { name: "Jasprit Bumrah", number: "93", role: "Bowler", emoji: "🎯", color: "from-neon-green/30 to-neon-green/10" },
+];
+
+const QUICK_MODES = [
+  { icon: "📸", label: "AR Mode", mode: "ar", color: "from-primary/25 to-primary/5", border: "border-primary/25", glow: "shadow-[0_0_15px_hsl(217_91%_60%/0.15)]" },
+  { icon: "👆", label: "Tap", mode: "tap", color: "from-accent/25 to-accent/5", border: "border-accent/25", glow: "shadow-[0_0_15px_hsl(168_80%_50%/0.15)]" },
+  { icon: "📅", label: "Daily", mode: "daily", color: "from-secondary/25 to-secondary/5", border: "border-secondary/25", glow: "shadow-[0_0_15px_hsl(45_93%_58%/0.15)]" },
+  { icon: "⚔️", label: "PvP", mode: "multiplayer", color: "from-out-red/20 to-out-red/5", border: "border-out-red/20", glow: "shadow-[0_0_15px_hsl(0_72%_51%/0.1)]" },
+];
+
+const ALL_MODES = [
+  { icon: "🏆", label: "Tournament", desc: "5-round bracket challenge", mode: "tournament", accent: "text-secondary" },
+  { icon: "🎯", label: "Practice", desc: "Learn hand gestures", mode: "practice", accent: "text-neon-green" },
+  { icon: "📸", label: "AR Camera", desc: "Hand gesture tracking", mode: "ar", accent: "text-primary" },
+  { icon: "⚔️", label: "Multiplayer", desc: "Real-time PvP battles", mode: "multiplayer", accent: "text-out-red" },
 ];
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [quickStats, setQuickStats] = useState<QuickStat[]>([
-    { label: "MATCHES", value: "0", icon: "🏏", color: "text-primary" },
-    { label: "WINS", value: "0", icon: "🏆", color: "text-secondary" },
-    { label: "HIGH SCORE", value: "—", icon: "⭐", color: "text-score-gold" },
-  ]);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [recentMatch, setRecentMatch] = useState<RecentMatch | null>(null);
+  const [activePlayer, setActivePlayer] = useState(0);
 
   useEffect(() => {
     const seen = localStorage.getItem("hc_onboarding_done");
@@ -42,19 +64,25 @@ export default function HomePage() {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("total_matches, wins, high_score")
+      .select("total_matches, wins, losses, high_score, current_streak, best_streak")
       .eq("user_id", user.id)
       .single()
-      .then(({ data }) => {
-        if (data) {
-          setQuickStats([
-            { label: "MATCHES", value: String(data.total_matches), icon: "🏏", color: "text-primary" },
-            { label: "WINS", value: String(data.wins), icon: "🏆", color: "text-secondary" },
-            { label: "HIGH SCORE", value: data.high_score > 0 ? String(data.high_score) : "—", icon: "⭐", color: "text-score-gold" },
-          ]);
-        }
-      });
+      .then(({ data }) => { if (data) setProfile(data); });
+
+    supabase
+      .from("matches")
+      .select("id, mode, user_score, ai_score, result, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .then(({ data }) => { if (data?.[0]) setRecentMatch(data[0]); });
   }, [user]);
+
+  // Cycle featured player
+  useEffect(() => {
+    const t = setInterval(() => setActivePlayer(p => (p + 1) % PLAYERS.length), 4000);
+    return () => clearInterval(t);
+  }, []);
 
   const completeOnboarding = () => {
     localStorage.setItem("hc_onboarding_done", "1");
@@ -65,160 +93,334 @@ export default function HomePage() {
     return <OnboardingTutorial onComplete={completeOnboarding} />;
   }
 
+  const winRate = profile && profile.total_matches > 0
+    ? Math.round((profile.wins / profile.total_matches) * 100)
+    : 0;
+
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden pb-24">
+    <div className="min-h-screen bg-background relative overflow-hidden pb-28">
       {/* Background layers */}
       <div className="absolute inset-0 stadium-gradient pointer-events-none" />
       <div className="absolute inset-0 vignette pointer-events-none" />
       <ParticleField />
 
-      {/* Radial glow */}
+      {/* Top ambient glow */}
       <div
-        className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[500px] h-[500px] pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(4 85% 58% / 0.08) 0%, transparent 60%)" }}
+        className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.06) 0%, transparent 70%)" }}
       />
 
-      <div className="relative z-10 max-w-lg mx-auto px-4 pt-10">
-        {/* Hero */}
+      {/* Top Status Bar */}
+      <TopStatusBar />
+
+      <div className="relative z-10 max-w-lg mx-auto px-4 pt-4">
+
+        {/* ── Featured Player Hero ────────────────── */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
+          transition={{ duration: 0.5 }}
+          className="glass-premium p-4 mb-4 relative overflow-hidden"
         >
-          <motion.div
-            animate={{ rotate: [0, -3, 3, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-primary/30 to-accent/10 border border-primary/30 flex items-center justify-center glow-primary mb-5"
-          >
-            <span className="text-5xl">🏏</span>
-          </motion.div>
-
-          <h1 className="font-display text-3xl font-black text-foreground tracking-wider leading-tight">
-            HAND CRICKET
-          </h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="font-display text-[10px] tracking-[0.35em] text-primary font-bold mt-2"
-          >
-            AUGMENTED REALITY • LIVE
-          </motion.p>
-        </motion.div>
-
-        {/* Play CTA */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, type: "spring" }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate("/play")}
-          className="w-full py-4 bg-gradient-to-r from-primary via-primary/90 to-out-red/80 text-primary-foreground font-display font-black text-base rounded-2xl glow-primary transition-all tracking-wider mb-6 relative overflow-hidden group"
-        >
-          <span className="relative z-10">⚡ PLAY NOW</span>
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/10 to-transparent"
-            animate={{ x: ["-100%", "200%"] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </motion.button>
-
-        {/* Stats row */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="grid grid-cols-3 gap-2 mb-6"
-        >
-          {quickStats.map((s, i) => (
+          {/* Decorative background number */}
+          <AnimatePresence mode="wait">
             <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + i * 0.08 }}
-              className="glass-score p-3 text-center group hover:border-primary/20 transition-colors"
+              key={activePlayer}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 0.04, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 0.5 }}
+              className="absolute -right-4 -top-4 font-display text-[120px] font-black leading-none text-foreground pointer-events-none select-none"
             >
-              <span className="text-xl block mb-1">{s.icon}</span>
-              <span className={`font-display text-lg font-black block leading-none ${s.color}`}>
-                {s.value}
-              </span>
-              <span className="text-[7px] text-muted-foreground font-display font-bold tracking-wider mt-1 block">
-                {s.label}
-              </span>
+              {PLAYERS[activePlayer].number}
             </motion.div>
-          ))}
-        </motion.div>
+          </AnimatePresence>
 
-        {/* Game Modes */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="space-y-3"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-px bg-gradient-to-r from-primary/40 to-transparent" />
-            <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
-              GAME MODES
-            </h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent to-primary/10" />
+          <div className="flex items-center gap-4 relative z-10">
+            {/* Player avatar */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activePlayer}
+                initial={{ opacity: 0, x: -20, scale: 0.8 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 20, scale: 0.8 }}
+                transition={{ duration: 0.4 }}
+                className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${PLAYERS[activePlayer].color} border border-primary/20 flex items-center justify-center relative shrink-0`}
+              >
+                <span className="text-4xl">{PLAYERS[activePlayer].emoji}</span>
+                {/* Pulse ring */}
+                <motion.div
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0, 0.3] }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
+                  className="absolute inset-0 rounded-2xl border border-primary/20"
+                />
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="flex-1 min-w-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activePlayer}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <p className="font-display text-[8px] text-primary/60 tracking-[0.2em] font-bold">
+                    FEATURED LEGEND
+                  </p>
+                  <h2 className="font-heading text-lg font-bold text-foreground leading-tight mt-0.5">
+                    {PLAYERS[activePlayer].name}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="font-display text-[9px] text-muted-foreground tracking-wider">
+                      #{PLAYERS[activePlayer].number}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-primary/30" />
+                    <span className="font-display text-[9px] text-primary/70 tracking-wider font-bold">
+                      {PLAYERS[activePlayer].role.toUpperCase()}
+                    </span>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            {MODES.map((m, i) => (
+          {/* Player dots indicator */}
+          <div className="flex items-center justify-center gap-2 mt-3">
+            {PLAYERS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActivePlayer(i)}
+                className={`transition-all rounded-full ${
+                  i === activePlayer
+                    ? "w-6 h-1.5 bg-primary"
+                    : "w-1.5 h-1.5 bg-muted-foreground/30"
+                }`}
+              />
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Quick Play Grid ────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 rounded-full bg-primary" />
+            <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.2em]">
+              QUICK PLAY
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {QUICK_MODES.map((m, i) => (
               <motion.button
                 key={m.mode}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + i * 0.07 }}
-                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.06 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => navigate(`/game/${m.mode}`)}
-                className={`relative bg-gradient-to-br ${m.gradient} border ${m.border} rounded-2xl p-4 text-left transition-all active:scale-95`}
+                className={`bg-gradient-to-br ${m.color} border ${m.border} rounded-2xl p-3 flex flex-col items-center gap-1.5 ${m.glow} active:scale-95 transition-all`}
               >
-                <span className="text-2xl block mb-2">{m.icon}</span>
-                <span className="font-display text-[11px] font-bold text-foreground block tracking-wider">
-                  {m.label}
+                <span className="text-2xl">{m.icon}</span>
+                <span className="font-display text-[8px] font-bold text-foreground tracking-wider">
+                  {m.label.toUpperCase()}
                 </span>
-                <span className="text-[9px] text-muted-foreground">{m.desc}</span>
               </motion.button>
             ))}
           </div>
         </motion.div>
 
-        {/* Tutorial shortcut */}
+        {/* ── Play Now CTA ───────────────────────── */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, type: "spring" }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate("/play")}
+          className="w-full py-4 bg-gradient-to-r from-primary via-primary/90 to-accent/60 text-primary-foreground font-display font-black text-sm rounded-2xl glow-primary transition-all tracking-wider mb-4 relative overflow-hidden"
+        >
+          <span className="relative z-10">⚡ ALL GAME MODES</span>
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/8 to-transparent"
+            animate={{ x: ["-100%", "200%"] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.button>
+
+        {/* ── Stats Cards Row ────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="grid grid-cols-3 gap-2 mb-4"
+        >
+          <div className="glass-card p-3 text-center">
+            <span className="text-lg block mb-0.5">🏏</span>
+            <span className="font-display text-xl font-black text-foreground block leading-none">
+              {profile?.total_matches ?? 0}
+            </span>
+            <span className="text-[7px] text-muted-foreground font-display font-bold tracking-wider mt-1 block">
+              MATCHES
+            </span>
+          </div>
+          <div className="glass-card p-3 text-center">
+            <span className="text-lg block mb-0.5">🏆</span>
+            <span className="font-display text-xl font-black text-secondary block leading-none">
+              {profile?.wins ?? 0}
+            </span>
+            <span className="text-[7px] text-muted-foreground font-display font-bold tracking-wider mt-1 block">
+              WINS
+            </span>
+          </div>
+          <div className="glass-card p-3 text-center">
+            <span className="text-lg block mb-0.5">📊</span>
+            <span className="font-display text-xl font-black text-primary block leading-none">
+              {winRate}%
+            </span>
+            <span className="text-[7px] text-muted-foreground font-display font-bold tracking-wider mt-1 block">
+              WIN RATE
+            </span>
+          </div>
+        </motion.div>
+
+        {/* ── Past Match Widget ──────────────────── */}
+        {recentMatch && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="glass-premium p-4 mb-4 relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.2em]">
+                PAST MATCH
+              </span>
+              <span className={`font-display text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full ${
+                recentMatch.result === "win"
+                  ? "bg-neon-green/15 text-neon-green border border-neon-green/20"
+                  : recentMatch.result === "loss"
+                  ? "bg-out-red/15 text-out-red border border-out-red/20"
+                  : "bg-secondary/15 text-secondary border border-secondary/20"
+              }`}>
+                {recentMatch.result.toUpperCase()}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center">
+                  <span className="text-lg">🏏</span>
+                </div>
+                <div>
+                  <span className="font-heading text-sm font-bold text-foreground block">You</span>
+                  <span className="font-display text-[8px] text-muted-foreground tracking-wider">
+                    {recentMatch.mode.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-center px-4">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-display text-2xl font-black text-secondary">{recentMatch.user_score}</span>
+                  <span className="text-[10px] text-muted-foreground font-display font-bold">:</span>
+                  <span className="font-display text-2xl font-black text-muted-foreground">{recentMatch.ai_score}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <span className="font-heading text-sm font-bold text-foreground block">AI</span>
+                  <span className="font-display text-[8px] text-muted-foreground tracking-wider">BOT</span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/15 flex items-center justify-center">
+                  <span className="text-lg">🤖</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── More Modes ─────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="mb-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 rounded-full bg-secondary" />
+            <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.2em]">
+              GAME MODES
+            </h2>
+          </div>
+
+          <div className="space-y-2">
+            {ALL_MODES.map((m, i) => (
+              <motion.button
+                key={m.mode}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + i * 0.06 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(`/game/${m.mode}`)}
+                className="w-full glass-card p-3.5 flex items-center gap-3 active:scale-[0.98] transition-all"
+              >
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/15 flex items-center justify-center shrink-0">
+                  <span className="text-xl">{m.icon}</span>
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <span className="font-heading text-[12px] font-bold text-foreground block tracking-wide">
+                    {m.label}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground">{m.desc}</span>
+                </div>
+                <span className="text-muted-foreground/30 text-sm">›</span>
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Tutorial Banner ────────────────────── */}
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.6 }}
           onClick={() => setShowOnboarding(true)}
-          className="w-full mt-5 glass-premium px-4 py-3 flex items-center gap-3 active:scale-[0.98] transition-transform"
+          className="w-full glass-card p-3.5 flex items-center gap-3 active:scale-[0.98] transition-transform mb-4"
         >
-          <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/15 flex items-center justify-center shrink-0">
             <span className="text-lg">📖</span>
           </div>
           <div className="text-left flex-1">
-            <span className="font-display text-[10px] font-bold text-foreground tracking-wider block">
-              GESTURE TUTORIAL
+            <span className="font-heading text-[11px] font-bold text-foreground block">
+              Gesture Tutorial
             </span>
             <span className="text-[9px] text-muted-foreground">Learn all 6 hand cricket gestures</span>
           </div>
-          <span className="text-[10px] text-muted-foreground">→</span>
+          <span className="text-muted-foreground/30 text-sm">›</span>
         </motion.button>
 
-        {/* Gesture strip */}
+        {/* ── Gesture Strip ──────────────────────── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-5 flex items-center justify-center gap-4"
+          transition={{ delay: 0.7 }}
+          className="flex items-center justify-center gap-5 pb-4"
         >
           {["✊", "☝️", "✌️", "🤟", "🖖", "👍"].map((e, i) => (
             <motion.span
               key={i}
-              animate={{ y: [0, -3, 0] }}
-              transition={{ duration: 2, delay: i * 0.2, repeat: Infinity }}
-              className="text-base opacity-20"
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 2.5, delay: i * 0.2, repeat: Infinity }}
+              className="text-base opacity-15"
             >
               {e}
             </motion.span>
