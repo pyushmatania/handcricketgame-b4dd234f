@@ -105,7 +105,7 @@ export default function HomeScreen({ onStart }: HomeScreenProps) {
           <span className="text-[9px] text-muted-foreground/40 font-display">✌️ 2</span>
           <span className="text-[9px] text-muted-foreground/40 font-display">🤟 3</span>
           <span className="text-[9px] text-muted-foreground/40 font-display">🖖 4</span>
-          <span className="text-[9px] text-muted-foreground/40 font-display">🖐️ 5</span>
+          <span className="text-[9px] text-muted-foreground/40 font-display">👍 6</span>
         </motion.div>
       </motion.div>
     </div>

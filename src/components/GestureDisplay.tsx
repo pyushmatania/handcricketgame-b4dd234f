@@ -16,7 +16,7 @@ interface GestureDisplayProps {
 }
 
 const moveEmoji: Record<string, string> = {
-  DEF: "✊", "1": "☝️", "2": "✌️", "3": "🤟", "4": "🖖", "5": "🖐️", "6": "6️⃣",
+  DEF: "✊", "1": "☝️", "2": "✌️", "3": "🤟", "4": "🖖", "6": "👍",
 };
 
 function moveLabel(m: Move | null): string {
@@ -279,7 +279,7 @@ export default function GestureDisplay({
         <span className="text-[8px] text-muted-foreground/30">✌️ 2</span>
         <span className="text-[8px] text-muted-foreground/30">🤟 3</span>
         <span className="text-[8px] text-muted-foreground/30">🖖 4</span>
-        <span className="text-[8px] text-muted-foreground/30">🖐️ 5</span>
+        <span className="text-[8px] text-muted-foreground/30">👍 6</span>
       </div>
     </div>
   );
