@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
-import playerKohli from "@/assets/player-kohli.png";
-import playerDhoni from "@/assets/player-dhoni.png";
-import playerRohit from "@/assets/player-rohit.png";
-import playerBumrah from "@/assets/player-bumrah.png";
+import playerKohli from "@/assets/player-kohli.jpg";
+import playerDhoni from "@/assets/player-dhoni.jpg";
+import playerRohit from "@/assets/player-rohit.jpg";
+import playerBumrah from "@/assets/player-bumrah.jpg";
 
 export const PLAYER_IMAGES: Record<string, string> = {
   kohli: playerKohli,
