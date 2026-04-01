@@ -221,6 +221,72 @@ export default function ProfilePage() {
             })}
           </div>
         </motion.div>
+
+        {/* Match History */}
+        {matches.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 rounded-full bg-score-gold" />
+              <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
+                MATCH HISTORY
+              </h2>
+              <span className="text-[8px] text-muted-foreground/50 font-display">
+                {matches.length} matches
+              </span>
+            </div>
+            <div className="space-y-2">
+              {(showAllMatches ? matches : matches.slice(0, 5)).map((m, i) => {
+                const modeIcon = m.mode === "ar" ? "📸" : m.mode === "tournament" ? "🏆" : m.mode === "multiplayer" ? "⚔️" : "👆";
+                const resultColor = m.result === "win" ? "text-neon-green" : m.result === "loss" ? "text-out-red" : "text-score-gold";
+                const timeAgo = getTimeAgo(m.created_at);
+                return (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.35 + i * 0.04 }}
+                    className="glass-score p-3 flex items-center gap-3"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-lg">
+                      {modeIcon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-display text-[10px] font-bold ${resultColor} tracking-wider`}>
+                          {m.result.toUpperCase()}
+                        </span>
+                        <span className="text-[8px] text-muted-foreground font-display">
+                          {m.mode.toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-[8px] text-muted-foreground">
+                        {m.balls_played} balls • {timeAgo}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-display text-sm font-black text-score-gold">{m.user_score}</span>
+                      <span className="text-[9px] text-muted-foreground mx-1">-</span>
+                      <span className="font-display text-sm font-black text-accent">{m.ai_score}</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+            {matches.length > 5 && (
+              <button
+                onClick={() => setShowAllMatches(!showAllMatches)}
+                className="w-full mt-2 py-2 text-[9px] font-display font-bold text-primary tracking-wider"
+              >
+                {showAllMatches ? "SHOW LESS ▲" : `VIEW ALL ${matches.length} MATCHES ▼`}
+              </button>
+            )}
+          </motion.div>
+        )}
       </div>
 
       <BottomNav />
