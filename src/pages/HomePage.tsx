@@ -23,13 +23,36 @@ const MODES = [
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [quickStats, setQuickStats] = useState<QuickStat[]>([
+    { label: "MATCHES", value: "0", icon: "🏏", color: "text-primary" },
+    { label: "WINS", value: "0", icon: "🏆", color: "text-secondary" },
+    { label: "HIGH SCORE", value: "—", icon: "⭐", color: "text-score-gold" },
+  ]);
 
-  // Check if first visit
   useEffect(() => {
     const seen = localStorage.getItem("hc_onboarding_done");
     if (!seen) setShowOnboarding(true);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("total_matches, wins, high_score")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setQuickStats([
+            { label: "MATCHES", value: String(data.total_matches), icon: "🏏", color: "text-primary" },
+            { label: "WINS", value: String(data.wins), icon: "🏆", color: "text-secondary" },
+            { label: "HIGH SCORE", value: data.high_score > 0 ? String(data.high_score) : "—", icon: "⭐", color: "text-score-gold" },
+          ]);
+        }
+      });
+  }, [user]);
 
   const completeOnboarding = () => {
     localStorage.setItem("hc_onboarding_done", "1");
