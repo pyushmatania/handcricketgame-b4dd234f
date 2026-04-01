@@ -591,25 +591,92 @@ export default function ProfilePage() {
             </motion.div>
           )}
 
-          {/* ========== SQUAD TAB ========== */}
-          {activeTab === "squad" && (
-            <motion.div key="squad" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-4 rounded-full bg-secondary" />
-                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">INDIAN LEGENDS</span>
+          {/* ========== FRIENDS TAB ========== */}
+          {activeTab === "friends" && (
+            <motion.div key="friends" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
+              {/* My invite code */}
+              <div className="glass-premium rounded-xl p-3 mb-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[8px] text-muted-foreground font-display tracking-widest block">YOUR INVITE CODE</span>
+                  <span className="font-display text-lg font-black text-primary tracking-[0.2em]">{myCode}</span>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => { navigator.clipboard.writeText(myCode); }}
+                  className="px-3 py-2 rounded-xl glass-card text-[9px] font-display font-bold text-primary tracking-wider"
+                >
+                  📋 COPY
+                </motion.button>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {INDIAN_LEGENDS.map((player, i) => (
-                  <PlayerCard key={player.id} player={player} size="sm" delay={i * 0.1} onTap={setSelectedPlayer} />
-                ))}
-              </div>
+
+              {/* Player ID */}
+              {user && (
+                <div className="glass-premium rounded-xl p-3 mb-4">
+                  <span className="text-[8px] text-muted-foreground font-display tracking-widest block mb-1">PLAYER ID</span>
+                  <span className="font-display text-[11px] font-bold text-foreground">{user.email}</span>
+                </div>
+              )}
+
+              {friends.length === 0 ? (
+                <div className="glass-premium rounded-xl p-8 text-center">
+                  <span className="text-3xl block mb-2">👥</span>
+                  <span className="font-display text-xs font-bold text-muted-foreground tracking-wider">NO FRIENDS YET</span>
+                  <p className="text-[9px] text-muted-foreground/60 mt-1">Go to the Friends tab to add players</p>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate("/friends")}
+                    className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display text-[9px] font-bold tracking-wider"
+                  >
+                    ➕ ADD FRIENDS
+                  </motion.button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-4 rounded-full bg-primary" />
+                      <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">FRIENDS ({friends.length})</span>
+                    </div>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => navigate("/friends")}
+                      className="px-3 py-1.5 rounded-lg glass-card text-[8px] font-display font-bold text-primary tracking-wider"
+                    >
+                      ➕ ADD
+                    </motion.button>
+                  </div>
+                  {friends.map((f: any, i: number) => {
+                    const winRate = f.total_matches > 0 ? Math.round((f.wins / f.total_matches) * 100) : 0;
+                    return (
+                      <motion.div
+                        key={f.user_id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="glass-premium rounded-xl p-3 flex items-center gap-3"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 flex items-center justify-center">
+                          <span className="text-lg">🏏</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-display text-[11px] font-bold text-foreground block truncate">{f.display_name}</span>
+                          <span className="text-[8px] text-muted-foreground">{f.wins}W {f.losses}L • {winRate}% WR</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-display text-sm font-black text-secondary block leading-none">{f.high_score}</span>
+                          <span className="text-[6px] text-muted-foreground font-display tracking-widest">HIGH</span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       <BottomNav />
-      {selectedPlayer && <PlayerDetailModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />}
     </div>
   );
 }
