@@ -1,6 +1,7 @@
 import { useRef, useCallback, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import CameraFeed, { type CameraFeedHandle } from "./CameraFeed";
+import CameraFeed, { type CameraFeedHandle, type CameraFilter } from "./CameraFeed";
+import HandOverlay from "./HandOverlay";
 import ScoreBoard from "./ScoreBoard";
 import GestureDisplay from "./GestureDisplay";
 import RulesSheet from "./RulesSheet";
@@ -11,6 +12,22 @@ interface GameScreenProps {
   onHome: () => void;
 }
 
+type GloveStyle = "cricket" | "neon" | "outline" | "off";
+
+const FILTER_OPTIONS: { key: CameraFilter; label: string; icon: string }[] = [
+  { key: "broadcast", label: "TV", icon: "📺" },
+  { key: "stadium_night", label: "Night", icon: "🌙" },
+  { key: "arcade", label: "Arcade", icon: "🕹️" },
+  { key: "natural", label: "Raw", icon: "👁️" },
+];
+
+const GLOVE_OPTIONS: { key: GloveStyle; label: string }[] = [
+  { key: "cricket", label: "🧤" },
+  { key: "neon", label: "💚" },
+  { key: "outline", label: "💎" },
+  { key: "off", label: "✋" },
+];
+
 export default function GameScreen({ onHome }: GameScreenProps) {
   const cameraRef = useRef<CameraFeedHandle>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
@@ -19,6 +36,9 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const [tossChoice, setTossChoice] = useState<null | boolean>(null);
   const [stadiumMode, setStadiumMode] = useState(true);
   const [immersive, setImmersive] = useState(false);
+  const [filter, setFilter] = useState<CameraFilter>("broadcast");
+  const [gloveStyle, setGloveStyle] = useState<GloveStyle>("cricket");
+  const [showFilterPicker, setShowFilterPicker] = useState(false);
 
   const handleVideoReady = useCallback(
     (video: HTMLVideoElement) => {
@@ -28,12 +48,9 @@ export default function GameScreen({ onHome }: GameScreenProps) {
     [detection]
   );
 
-  // Auto-capture: connect detection to game
   useEffect(() => {
     if (game.phase !== "not_started" && game.phase !== "finished") {
-      detection.setOnAutoCapture((move) => {
-        playBall(move);
-      });
+      detection.setOnAutoCapture((move) => playBall(move));
     } else {
       detection.setOnAutoCapture(null);
     }
@@ -46,16 +63,21 @@ export default function GameScreen({ onHome }: GameScreenProps) {
 
   const toggleImmersive = () => setImmersive(!immersive);
 
+  const videoW = videoElementRef.current?.videoWidth || 640;
+  const videoH = videoElementRef.current?.videoHeight || 480;
+  const isFrontCamera = cameraRef.current?.videoRef?.current
+    ? (cameraRef.current.videoRef.current.className || "").includes("scale-x-[-1]")
+    : false;
+
   return (
     <div className={`min-h-screen bg-background flex flex-col relative overflow-hidden ${immersive ? "immersive-mode" : ""}`}>
-      {/* Stadium gradient */}
       {stadiumMode && <div className="absolute inset-0 stadium-gradient pointer-events-none" />}
       {stadiumMode && (
         <>
           <div className="absolute top-0 left-0 w-40 h-40 pointer-events-none"
-            style={{ background: "radial-gradient(circle, hsl(45 100% 85% / 0.06) 0%, transparent 70%)" }} />
+            style={{ background: "radial-gradient(circle, hsla(45, 100%, 85%, 0.06) 0%, transparent 70%)" }} />
           <div className="absolute top-0 right-0 w-40 h-40 pointer-events-none"
-            style={{ background: "radial-gradient(circle, hsl(45 100% 85% / 0.06) 0%, transparent 70%)" }} />
+            style={{ background: "radial-gradient(circle, hsla(45, 100%, 85%, 0.06) 0%, transparent 70%)" }} />
         </>
       )}
 
@@ -90,14 +112,87 @@ export default function GameScreen({ onHome }: GameScreenProps) {
 
       {/* Main content */}
       <div className={`relative z-10 flex-1 flex flex-col ${immersive ? "px-0 pb-0" : "gap-2 px-3 pb-3"} max-w-lg mx-auto w-full`}>
-        {/* Camera */}
-        <div className={immersive ? "flex-1 relative" : ""}>
-          <CameraFeed ref={cameraRef} onVideoReady={handleVideoReady} stadiumMode={stadiumMode} fullscreen={immersive} />
+        {/* Camera + overlay */}
+        <div className={immersive ? "flex-1 relative" : "relative"}>
+          <CameraFeed ref={cameraRef} onVideoReady={handleVideoReady} stadiumMode={stadiumMode} fullscreen={immersive} filter={filter} />
+          {/* Hand overlay canvas */}
+          <HandOverlay
+            landmarks={detection.landmarks}
+            videoWidth={videoW}
+            videoHeight={videoH}
+            status={detection.status}
+            gloveStyle={gloveStyle}
+            mirrored={isFrontCamera}
+          />
 
-          {/* Immersive overlays ON TOP of camera */}
+          {/* Filter / Glove controls floating on camera */}
+          <div className="absolute top-2 right-12 flex gap-1 z-[6]">
+            <button
+              onClick={() => setShowFilterPicker(!showFilterPicker)}
+              className="w-7 h-7 rounded-full bg-card/70 backdrop-blur-md border border-glass flex items-center justify-center text-[10px] active:scale-90 transition-transform"
+              aria-label="Camera filter"
+            >
+              🎨
+            </button>
+            <button
+              onClick={() => {
+                const opts: GloveStyle[] = ["cricket", "neon", "outline", "off"];
+                const idx = opts.indexOf(gloveStyle);
+                setGloveStyle(opts[(idx + 1) % opts.length]);
+              }}
+              className={`w-7 h-7 rounded-full backdrop-blur-md border flex items-center justify-center text-[10px] active:scale-90 transition-transform ${
+                gloveStyle !== "off" ? "bg-primary/20 border-primary/40" : "bg-card/70 border-glass"
+              }`}
+              aria-label="Toggle glove"
+            >
+              🧤
+            </button>
+          </div>
+
+          {/* Filter picker dropdown */}
+          <AnimatePresence>
+            {showFilterPicker && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="absolute top-11 right-10 z-[7] bg-card/90 backdrop-blur-xl border border-glass rounded-lg p-2 space-y-1.5"
+              >
+                <p className="text-[8px] font-display font-bold text-muted-foreground tracking-wider px-1">FILTER</p>
+                <div className="flex gap-1">
+                  {FILTER_OPTIONS.map((f) => (
+                    <button
+                      key={f.key}
+                      onClick={() => { setFilter(f.key); setShowFilterPicker(false); }}
+                      className={`px-2 py-1.5 rounded text-[9px] font-bold transition-all ${
+                        filter === f.key ? "bg-primary/20 text-primary border border-primary/30" : "bg-muted/50 text-muted-foreground border border-transparent"
+                      }`}
+                    >
+                      {f.icon}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[8px] font-display font-bold text-muted-foreground tracking-wider px-1 pt-1">GLOVE</p>
+                <div className="flex gap-1">
+                  {GLOVE_OPTIONS.map((g) => (
+                    <button
+                      key={g.key}
+                      onClick={() => { setGloveStyle(g.key); setShowFilterPicker(false); }}
+                      className={`px-2 py-1.5 rounded text-[9px] font-bold transition-all ${
+                        gloveStyle === g.key ? "bg-primary/20 text-primary border border-primary/30" : "bg-muted/50 text-muted-foreground border border-transparent"
+                      }`}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Immersive overlays */}
           {immersive && game.phase !== "not_started" && (
             <div className="absolute inset-0 z-20 flex flex-col justify-between pointer-events-none p-2">
-              {/* Top: immersive bar */}
               <div className="pointer-events-auto">
                 <div className="flex items-center justify-between mb-1">
                   <button onClick={toggleImmersive} className="text-[9px] text-foreground/70 font-display font-bold bg-card/60 backdrop-blur-md rounded px-2 py-1">
@@ -109,8 +204,6 @@ export default function GameScreen({ onHome }: GameScreenProps) {
                 </div>
                 <ImmersiveScoreStrip game={game} />
               </div>
-
-              {/* Bottom: gesture + result */}
               <div className="pointer-events-auto space-y-1">
                 <GestureDisplay
                   status={detection.status}
@@ -128,13 +221,9 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           )}
         </div>
 
-        {/* Toss / Start */}
+        {/* Toss */}
         {game.phase === "not_started" && tossChoice === null && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-score p-5 text-center space-y-4"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-score p-5 text-center space-y-4">
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-8 h-0.5 bg-gradient-to-r from-transparent to-primary/50" />
               <p className="font-display text-xs font-black text-foreground tracking-wider">CHOOSE YOUR INNINGS</p>
@@ -158,10 +247,8 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           </motion.div>
         )}
 
-        {/* Scoreboard (normal mode) */}
         {!immersive && game.phase !== "not_started" && <ScoreBoard game={game} />}
 
-        {/* Gesture area (normal mode) */}
         {!immersive && game.phase !== "not_started" && (
           <GestureDisplay
             status={detection.status}
@@ -175,13 +262,9 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           />
         )}
 
-        {/* Game over */}
         {game.phase === "finished" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3">
-            <button
-              onClick={handleStartNew}
-              className="flex-1 py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-xl glow-primary active:scale-95 transition-transform"
-            >
+            <button onClick={handleStartNew} className="flex-1 py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-xl glow-primary active:scale-95 transition-transform">
               NEW MATCH
             </button>
             <button onClick={onHome} className="flex-1 py-3 bg-muted text-foreground font-display font-bold rounded-xl active:scale-95 transition-transform">
@@ -190,7 +273,6 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           </motion.div>
         )}
 
-        {/* Reset mid-game */}
         {!immersive && game.phase !== "not_started" && game.phase !== "finished" && (
           <button onClick={handleStartNew} className="text-xs text-muted-foreground underline self-center mt-1 active:scale-95">
             Reset Match
@@ -201,7 +283,6 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   );
 }
 
-// Compact immersive score strip
 function ImmersiveScoreStrip({ game }: { game: import("@/hooks/useHandCricket").GameState }) {
   const needRuns = game.target && game.isBatting && game.phase !== "finished"
     ? Math.max(0, game.target - game.userScore)
@@ -225,28 +306,17 @@ function ImmersiveScoreStrip({ game }: { game: import("@/hooks/useHandCricket").
         </div>
         <div className="text-right">
           {game.target && game.phase !== "finished" && (
-            <span className="text-[9px] font-display font-bold text-secondary block">
-              TGT: {game.target}
-            </span>
+            <span className="text-[9px] font-display font-bold text-secondary block">TGT: {game.target}</span>
           )}
           {needRuns !== null && (
-            <span className="text-[9px] font-display font-bold text-primary">
-              NEED {needRuns}
-            </span>
+            <span className="text-[9px] font-display font-bold text-primary">NEED {needRuns}</span>
           )}
         </div>
       </div>
-
-      {/* Ball history chips */}
       {game.ballHistory.length > 0 && (
         <div className="flex gap-1 mt-1.5 overflow-x-auto">
           {game.ballHistory.slice(-8).map((b, i) => (
-            <span
-              key={i}
-              className={`ball-chip text-[8px] ${
-                b.runs === "OUT" ? "ball-chip-wicket" : "ball-chip-run"
-              }`}
-            >
+            <span key={i} className={`ball-chip text-[8px] ${b.runs === "OUT" ? "ball-chip-wicket" : "ball-chip-run"}`}>
               {b.runs === "OUT" ? "W" : b.runs > 0 ? b.runs : "•"}
             </span>
           ))}
