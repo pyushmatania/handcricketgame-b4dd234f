@@ -39,6 +39,15 @@ interface MultiplayerGame {
   host_reserve_ms: number;
   guest_reserve_ms: number;
   abandoned_by: string | null;
+  created_at?: string;
+}
+
+interface LobbyGame extends MultiplayerGame {
+  host_name: string;
+  host_avatar_index: number;
+  host_wins: number;
+  host_total_matches: number;
+  time_left_ms: number;
 }
 
 interface Props {
