@@ -37,8 +37,8 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
     if (game.phase === "finished" && !savedRef.current) {
       savedRef.current = true;
       saveMatch(game, "tap");
-      if (game.result === "win") { SFX.win(); Haptics.success(); }
-      else if (game.result === "loss") { SFX.loss(); Haptics.error(); }
+      if (game.result === "win") { if (soundEnabled) SFX.win(); if (hapticsEnabled) Haptics.success(); }
+      else if (game.result === "loss") { if (soundEnabled) SFX.loss(); if (hapticsEnabled) Haptics.error(); }
     }
   }, [game.phase, game, saveMatch]);
 
