@@ -58,13 +58,62 @@ function parseMatchBalls(balls: BallRecord[] | null, isBattingFirst: boolean) {
   return { sixes, fours, threes, twos, singles, dots, wickets, aiSixes, aiFours, aiDots, totalBalls: balls.length };
 }
 
-const ACHIEVEMENTS = [
-  { icon: "🏏", title: "First Match", desc: "Play your first match", key: "first_match", check: (p: any) => p.total_matches >= 1 },
-  { icon: "🏆", title: "First Win", desc: "Win your first match", key: "first_win", check: (p: any) => p.wins >= 1 },
-  { icon: "🔥", title: "On Fire", desc: "Win 3 in a row", key: "on_fire", check: (p: any) => p.best_streak >= 3 },
-  { icon: "💯", title: "Century", desc: "Score 100+ in a match", key: "century", check: (p: any) => p.high_score >= 100 },
-  { icon: "🎯", title: "10 Wins", desc: "Win 10 matches", key: "ten_wins", check: (p: any) => p.wins >= 10 },
-  { icon: "⚡", title: "Veteran", desc: "Play 50 matches", key: "veteran", check: (p: any) => p.total_matches >= 50 },
+type AchievementTier = "bronze" | "silver" | "gold" | "legendary";
+
+interface Achievement {
+  icon: string;
+  title: string;
+  desc: string;
+  key: string;
+  tier: AchievementTier;
+  category: string;
+  check: (p: any, stats?: any) => boolean;
+  progress?: (p: any, stats?: any) => { current: number; target: number };
+}
+
+const TIER_STYLES: Record<AchievementTier, { bg: string; border: string; glow: string; label: string }> = {
+  bronze: { bg: "from-[hsl(25,60%,40%)]/20 to-transparent", border: "border-[hsl(25,60%,40%)]/30", glow: "", label: "BRONZE" },
+  silver: { bg: "from-[hsl(210,10%,65%)]/20 to-transparent", border: "border-[hsl(210,10%,65%)]/30", glow: "", label: "SILVER" },
+  gold: { bg: "from-score-gold/20 to-transparent", border: "border-score-gold/30", glow: "shadow-[0_0_12px_hsl(45_93%_58%/0.15)]", label: "GOLD" },
+  legendary: { bg: "from-primary/20 to-accent/10", border: "border-primary/40", glow: "shadow-[0_0_20px_hsl(217_91%_60%/0.2)]", label: "LEGENDARY" },
+};
+
+const ACHIEVEMENTS: Achievement[] = [
+  // --- Milestones ---
+  { icon: "🏏", title: "First Steps", desc: "Play your first match", key: "first_match", tier: "bronze", category: "Milestones", check: (p) => p.total_matches >= 1, progress: (p) => ({ current: Math.min(p.total_matches, 1), target: 1 }) },
+  { icon: "🏆", title: "First Blood", desc: "Win your first match", key: "first_win", tier: "bronze", category: "Milestones", check: (p) => p.wins >= 1, progress: (p) => ({ current: Math.min(p.wins, 1), target: 1 }) },
+  { icon: "🎮", title: "Regular", desc: "Play 10 matches", key: "ten_matches", tier: "bronze", category: "Milestones", check: (p) => p.total_matches >= 10, progress: (p) => ({ current: Math.min(p.total_matches, 10), target: 10 }) },
+  { icon: "⚡", title: "Veteran", desc: "Play 50 matches", key: "veteran", tier: "silver", category: "Milestones", check: (p) => p.total_matches >= 50, progress: (p) => ({ current: Math.min(p.total_matches, 50), target: 50 }) },
+  { icon: "👑", title: "Legend", desc: "Play 100 matches", key: "legend", tier: "gold", category: "Milestones", check: (p) => p.total_matches >= 100, progress: (p) => ({ current: Math.min(p.total_matches, 100), target: 100 }) },
+  { icon: "🌟", title: "Immortal", desc: "Play 500 matches", key: "immortal", tier: "legendary", category: "Milestones", check: (p) => p.total_matches >= 500, progress: (p) => ({ current: Math.min(p.total_matches, 500), target: 500 }) },
+
+  // --- Winning ---
+  { icon: "🎯", title: "Sharpshooter", desc: "Win 10 matches", key: "ten_wins", tier: "bronze", category: "Winning", check: (p) => p.wins >= 10, progress: (p) => ({ current: Math.min(p.wins, 10), target: 10 }) },
+  { icon: "💪", title: "Dominator", desc: "Win 25 matches", key: "25_wins", tier: "silver", category: "Winning", check: (p) => p.wins >= 25, progress: (p) => ({ current: Math.min(p.wins, 25), target: 25 }) },
+  { icon: "🦁", title: "Champion", desc: "Win 50 matches", key: "50_wins", tier: "gold", category: "Winning", check: (p) => p.wins >= 50, progress: (p) => ({ current: Math.min(p.wins, 50), target: 50 }) },
+  { icon: "🐉", title: "Unstoppable", desc: "Win 100 matches", key: "100_wins", tier: "legendary", category: "Winning", check: (p) => p.wins >= 100, progress: (p) => ({ current: Math.min(p.wins, 100), target: 100 }) },
+
+  // --- Streaks ---
+  { icon: "🔥", title: "On Fire", desc: "Win 3 in a row", key: "streak_3", tier: "bronze", category: "Streaks", check: (p) => p.best_streak >= 3, progress: (p) => ({ current: Math.min(p.best_streak, 3), target: 3 }) },
+  { icon: "💥", title: "Rampage", desc: "Win 5 in a row", key: "streak_5", tier: "silver", category: "Streaks", check: (p) => p.best_streak >= 5, progress: (p) => ({ current: Math.min(p.best_streak, 5), target: 5 }) },
+  { icon: "☄️", title: "Supernova", desc: "Win 10 in a row", key: "streak_10", tier: "gold", category: "Streaks", check: (p) => p.best_streak >= 10, progress: (p) => ({ current: Math.min(p.best_streak, 10), target: 10 }) },
+  { icon: "🌪️", title: "Godlike", desc: "Win 20 in a row", key: "streak_20", tier: "legendary", category: "Streaks", check: (p) => p.best_streak >= 20, progress: (p) => ({ current: Math.min(p.best_streak, 20), target: 20 }) },
+
+  // --- Scoring ---
+  { icon: "5️⃣", title: "Half Century", desc: "Score 50+ in a match", key: "fifty", tier: "bronze", category: "Scoring", check: (p) => p.high_score >= 50, progress: (p) => ({ current: Math.min(p.high_score, 50), target: 50 }) },
+  { icon: "💯", title: "Centurion", desc: "Score 100+ in a match", key: "century", tier: "silver", category: "Scoring", check: (p) => p.high_score >= 100, progress: (p) => ({ current: Math.min(p.high_score, 100), target: 100 }) },
+  { icon: "🔱", title: "Double Century", desc: "Score 200+ in a match", key: "double_century", tier: "gold", category: "Scoring", check: (p) => p.high_score >= 200, progress: (p) => ({ current: Math.min(p.high_score, 200), target: 200 }) },
+  { icon: "🏰", title: "Triple Threat", desc: "Score 300+ in a match", key: "triple_century", tier: "legendary", category: "Scoring", check: (p) => p.high_score >= 300, progress: (p) => ({ current: Math.min(p.high_score, 300), target: 300 }) },
+
+  // --- Batting Style ---
+  { icon: "6️⃣", title: "Six Machine", desc: "Hit 50 total sixes", key: "50_sixes", tier: "silver", category: "Batting", check: (_p, s) => s && s.totalSixes >= 50, progress: (_p: any, s: any) => ({ current: Math.min(s?.totalSixes || 0, 50), target: 50 }) },
+  { icon: "4️⃣", title: "Boundary King", desc: "Hit 100 total fours", key: "100_fours", tier: "silver", category: "Batting", check: (_p, s) => s && s.totalFours >= 100, progress: (_p: any, s: any) => ({ current: Math.min(s?.totalFours || 0, 100), target: 100 }) },
+  { icon: "💎", title: "Boundary Master", desc: "60%+ boundary rate", key: "boundary_master", tier: "gold", category: "Batting", check: (_p, s) => s && s.boundaryPct >= 60, progress: (_p: any, s: any) => ({ current: Math.min(s?.boundaryPct || 0, 60), target: 60 }) },
+
+  // --- Resilience ---
+  { icon: "🪨", title: "Iron Will", desc: "Win after 5+ losses", key: "iron_will", tier: "silver", category: "Resilience", check: (p) => p.losses >= 5 && p.wins >= 1 },
+  { icon: "🐢", title: "The Wall", desc: "0 abandons in 20+ matches", key: "the_wall", tier: "gold", category: "Resilience", check: (p) => p.total_matches >= 20 && p.abandons === 0, progress: (p) => ({ current: p.abandons === 0 ? Math.min(p.total_matches, 20) : 0, target: 20 }) },
+  { icon: "🦅", title: "Comeback King", desc: "50%+ win rate with 50+ matches", key: "comeback", tier: "legendary", category: "Resilience", check: (p) => p.total_matches >= 50 && (p.wins / p.total_matches) >= 0.5, progress: (p) => ({ current: Math.min(p.total_matches, 50), target: 50 }) },
 ];
 
 interface ProfileData {
@@ -205,7 +254,8 @@ export default function ProfilePage() {
     : 0;
 
   const level = profile ? Math.floor(profile.total_matches / 5) + 1 : 1;
-  const unlockedCount = profile ? ACHIEVEMENTS.filter((a) => a.check(profile)).length : 0;
+  const unlockedCount = profile ? ACHIEVEMENTS.filter((a) => a.check(profile, advancedStats)).length : 0;
+  const [achieveFilter, setAchieveFilter] = useState<string>("All");
 
   const tabs: { key: TabType; label: string; icon: string }[] = [
     { key: "stats", label: "STATS", icon: "📊" },
@@ -431,27 +481,97 @@ export default function ProfilePage() {
               )}
 
               {/* Achievements */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-4 rounded-full bg-primary" />
-                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">ACHIEVEMENTS</span>
-                <span className="text-[8px] text-muted-foreground/50 font-display">{unlockedCount}/{ACHIEVEMENTS.length}</span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 rounded-full bg-primary" />
+                  <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">ACHIEVEMENTS</span>
+                  <span className="text-[8px] text-muted-foreground/50 font-display">{unlockedCount}/{ACHIEVEMENTS.length}</span>
+                </div>
               </div>
+
+              {/* Achievement progress bar */}
+              <div className="glass-premium rounded-xl p-3 mb-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[8px] text-muted-foreground font-display tracking-wider">COMPLETION</span>
+                  <span className="font-display text-sm font-black text-primary">{Math.round((unlockedCount / ACHIEVEMENTS.length) * 100)}%</span>
+                </div>
+                <div className="w-full h-2 bg-muted/40 rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(unlockedCount / ACHIEVEMENTS.length) * 100}%` }} transition={{ delay: 0.3, duration: 0.8 }} className="h-full bg-gradient-to-r from-primary to-accent rounded-full" />
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  {(["bronze", "silver", "gold", "legendary"] as AchievementTier[]).map(tier => {
+                    const count = ACHIEVEMENTS.filter(a => a.tier === tier && a.check(profile!, advancedStats)).length;
+                    const total = ACHIEVEMENTS.filter(a => a.tier === tier).length;
+                    return (
+                      <div key={tier} className="text-center">
+                        <span className="font-display text-[10px] font-black text-foreground">{count}/{total}</span>
+                        <span className="text-[6px] text-muted-foreground font-display tracking-widest block">{TIER_STYLES[tier].label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Category filter */}
+              {(() => {
+                const categories = ["All", ...Array.from(new Set(ACHIEVEMENTS.map(a => a.category)))];
+                return (
+                  <div className="flex gap-1 mb-3 overflow-x-auto no-scrollbar">
+                    {categories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setAchieveFilter(cat)}
+                        className={`px-2.5 py-1 rounded-lg font-display text-[7px] font-bold tracking-widest whitespace-nowrap transition-all ${
+                          achieveFilter === cat
+                            ? "bg-primary/15 text-primary border border-primary/20"
+                            : "text-muted-foreground/50"
+                        }`}
+                      >
+                        {cat.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-2 gap-2">
-                {ACHIEVEMENTS.map((a, i) => {
-                  const unlocked = profile ? a.check(profile) : false;
+                {ACHIEVEMENTS.filter(a => achieveFilter === "All" || a.category === achieveFilter).map((a, i) => {
+                  const unlocked = profile ? a.check(profile, advancedStats) : false;
+                  const tierStyle = TIER_STYLES[a.tier];
+                  const prog = a.progress && profile ? a.progress(profile, advancedStats) : null;
+                  const progPct = prog ? Math.min(100, Math.round((prog.current / prog.target) * 100)) : 0;
                   return (
-                    <motion.div key={a.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + i * 0.04 }} className={`glass-premium rounded-xl p-3 relative overflow-hidden ${!unlocked ? "opacity-35 grayscale" : ""}`}>
-                      <div className="flex items-start gap-2">
+                    <motion.div
+                      key={a.key}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + i * 0.03 }}
+                      className={`glass-premium rounded-xl p-3 relative overflow-hidden ${tierStyle.border} border ${unlocked ? tierStyle.glow : "opacity-50 grayscale"}`}
+                    >
+                      <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl ${tierStyle.bg} rounded-bl-full`} />
+                      <div className="flex items-start gap-2 relative z-10">
                         <span className="text-xl">{a.icon}</span>
-                        <div>
-                          <span className="font-display text-[10px] font-bold text-foreground block">{a.title}</span>
-                          <span className="text-[7px] text-muted-foreground">{a.desc}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-display text-[10px] font-bold text-foreground block truncate">{a.title}</span>
+                          <span className="text-[7px] text-muted-foreground block">{a.desc}</span>
+                          <span className={`text-[6px] font-display font-bold tracking-widest mt-0.5 block ${
+                            a.tier === "legendary" ? "text-primary" : a.tier === "gold" ? "text-score-gold" : a.tier === "silver" ? "text-muted-foreground" : "text-[hsl(25,60%,50%)]"
+                          }`}>{tierStyle.label}</span>
                         </div>
                       </div>
+                      {/* Progress bar */}
+                      {prog && !unlocked && (
+                        <div className="mt-2 relative z-10">
+                          <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-primary/60 to-primary/30 rounded-full transition-all" style={{ width: `${progPct}%` }} />
+                          </div>
+                          <span className="text-[6px] text-muted-foreground font-display mt-0.5 block">{prog.current}/{prog.target}</span>
+                        </div>
+                      )}
                       {unlocked ? (
-                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-neon-green/20 flex items-center justify-center"><span className="text-[8px]">✅</span></div>
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-neon-green/20 flex items-center justify-center z-10"><span className="text-[8px]">✅</span></div>
                       ) : (
-                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-muted/30 flex items-center justify-center"><span className="text-[7px]">🔒</span></div>
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-muted/30 flex items-center justify-center z-10"><span className="text-[7px]">🔒</span></div>
                       )}
                       {unlocked && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-neon-green to-neon-green/30" />}
                     </motion.div>
