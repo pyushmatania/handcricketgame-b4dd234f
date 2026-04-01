@@ -284,6 +284,7 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
           rawGesture: raw,
           hint: "Move captured!",
           debugInfo: `captured:${move}`,
+          landmarks: lm ? [...lm] : null,
         }));
 
         onAutoCaptureRef.current(move);
