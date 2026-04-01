@@ -694,9 +694,7 @@ export default function ProfilePage() {
                         transition={{ delay: i * 0.05 }}
                         className="glass-premium rounded-xl p-3 flex items-center gap-3"
                       >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 flex items-center justify-center">
-                          <span className="text-lg">🏏</span>
-                        </div>
+                        <PlayerAvatar avatarUrl={f.avatar_url} avatarIndex={f.avatar_index ?? 0} size="sm" />
                         <div className="flex-1 min-w-0">
                           <span className="font-display text-[11px] font-bold text-foreground block truncate">{f.display_name}</span>
                           <span className="text-[8px] text-muted-foreground">{f.wins}W {f.losses}L • {winRate}% WR</span>
