@@ -1,13 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
+const HAND_EMOJIS: Record<number, string> = {
+  1: "☝️", 2: "✌️", 3: "🤟", 4: "🖖", 5: "🖐️", 6: "👍",
+};
 
 interface OddEvenTossProps {
   onResult: (batFirst: boolean) => void;
+  playerName?: string;
+  opponentName?: string;
+  isMultiplayer?: boolean;
 }
 
 type OddEven = "odd" | "even";
 
-export default function OddEvenToss({ onResult }: OddEvenTossProps) {
+export default function OddEvenToss({ onResult, playerName = "You", opponentName = "AI", isMultiplayer = false }: OddEvenTossProps) {
   const [step, setStep] = useState<"choose_oe" | "choose_number" | "reveal" | "pick_innings">("choose_oe");
   const [playerChoice, setPlayerChoice] = useState<OddEven | null>(null);
   const [playerNumber, setPlayerNumber] = useState<number | null>(null);
@@ -22,7 +29,7 @@ export default function OddEvenToss({ onResult }: OddEvenTossProps) {
 
   const handleChooseNumber = (num: number) => {
     setPlayerNumber(num);
-    const ai = Math.floor(Math.random() * 6) + 1; // 1-6
+    const ai = Math.floor(Math.random() * 6) + 1;
     setAiNumber(ai);
 
     const total = num + ai;
@@ -32,17 +39,17 @@ export default function OddEvenToss({ onResult }: OddEvenTossProps) {
     setStep("reveal");
     setRevealStep(0);
 
-    // Animate reveal steps
-    setTimeout(() => setRevealStep(1), 600);  // Show AI number
-    setTimeout(() => setRevealStep(2), 1200); // Show total
-    setTimeout(() => setRevealStep(3), 1800); // Show result
+    setTimeout(() => setRevealStep(1), 600);
+    setTimeout(() => setRevealStep(2), 1200);
+    setTimeout(() => setRevealStep(3), 1800);
     if (!won) {
-      // AI picks randomly
       setTimeout(() => {
         onResult(Math.random() > 0.5);
       }, 3200);
     }
   };
+
+  const winnerName = tossWon ? playerName : opponentName;
 
   return (
     <motion.div
@@ -69,27 +76,46 @@ export default function OddEvenToss({ onResult }: OddEvenTossProps) {
               <div className="w-8 h-0.5 bg-gradient-to-l from-transparent to-primary/50" />
             </div>
             <p className="text-[11px] text-muted-foreground">Pick your call for the toss</p>
-            <motion.div
-              animate={{ scale: [1, 1.05, 1], rotate: [0, -3, 3, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-secondary/20 to-primary/10 border border-secondary/30 flex items-center justify-center"
-            >
-              <span className="text-3xl">🪙</span>
-            </motion.div>
+
+            {/* Hand gesture animation instead of coin */}
+            <div className="flex items-center justify-center gap-4 py-2">
+              <motion.div
+                animate={{ y: [0, -8, 0], rotate: [-5, 5, -5] }}
+                transition={{ duration: 1.2, repeat: Infinity }}
+                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center"
+              >
+                <span className="text-3xl">✌️</span>
+              </motion.div>
+              <motion.span
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="text-lg font-black text-muted-foreground"
+              >
+                VS
+              </motion.span>
+              <motion.div
+                animate={{ y: [0, -8, 0], rotate: [5, -5, 5] }}
+                transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
+                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/30 flex items-center justify-center"
+              >
+                <span className="text-3xl">🖖</span>
+              </motion.div>
+            </div>
+
             <div className="flex gap-3">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => handleChooseOddEven("odd")}
                 className="flex-1 py-3.5 bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(217_91%_60%/0.25)] border border-primary/30"
               >
-                <span className="text-lg mr-1">🔷</span> ODD
+                <span className="text-lg mr-1">☝️</span> ODD
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => handleChooseOddEven("even")}
                 className="flex-1 py-3.5 bg-gradient-to-br from-accent to-accent/70 text-accent-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(168_80%_50%/0.2)] border border-accent/30"
               >
-                <span className="text-lg mr-1">🔶</span> EVEN
+                <span className="text-lg mr-1">✌️</span> EVEN
               </motion.button>
             </div>
           </motion.div>
@@ -100,21 +126,23 @@ export default function OddEvenToss({ onResult }: OddEvenTossProps) {
           <motion.div key="num" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
             <div className="flex items-center justify-center gap-2">
               <div className="w-8 h-0.5 bg-gradient-to-r from-transparent to-primary/50" />
-              <p className="font-display text-xs font-black text-foreground tracking-wider">PLAY YOUR SHOT</p>
+              <p className="font-display text-xs font-black text-foreground tracking-wider">PLAY YOUR HAND</p>
               <div className="w-8 h-0.5 bg-gradient-to-l from-transparent to-primary/50" />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              You chose <span className="text-primary font-bold uppercase">{playerChoice}</span>. Pick a number (1-6)
+              You chose <span className="text-primary font-bold uppercase">{playerChoice}</span>. Show your hand!
             </p>
             <div className="grid grid-cols-3 gap-2">
               {[1, 2, 3, 4, 5, 6].map((n) => (
                 <motion.button
                   key={n}
                   whileTap={{ scale: 0.85 }}
+                  whileHover={{ scale: 1.05 }}
                   onClick={() => handleChooseNumber(n)}
-                  className="py-4 rounded-2xl font-display font-black text-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 text-foreground hover:border-primary/40 hover:from-primary/15 hover:to-primary/5 transition-all"
+                  className="py-4 rounded-2xl font-display font-black text-lg bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 text-foreground hover:border-primary/40 hover:from-primary/15 hover:to-primary/5 transition-all flex flex-col items-center gap-1"
                 >
-                  {n}
+                  <span className="text-2xl">{HAND_EMOJIS[n]}</span>
+                  <span className="text-xs">{n}</span>
                 </motion.button>
               ))}
             </div>
@@ -126,49 +154,54 @@ export default function OddEvenToss({ onResult }: OddEvenTossProps) {
           <motion.div key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
             <p className="font-display text-xs font-black text-foreground tracking-wider">TOSS RESULT</p>
 
-            <div className="flex items-center justify-center gap-6">
-              {/* Player number */}
+            <div className="flex items-center justify-center gap-4">
+              {/* Player hand */}
               <div className="text-center">
-                <p className="text-[8px] text-muted-foreground font-display font-bold tracking-widest mb-1">YOU</p>
+                <p className="text-[8px] text-muted-foreground font-display font-bold tracking-widest mb-1">
+                  {playerName.toUpperCase().slice(0, 10)}
+                </p>
                 <motion.div
                   initial={{ rotateY: 90 }}
                   animate={{ rotateY: 0 }}
-                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center"
+                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex flex-col items-center justify-center"
                 >
-                  <span className="font-display text-3xl font-black text-primary">{playerNumber}</span>
+                  <span className="text-2xl">{playerNumber ? HAND_EMOJIS[playerNumber] : ""}</span>
+                  <span className="font-display text-xs font-black text-primary">{playerNumber}</span>
                 </motion.div>
               </div>
 
-              {/* Plus sign */}
               <motion.span
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.3 }}
-                className="text-2xl font-black text-muted-foreground"
+                className="text-xl font-black text-muted-foreground"
               >
                 +
               </motion.span>
 
-              {/* AI number */}
+              {/* Opponent hand */}
               <div className="text-center">
-                <p className="text-[8px] text-muted-foreground font-display font-bold tracking-widest mb-1">AI</p>
+                <p className="text-[8px] text-muted-foreground font-display font-bold tracking-widest mb-1">
+                  {opponentName.toUpperCase().slice(0, 10)}
+                </p>
                 <AnimatePresence>
                   {revealStep >= 1 ? (
                     <motion.div
                       initial={{ rotateY: 90 }}
                       animate={{ rotateY: 0 }}
-                      className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/30 flex items-center justify-center"
+                      className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/30 flex flex-col items-center justify-center"
                     >
-                      <span className="font-display text-3xl font-black text-accent">{aiNumber}</span>
+                      <span className="text-2xl">{aiNumber ? HAND_EMOJIS[aiNumber] : ""}</span>
+                      <span className="font-display text-xs font-black text-accent">{aiNumber}</span>
                     </motion.div>
                   ) : (
                     <motion.div className="w-16 h-16 rounded-2xl bg-muted/30 border border-border/30 flex items-center justify-center">
                       <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}
+                        animate={{ rotate: [0, -20, 20, 0], y: [0, -5, 0] }}
+                        transition={{ duration: 0.4, repeat: Infinity }}
                         className="text-2xl"
                       >
-                        🎲
+                        ✊
                       </motion.span>
                     </motion.div>
                   )}
@@ -196,20 +229,20 @@ export default function OddEvenToss({ onResult }: OddEvenTossProps) {
               )}
             </AnimatePresence>
 
-            {/* Win/Loss result */}
+            {/* Win/Loss result with player name */}
             <AnimatePresence>
               {revealStep >= 3 && (
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", damping: 12 }}
-                  className={`py-3 rounded-2xl font-display font-black text-sm tracking-wider ${
+                  className={`py-3 px-4 rounded-2xl font-display font-black text-sm tracking-wider ${
                     tossWon
                       ? "bg-gradient-to-r from-neon-green/15 to-neon-green/5 border border-neon-green/30 text-neon-green"
                       : "bg-gradient-to-r from-out-red/15 to-out-red/5 border border-out-red/30 text-out-red"
                   }`}
                 >
-                  {tossWon ? "🏆 YOU WON THE TOSS!" : "😔 AI WINS THE TOSS"}
+                  🏆 {winnerName.toUpperCase()} WON THE TOSS!
                 </motion.div>
               )}
             </AnimatePresence>
@@ -223,7 +256,7 @@ export default function OddEvenToss({ onResult }: OddEvenTossProps) {
                   transition={{ delay: 0.3 }}
                   className="space-y-3"
                 >
-                  <p className="text-[11px] text-muted-foreground">Choose your innings</p>
+                  <p className="text-[11px] text-muted-foreground">Select your choice</p>
                   <div className="flex gap-3">
                     <motion.button
                       whileTap={{ scale: 0.9 }}
@@ -240,6 +273,21 @@ export default function OddEvenToss({ onResult }: OddEvenTossProps) {
                       🎯 BOWL FIRST
                     </motion.button>
                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* AI chose message */}
+            <AnimatePresence>
+              {revealStep >= 3 && !tossWon && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <p className="text-[10px] text-muted-foreground font-display tracking-wider">
+                    {opponentName} is choosing...
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
