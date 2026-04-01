@@ -154,6 +154,31 @@ export default function AuthPage() {
             </span>
           </motion.button>
 
+          {/* Divider */}
+          <div className="flex items-center gap-3 pt-1">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[8px] text-muted-foreground font-display tracking-widest">OR</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Google sign-in */}
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={async () => {
+              setError("");
+              const result = await lovable.auth.signInWithOAuth("google", {
+                redirect_uri: window.location.origin,
+              });
+              if (result.error) {
+                setError(result.error.message || "Google sign-in failed");
+              }
+            }}
+            className="w-full py-3 bg-muted/50 border border-border text-foreground font-display font-bold text-xs rounded-2xl tracking-wider flex items-center justify-center gap-2 hover:bg-muted transition-colors"
+          >
+            <span className="text-base">🔵</span> SIGN IN WITH GOOGLE
+          </motion.button>
+
           <button
             type="button"
             onClick={() => { setIsLogin(!isLogin); setError(""); setSuccess(""); }}
