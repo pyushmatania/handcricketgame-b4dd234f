@@ -184,7 +184,7 @@ export default function LeaderboardPage() {
         </div>
 
         {/* Sort options (for global & friends) */}
-        {mainTab !== "rage" && (
+        {(mainTab === "global" || mainTab === "friends") && (
           <div className="flex gap-1 mb-4">
             {SORT_OPTIONS.map((opt, i) => (
               <button
