@@ -22,6 +22,7 @@ export interface HandDetectionState {
   handDetected: boolean;
   rawGesture: string;
   debugInfo: string;
+  landmarks: Array<{ x: number; y: number; z: number }> | null;
 }
 
 declare global {
