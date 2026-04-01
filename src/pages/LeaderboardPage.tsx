@@ -203,6 +203,36 @@ export default function LeaderboardPage() {
         )}
 
         <AnimatePresence mode="wait">
+          {/* RIVALRY TAB */}
+          {mainTab === "rivalry" && (
+            <motion.div
+              key="rivalry"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-2"
+            >
+              {rivalFriends.length === 0 ? (
+                <div className="glass-premium rounded-2xl p-8 text-center">
+                  <span className="text-4xl block mb-3">⚔️</span>
+                  <p className="font-display text-sm font-bold text-foreground">Add friends to see rivalries!</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Play multiplayer against friends to build H2H stats</p>
+                </div>
+              ) : (
+                rivalFriends.map((f, i) => (
+                  <motion.div
+                    key={f.user_id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                  >
+                    <RivalryCard friend={f} onChallenge={challengeFriend} />
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
+          )}
+
           {/* RAGE STATS */}
           {mainTab === "rage" && (
             <motion.div
