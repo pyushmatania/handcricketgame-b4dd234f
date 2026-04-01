@@ -375,7 +375,7 @@ export default function ProfilePage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {INDIAN_LEGENDS.map((player, i) => (
-                  <PlayerCard key={player.id} player={player} size="sm" delay={i * 0.1} />
+                  <PlayerCard key={player.id} player={player} size="sm" delay={i * 0.1} onTap={setSelectedPlayer} />
                 ))}
               </div>
             </motion.div>
