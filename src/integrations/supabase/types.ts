@@ -50,6 +50,57 @@ export type Database = {
         }
         Relationships: []
       }
+      multiplayer_games: {
+        Row: {
+          created_at: string
+          current_turn: number
+          guest_id: string | null
+          guest_move: string | null
+          guest_score: number
+          host_batting: boolean
+          host_id: string
+          host_move: string | null
+          host_score: number
+          id: string
+          innings: number
+          status: string
+          updated_at: string
+          winner_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_turn?: number
+          guest_id?: string | null
+          guest_move?: string | null
+          guest_score?: number
+          host_batting?: boolean
+          host_id: string
+          host_move?: string | null
+          host_score?: number
+          id?: string
+          innings?: number
+          status?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_turn?: number
+          guest_id?: string | null
+          guest_move?: string | null
+          guest_score?: number
+          host_batting?: boolean
+          host_id?: string
+          host_move?: string | null
+          host_score?: number
+          id?: string
+          innings?: number
+          status?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

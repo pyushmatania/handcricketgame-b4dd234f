@@ -17,7 +17,7 @@ interface QuickStat {
 const MODES = [
   { icon: "📸", label: "AR Mode", desc: "Hand gesture tracking", mode: "ar", gradient: "from-primary/20 to-primary/5", border: "border-primary/20" },
   { icon: "👆", label: "Tap Mode", desc: "Quick tap gameplay", mode: "tap", gradient: "from-accent/20 to-accent/5", border: "border-accent/20" },
-  { icon: "⚔️", label: "Multiplayer", desc: "Coming soon", mode: "multiplayer", soon: true, gradient: "from-muted to-muted", border: "border-glass" },
+  { icon: "⚔️", label: "Multiplayer", desc: "Real-time PvP", mode: "multiplayer", gradient: "from-secondary/20 to-secondary/5", border: "border-secondary/20" },
   { icon: "🎯", label: "Practice", desc: "Learn gestures", mode: "practice", gradient: "from-neon-green/20 to-neon-green/5", border: "border-neon-green/20" },
 ];
 
@@ -170,17 +170,10 @@ export default function HomePage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 + i * 0.07 }}
-                whileTap={m.soon ? {} : { scale: 0.95 }}
-                onClick={() => !m.soon && navigate(`/game/${m.mode}`)}
-                className={`relative bg-gradient-to-br ${m.gradient} border ${m.border} rounded-2xl p-4 text-left transition-all ${
-                  m.soon ? "opacity-40 cursor-not-allowed" : "active:scale-95"
-                }`}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate(`/game/${m.mode}`)}
+                className={`relative bg-gradient-to-br ${m.gradient} border ${m.border} rounded-2xl p-4 text-left transition-all active:scale-95`}
               >
-                {m.soon && (
-                  <span className="absolute top-2 right-2 text-[6px] font-display font-bold text-secondary bg-secondary/20 px-1.5 py-0.5 rounded-full tracking-wider">
-                    SOON
-                  </span>
-                )}
                 <span className="text-2xl block mb-2">{m.icon}</span>
                 <span className="font-display text-[11px] font-bold text-foreground block tracking-wider">
                   {m.label}
