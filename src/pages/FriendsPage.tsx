@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
+import PlayerAvatar from "@/components/PlayerAvatar";
 
 interface FriendProfile {
   user_id: string;
@@ -15,6 +16,8 @@ interface FriendProfile {
   high_score: number;
   best_streak: number;
   invite_code: string;
+  avatar_url?: string | null;
+  avatar_index?: number;
 }
 
 interface FriendRequest {
@@ -63,7 +66,7 @@ export default function FriendsPage() {
     const friendIds = data.map((f: any) => f.friend_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, invite_code")
+      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, invite_code, avatar_url, avatar_index")
       .in("user_id", friendIds);
     if (profiles) setFriends(profiles as unknown as FriendProfile[]);
   };
@@ -107,7 +110,7 @@ export default function FriendsPage() {
     setLoading(true);
     const { data } = await supabase
       .from("profiles")
-      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, invite_code")
+      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, invite_code, avatar_url, avatar_index")
       .ilike("display_name", `%${searchQuery.trim()}%`)
       .neq("user_id", user.id)
       .limit(10);
@@ -292,9 +295,7 @@ export default function FriendsPage() {
                         transition={{ delay: i * 0.05 }}
                         className="glass-premium rounded-xl p-3 flex items-center gap-3"
                       >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 flex items-center justify-center">
-                          <span className="text-lg">🏏</span>
-                        </div>
+                        <PlayerAvatar avatarUrl={f.avatar_url} avatarIndex={f.avatar_index ?? 0} size="sm" />
                         <div className="flex-1 min-w-0">
                           <span className="font-display text-[11px] font-bold text-foreground block truncate">{f.display_name}</span>
                           <span className="text-[8px] text-muted-foreground">{f.wins}W {f.losses}L • {winRate}% WR</span>
@@ -445,9 +446,7 @@ export default function FriendsPage() {
                       const alreadySent = outgoing.some(o => o.to_user_id === p.user_id);
                       return (
                         <div key={p.user_id} className="flex items-center gap-3 p-2 rounded-xl glass-card">
-                          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                            <span className="text-sm">🏏</span>
-                          </div>
+                          <PlayerAvatar avatarUrl={p.avatar_url} avatarIndex={p.avatar_index ?? 0} size="sm" />
                           <div className="flex-1">
                             <span className="font-display text-[10px] font-bold text-foreground block">{p.display_name}</span>
                             <span className="text-[7px] text-muted-foreground">{p.wins}W • {p.total_matches} matches</span>

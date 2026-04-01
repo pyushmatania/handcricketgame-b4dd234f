@@ -191,6 +191,7 @@ export type Database = {
       profiles: {
         Row: {
           abandons: number
+          avatar_index: number
           avatar_url: string | null
           best_streak: number
           created_at: string
@@ -208,6 +209,7 @@ export type Database = {
         }
         Insert: {
           abandons?: number
+          avatar_index?: number
           avatar_url?: string | null
           best_streak?: number
           created_at?: string
@@ -225,6 +227,7 @@ export type Database = {
         }
         Update: {
           abandons?: number
+          avatar_index?: number
           avatar_url?: string | null
           best_streak?: number
           created_at?: string

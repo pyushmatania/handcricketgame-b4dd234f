@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
+import PlayerAvatar from "@/components/PlayerAvatar";
 
 interface BallRecord {
   userMove: string | number;
@@ -76,6 +77,8 @@ interface ProfileData {
   current_streak: number;
   best_streak: number;
   abandons: number;
+  avatar_url: string | null;
+  avatar_index: number;
 }
 
 type TabType = "stats" | "matches" | "friends";
@@ -89,6 +92,8 @@ export default function ProfilePage() {
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
   const [friends, setFriends] = useState<any[]>([]);
   const [myCode, setMyCode] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -109,10 +114,10 @@ export default function ProfilePage() {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name, total_matches, wins, losses, draws, high_score, current_streak, best_streak, abandons")
+      .select("display_name, total_matches, wins, losses, draws, high_score, current_streak, best_streak, abandons, avatar_url, avatar_index")
       .eq("user_id", user.id)
       .single()
-      .then(({ data }) => { if (data) setProfile(data); });
+      .then(({ data }) => { if (data) setProfile(data as unknown as ProfileData); });
 
     supabase
       .from("profiles")
@@ -139,7 +144,7 @@ export default function ProfilePage() {
     const friendIds = data.map((f: any) => f.friend_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, invite_code")
+      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, invite_code, avatar_url, avatar_index")
       .in("user_id", friendIds);
     if (profiles) setFriends(profiles);
   };
@@ -234,9 +239,43 @@ export default function ProfilePage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
           <div className="flex items-center gap-4 relative z-10">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
-                <span className="text-3xl">{user ? "🏏" : "👤"}</span>
-              </div>
+              <button
+                onClick={() => user && fileInputRef.current?.click()}
+                className="relative group"
+                disabled={uploading}
+              >
+                <PlayerAvatar
+                  avatarUrl={profile?.avatar_url}
+                  avatarIndex={profile?.avatar_index ?? 0}
+                  size="lg"
+                />
+                {user && (
+                  <div className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-[8px] font-display font-bold text-white tracking-wider">
+                      {uploading ? "..." : "EDIT"}
+                    </span>
+                  </div>
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !user) return;
+                  setUploading(true);
+                  const ext = file.name.split(".").pop();
+                  const path = `${user.id}/avatar.${ext}`;
+                  await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+                  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                  const avatarUrl = urlData.publicUrl + "?t=" + Date.now();
+                  await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("user_id", user.id);
+                  setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : prev);
+                  setUploading(false);
+                }}
+              />
               {user && (
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-gradient-to-br from-neon-green to-neon-green/70 border border-neon-green/50 flex items-center justify-center">
                   <span className="text-[8px] font-bold text-white">✓</span>
@@ -655,9 +694,7 @@ export default function ProfilePage() {
                         transition={{ delay: i * 0.05 }}
                         className="glass-premium rounded-xl p-3 flex items-center gap-3"
                       >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 flex items-center justify-center">
-                          <span className="text-lg">🏏</span>
-                        </div>
+                        <PlayerAvatar avatarUrl={f.avatar_url} avatarIndex={f.avatar_index ?? 0} size="sm" />
                         <div className="flex-1 min-w-0">
                           <span className="font-display text-[11px] font-bold text-foreground block truncate">{f.display_name}</span>
                           <span className="text-[8px] text-muted-foreground">{f.wins}W {f.losses}L • {winRate}% WR</span>
