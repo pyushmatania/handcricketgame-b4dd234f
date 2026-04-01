@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      matches: {
+        Row: {
+          ai_score: number
+          balls_played: number
+          created_at: string
+          id: string
+          innings_data: Json | null
+          mode: string
+          result: string
+          user_id: string
+          user_score: number
+        }
+        Insert: {
+          ai_score?: number
+          balls_played?: number
+          created_at?: string
+          id?: string
+          innings_data?: Json | null
+          mode?: string
+          result: string
+          user_id: string
+          user_score?: number
+        }
+        Update: {
+          ai_score?: number
+          balls_played?: number
+          created_at?: string
+          id?: string
+          innings_data?: Json | null
+          mode?: string
+          result?: string
+          user_id?: string
+          user_score?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          best_streak: number
+          created_at: string
+          current_streak: number
+          display_name: string
+          draws: number
+          high_score: number
+          id: string
+          losses: number
+          total_matches: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          best_streak?: number
+          created_at?: string
+          current_streak?: number
+          display_name?: string
+          draws?: number
+          high_score?: number
+          id?: string
+          losses?: number
+          total_matches?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          best_streak?: number
+          created_at?: string
+          current_streak?: number
+          display_name?: string
+          draws?: number
+          high_score?: number
+          id?: string
+          losses?: number
+          total_matches?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
