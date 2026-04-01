@@ -9,6 +9,8 @@ const TOGGLE_ITEMS = [
   { key: "soundEnabled" as const, icon: "🔊", label: "SOUND EFFECTS", desc: "Bat hits, runs, wickets", toggle: "toggleSound" as const },
   { key: "hapticsEnabled" as const, icon: "📳", label: "HAPTIC FEEDBACK", desc: "Vibrations on actions", toggle: "toggleHaptics" as const },
   { key: "commentaryEnabled" as const, icon: "📢", label: "LIVE COMMENTARY", desc: "Play-by-play text", toggle: "toggleCommentary" as const },
+  { key: "voiceEnabled" as const, icon: "🎙️", label: "VOICE COMMENTARY", desc: "Spoken play-by-play narration", toggle: "toggleVoice" as const },
+  { key: "crowdEnabled" as const, icon: "🏟️", label: "CROWD SOUNDS", desc: "Audience cheers & reactions", toggle: "toggleCrowd" as const },
 ];
 
 export default function SettingsPage() {

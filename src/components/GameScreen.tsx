@@ -90,8 +90,11 @@ export default function GameScreen({ onHome }: GameScreenProps) {
       else if (abs === 4) setTimeout(() => { if (soundEnabled) SFX.four(); if (hapticsEnabled) Haptics.medium(); }, 100);
       else { if (soundEnabled) SFX.runs(abs); if (hapticsEnabled) Haptics.light(); }
     }
+    if (crowdEnabled) playCrowdForResult(r.runs, game.isBatting, false);
     if (commentaryEnabled) {
-      setCommentary(getCommentary({ game, result: r }));
+      const text = getCommentary({ game, result: r });
+      setCommentary(text);
+      if (voiceEnabled) speakCommentary(text, true);
       setTimeout(() => setCommentary(null), 2500);
     }
   }, [game.lastResult]);
