@@ -239,17 +239,17 @@ export default function MultiplayerScreen({ onHome }: Props) {
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <div className="absolute inset-0 stadium-gradient pointer-events-none" />
       <div className="absolute inset-0 vignette pointer-events-none" />
+      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse, hsl(142 71% 45% / 0.05) 0%, transparent 70%)" }} />
 
-      {/* Top bar */}
+      {/* Premium top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2">
-        <button onClick={onHome} className="text-muted-foreground hover:text-foreground text-sm font-bold active:scale-95 transition-transform">
-          ← Back
-        </button>
-        <div className="flex items-center gap-2">
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onHome} className="w-9 h-9 rounded-xl glass-premium flex items-center justify-center text-sm">←</motion.button>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass-card">
           <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-          <span className="font-display text-[9px] tracking-[0.15em] text-neon-green font-bold">MULTIPLAYER</span>
+          <span className="font-display text-[9px] tracking-[0.2em] text-neon-green font-bold">MULTIPLAYER</span>
         </div>
-        <div className="w-12" />
+        <div className="w-9" />
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col gap-3 px-4 pb-4 max-w-lg mx-auto w-full">
