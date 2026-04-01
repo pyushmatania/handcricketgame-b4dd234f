@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
+import RivalryCard from "@/components/RivalryCard";
 
 interface LeaderEntry {
   display_name: string;
@@ -17,7 +19,18 @@ interface LeaderEntry {
   user_id: string;
 }
 
-type MainTab = "global" | "friends" | "rage";
+interface FriendProfile {
+  user_id: string;
+  display_name: string;
+  wins: number;
+  losses: number;
+  total_matches: number;
+  high_score: number;
+  best_streak: number;
+  abandons: number;
+}
+
+type MainTab = "global" | "friends" | "rivalry" | "rage";
 
 const SORT_OPTIONS = [
   { label: "WINS", icon: "🏆", key: "wins" as const },
