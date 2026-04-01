@@ -87,37 +87,88 @@ async function ensureVideoPlayable(video: HTMLVideoElement) {
   if (video.paused) await video.play();
 }
 
-// Vector math
-const sub = (a: { x: number; y: number }, b: { x: number; y: number }) => ({ x: a.x - b.x, y: a.y - b.y });
-const dot = (a: { x: number; y: number }, b: { x: number; y: number }) => a.x * b.x + a.y * b.y;
-const mag = (v: { x: number; y: number }) => Math.hypot(v.x, v.y);
-const norm = (v: { x: number; y: number }) => { const m = mag(v) || 1; return { x: v.x / m, y: v.y / m }; };
+// === 3D Vector math ===
+type V3 = { x: number; y: number; z: number };
+const V = (a: V3, b: V3): V3 => ({ x: b.x - a.x, y: b.y - a.y, z: (b.z ?? 0) - (a.z ?? 0) });
+const D = (a: V3, b: V3) => Math.hypot(b.x - a.x, b.y - a.y, (b.z ?? 0) - (a.z ?? 0));
+const dot3 = (a: V3, b: V3) => a.x * b.x + a.y * b.y + a.z * b.z;
+const mag3 = (a: V3) => Math.hypot(a.x, a.y, a.z);
+const norm3 = (a: V3): V3 => { const m = mag3(a) || 1; return { x: a.x / m, y: a.y / m, z: a.z / m }; };
+const cross = (a: V3, b: V3): V3 => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x });
+
+function angle(a: V3, b: V3, c: V3): number {
+  const ab = norm3(V(b, a));
+  const cb = norm3(V(b, c));
+  return Math.acos(Math.max(-1, Math.min(1, dot3(ab, cb))));
+}
+
+// Per-finger extension using joint angles + reach heuristic
+function isFingerExtended(
+  lm: V3[], mcp: number, pip: number, dip: number, tip: number, wrist = 0
+): boolean {
+  const a1 = angle(lm[mcp], lm[pip], lm[dip]);
+  const a2 = angle(lm[pip], lm[dip], lm[tip]);
+  // Angles > ~140° mean roughly straight joints
+  const straight = a1 > 2.45 && a2 > 2.35;
+  // Tip must be farther from wrist than PIP
+  const reach = D(lm[tip], lm[wrist]) > D(lm[pip], lm[wrist]) * 1.16;
+  return straight && reach;
+}
+
+// Thumb uses splay from palm plane + distance heuristics
+function isThumbExtended(lm: V3[], _handedness: "Left" | "Right" = "Right"): boolean {
+  const palmCenter: V3 = {
+    x: (lm[0].x + lm[5].x + lm[9].x + lm[13].x + lm[17].x) / 5,
+    y: (lm[0].y + lm[5].y + lm[9].y + lm[13].y + lm[17].y) / 5,
+    z: ((lm[0].z ?? 0) + (lm[5].z ?? 0) + (lm[9].z ?? 0) + (lm[13].z ?? 0) + (lm[17].z ?? 0)) / 5,
+  };
+  const palmNormal = norm3(cross(V(lm[0], lm[5]), V(lm[0], lm[17])));
+  const thumbDir = norm3(V(lm[2], lm[4]));
+
+  // Splay: thumb direction should NOT be purely along palm normal (i.e. it's sticking out sideways)
+  const splay = Math.abs(dot3(thumbDir, palmNormal)) < 0.72;
+  // Open: thumb tip is farther from palm center than thumb IP
+  const open = D(lm[4], palmCenter) > D(lm[3], palmCenter) * 1.12
+    && D(lm[4], lm[5]) > D(lm[3], lm[5]) * 1.1;
+  // Lateral check: thumb tip should be laterally away from thumb MCP
+  const side = (_handedness === "Right" ? 1 : -1) * (lm[4].x - lm[2].x) > -0.01;
+
+  return splay && open && side;
+}
 
 type RawGesture = "no_hand" | "unclear" | "def" | "1" | "2" | "3" | "4" | "5";
 const VALID_GESTURES: RawGesture[] = ["def", "1", "2", "3", "4", "5"];
 
-function classifyGesture(landmarks: Array<{ x: number; y: number; z: number }> | undefined): RawGesture {
+function classifyGesture(landmarks: V3[] | undefined): RawGesture {
   if (!landmarks || landmarks.length < 21) return "no_hand";
 
-  const fingers: [number, number, number][] = [
-    [5, 6, 8], [9, 10, 12], [13, 14, 16], [17, 18, 20],
-  ];
+  const lm = landmarks;
+  const index = isFingerExtended(lm, 5, 6, 7, 8);
+  const middle = isFingerExtended(lm, 9, 10, 11, 12);
+  const ring = isFingerExtended(lm, 13, 14, 15, 16);
+  const pinky = isFingerExtended(lm, 17, 18, 19, 20);
+  const thumb = isThumbExtended(lm);
 
-  let extendedCount = 0;
-  for (const [mcp, pip, tip] of fingers) {
-    const axis = norm(sub(landmarks[pip], landmarks[mcp]));
-    const tipProjection = dot(sub(landmarks[tip], landmarks[pip]), axis);
-    const baseLen = dot(sub(landmarks[pip], landmarks[mcp]), axis);
-    if (tipProjection > 0.035 && tipProjection > baseLen * 0.5) extendedCount++;
-  }
+  // Fist detection: all fingertips close to palm center
+  const palmCenter: V3 = {
+    x: (lm[0].x + lm[5].x + lm[9].x + lm[13].x + lm[17].x) / 5,
+    y: (lm[0].y + lm[5].y + lm[9].y + lm[13].y + lm[17].y) / 5,
+    z: ((lm[0].z ?? 0) + (lm[5].z ?? 0) + (lm[9].z ?? 0) + (lm[13].z ?? 0) + (lm[17].z ?? 0)) / 5,
+  };
+  const fistish = [4, 8, 12, 16, 20].every((i) => D(lm[i], palmCenter) < 0.19);
 
-  const thumbTipToIP = mag(sub(landmarks[4], landmarks[3]));
-  const thumbTipToIndexMCP = mag(sub(landmarks[4], landmarks[5]));
-  const thumbOpen = thumbTipToIP > 0.05 && thumbTipToIndexMCP > 0.08;
+  const extended = [thumb, index, middle, ring, pinky].filter(Boolean).length;
 
-  if (extendedCount === 0 && !thumbOpen) return "def";
-  if (extendedCount === 4 && thumbOpen) return "5";
-  if (extendedCount >= 1 && extendedCount <= 4) return String(extendedCount) as RawGesture;
+  // Priority mapping: 4 (thumb folded) before 5
+  if (index && middle && ring && pinky && !thumb) return "4";
+  if (thumb && index && middle && ring && pinky) return "5";
+  if (fistish || extended === 0) return "def";
+  if (index && !middle && !ring && !pinky) return "1";
+  if (index && middle && !ring && !pinky) return "2";
+  if (index && middle && ring && !pinky) return "3";
+
+  // Fallback: use count but be cautious
+  if (extended >= 1 && extended <= 5) return String(extended) as RawGesture;
   return "unclear";
 }
 
@@ -127,10 +178,11 @@ function rawGestureToMove(g: RawGesture): Move | null {
   return null;
 }
 
-const BUFFER_SIZE = 8;
-const STABILITY_THRESHOLD = 5;
-const AUTO_CAPTURE_FRAMES = 6; // frames of stability before auto-capture
-const COOLDOWN_MS = 1200;
+// Tuning constants — increased for better stability and pacing
+const BUFFER_SIZE = 10;
+const STABILITY_THRESHOLD = 7;
+const AUTO_CAPTURE_FRAMES = 8;
+const COOLDOWN_MS = 1800;
 
 export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | null>) {
   const [state, setState] = useState<HandDetectionState>({
