@@ -187,13 +187,13 @@ export default function GestureDisplay({
               >
                 <span className="text-[10px] font-display font-bold text-muted-foreground">{status === "result" ? "⚡" : "⏳"}</span>
               </motion.div>
-            ) : status === "wait_for_motion" ? (
+            ) : status === "tracking_active" ? (
               <motion.div
-                key="wait"
-                className="w-12 h-12 rounded-full border-2 border-dashed border-primary/40 flex items-center justify-center animate-pulse"
+                key="ready"
+                className="w-12 h-12 rounded-full border-2 border-primary/40 flex items-center justify-center"
               >
                 <span className="text-[8px] font-display font-bold text-primary text-center leading-tight">
-                  MOVE
+                  ✋
                 </span>
               </motion.div>
             ) : (
