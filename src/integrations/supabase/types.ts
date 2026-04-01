@@ -242,6 +242,57 @@ export type Database = {
         }
         Relationships: []
       }
+      season_snapshots: {
+        Row: {
+          abandons: number
+          best_streak: number
+          created_at: string
+          draws: number
+          high_score: number
+          id: string
+          losses: number
+          rank: number | null
+          season_end: string
+          season_label: string
+          season_start: string
+          total_matches: number
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          abandons?: number
+          best_streak?: number
+          created_at?: string
+          draws?: number
+          high_score?: number
+          id?: string
+          losses?: number
+          rank?: number | null
+          season_end: string
+          season_label: string
+          season_start: string
+          total_matches?: number
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          abandons?: number
+          best_streak?: number
+          created_at?: string
+          draws?: number
+          high_score?: number
+          id?: string
+          losses?: number
+          rank?: number | null
+          season_end?: string
+          season_label?: string
+          season_start?: string
+          total_matches?: number
+          user_id?: string
+          wins?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
