@@ -7,6 +7,8 @@ import GestureDisplay from "./GestureDisplay";
 import RulesSheet from "./RulesSheet";
 import OddEvenToss from "./OddEvenToss";
 import CelebrationEffects from "./CelebrationEffects";
+import CanvasFireworks, { type FireworkType } from "./CanvasFireworks";
+import { PreMatchCeremony, PostMatchCeremony } from "./MatchCeremony";
 import { useHandCricket } from "@/hooks/useHandCricket";
 import { useHandDetection } from "@/hooks/useHandDetection";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
@@ -52,15 +54,80 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const savedRef = useRef(false);
   const prevPhaseRef = useRef(game.phase);
 
-  // Auto-save match when game finishes
+  // Fireworks state
+  const [fireworkType, setFireworkType] = useState<FireworkType | null>(null);
+
+  // Ceremony states
+  const [showPreMatch, setShowPreMatch] = useState(false);
+  const [showPostMatch, setShowPostMatch] = useState(false);
+  const [tossInfo, setTossInfo] = useState<{ winner: string; battingFirst: string } | null>(null);
+  const [pendingBatFirst, setPendingBatFirst] = useState<boolean | null>(null);
+  const postMatchShownRef = useRef(false);
+
+  const playerName = "You";
+  const opponentName = "AI";
+
+  // Handle toss complete -> show pre-match ceremony
+  const handleTossComplete = (tossWinner: string, battingFirst: string) => {
+    setTossInfo({ winner: tossWinner, battingFirst });
+  };
+
+  const handleTossResult = (batFirst: boolean) => {
+    setPendingBatFirst(batFirst);
+    // Show pre-match ceremony after a short delay
+    setTimeout(() => setShowPreMatch(true), 500);
+  };
+
+  const handlePreMatchComplete = () => {
+    setShowPreMatch(false);
+    if (pendingBatFirst !== null) {
+      setTossChoice(pendingBatFirst);
+      startGame(pendingBatFirst);
+    }
+  };
+
+  // Auto-save match when game finishes + trigger post-match ceremony
   useEffect(() => {
     if (game.phase === "finished" && !savedRef.current) {
       savedRef.current = true;
       saveMatch(game, "ar");
-      if (game.result === "win") { if (soundEnabled) SFX.win(); if (hapticsEnabled) Haptics.success(); if (crowdEnabled) playCrowdForResult(0, true, true, "win"); }
-      else if (game.result === "loss") { if (soundEnabled) SFX.loss(); if (hapticsEnabled) Haptics.error(); if (crowdEnabled) playCrowdForResult(0, true, true, "loss"); }
+
+      if (game.result === "win") {
+        if (soundEnabled) SFX.win();
+        if (hapticsEnabled) Haptics.success();
+        if (crowdEnabled) playCrowdForResult(0, true, true, "win");
+        setFireworkType("win");
+        if (soundEnabled) {
+          setTimeout(() => SFX.fireworkWhoosh(), 200);
+          setTimeout(() => SFX.fireworkPop(), 600);
+          setTimeout(() => SFX.fireworkWhoosh(), 1000);
+          setTimeout(() => SFX.fireworkPop(), 1400);
+        }
+        if (hapticsEnabled) {
+          setTimeout(() => Haptics.firework(), 600);
+          setTimeout(() => Haptics.firework(), 1400);
+        }
+      } else if (game.result === "loss") {
+        if (soundEnabled) SFX.loss();
+        if (hapticsEnabled) Haptics.error();
+        if (crowdEnabled) playCrowdForResult(0, true, true, "loss");
+      }
+
+      // Show post-match ceremony
+      if (!postMatchShownRef.current) {
+        postMatchShownRef.current = true;
+        setTimeout(() => setShowPostMatch(true), game.result === "win" ? 2500 : 1000);
+      }
     }
   }, [game.phase, game, saveMatch]);
+
+  // Clear fireworks after duration
+  useEffect(() => {
+    if (fireworkType) {
+      const t = setTimeout(() => setFireworkType(null), fireworkType === "win" ? 5000 : 3000);
+      return () => clearTimeout(t);
+    }
+  }, [fireworkType]);
 
   // Innings change sound
   useEffect(() => {
@@ -78,18 +145,34 @@ export default function GameScreen({ onHome }: GameScreenProps) {
     }
   }, [game.phase]);
 
-  // Ball result sounds & commentary
+  // Ball result sounds, commentary & fireworks
   useEffect(() => {
     if (!game.lastResult) return;
     const r = game.lastResult;
     if (soundEnabled) SFX.batHit();
     if (r.runs === "OUT") {
       setTimeout(() => { if (soundEnabled) SFX.out(); if (hapticsEnabled) Haptics.out(); }, 150);
+      // Wicket fireworks
+      setFireworkType("wicket");
+      if (soundEnabled) setTimeout(() => SFX.fireworkPop(), 300);
     } else if (typeof r.runs === "number") {
       const abs = Math.abs(r.runs);
-      if (abs === 6) setTimeout(() => { if (soundEnabled) SFX.six(); if (hapticsEnabled) Haptics.heavy(); }, 100);
-      else if (abs === 4) setTimeout(() => { if (soundEnabled) SFX.four(); if (hapticsEnabled) Haptics.medium(); }, 100);
-      else { if (soundEnabled) SFX.runs(abs); if (hapticsEnabled) Haptics.light(); }
+      if (abs === 6) {
+        setTimeout(() => { if (soundEnabled) SFX.six(); if (hapticsEnabled) Haptics.heavy(); }, 100);
+        setFireworkType("six");
+        if (soundEnabled) {
+          setTimeout(() => SFX.fireworkWhoosh(), 400);
+          setTimeout(() => SFX.fireworkPop(), 800);
+        }
+        if (hapticsEnabled) setTimeout(() => Haptics.firework(), 800);
+      } else if (abs === 4) {
+        setTimeout(() => { if (soundEnabled) SFX.four(); if (hapticsEnabled) Haptics.medium(); }, 100);
+        setFireworkType("four");
+        if (soundEnabled) setTimeout(() => SFX.fireworkPop(), 400);
+      } else {
+        if (soundEnabled) SFX.runs(abs);
+        if (hapticsEnabled) Haptics.light();
+      }
     }
     if (crowdEnabled) playCrowdForResult(r.runs, game.isBatting, false);
     if (commentaryEnabled) {
@@ -125,7 +208,13 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const handleStartNew = () => {
     resetGame();
     setTossChoice(null);
+    setPendingBatFirst(null);
+    setTossInfo(null);
+    setFireworkType(null);
+    setShowPreMatch(false);
+    setShowPostMatch(false);
     savedRef.current = false;
+    postMatchShownRef.current = false;
   };
 
   const toggleImmersive = () => setImmersive(!immersive);
@@ -141,6 +230,30 @@ export default function GameScreen({ onHome }: GameScreenProps) {
       {stadiumMode && <div className="absolute inset-0 stadium-gradient pointer-events-none" />}
       {stadiumMode && <div className="absolute inset-0 vignette pointer-events-none" />}
       <CelebrationEffects lastResult={game.lastResult} gameResult={game.result} phase={game.phase} />
+      <CanvasFireworks type={fireworkType} duration={fireworkType === "win" ? 5000 : 3000} />
+
+      {/* Pre-match ceremony */}
+      {showPreMatch && tossInfo && (
+        <PreMatchCeremony
+          playerName={playerName}
+          opponentName={opponentName}
+          tossWinner={tossInfo.winner}
+          battingFirst={tossInfo.battingFirst}
+          onComplete={handlePreMatchComplete}
+        />
+      )}
+
+      {/* Post-match ceremony */}
+      {showPostMatch && game.result && (
+        <PostMatchCeremony
+          playerName={playerName}
+          opponentName={opponentName}
+          result={game.result}
+          playerScore={game.userScore}
+          opponentScore={game.aiScore}
+          onComplete={() => setShowPostMatch(false)}
+        />
+      )}
 
       {/* Top ambient glow */}
       <div
@@ -318,8 +431,13 @@ export default function GameScreen({ onHome }: GameScreenProps) {
         </div>
 
         {/* Odd/Even Toss */}
-        {game.phase === "not_started" && tossChoice === null && (
-          <OddEvenToss onResult={(batFirst) => { setTossChoice(batFirst); startGame(batFirst); }} />
+        {game.phase === "not_started" && tossChoice === null && !showPreMatch && (
+          <OddEvenToss
+            onResult={handleTossResult}
+            onTossComplete={handleTossComplete}
+            playerName={playerName}
+            opponentName={opponentName}
+          />
         )}
 
         {/* Phase-based countdown overlay */}
