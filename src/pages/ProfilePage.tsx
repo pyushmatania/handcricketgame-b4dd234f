@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
+import TopStatusBar from "@/components/TopStatusBar";
+import PlayerCard, { INDIAN_LEGENDS } from "@/components/PlayerCard";
 
 interface MatchRecord {
   id: string;
@@ -35,12 +37,14 @@ interface ProfileData {
   best_streak: number;
 }
 
+type TabType = "stats" | "matches" | "squad";
+
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
-  const [showAllMatches, setShowAllMatches] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("stats");
 
   const getTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -59,9 +63,7 @@ export default function ProfilePage() {
       .select("display_name, total_matches, wins, losses, draws, high_score, current_streak, best_streak")
       .eq("user_id", user.id)
       .single()
-      .then(({ data }) => {
-        if (data) setProfile(data);
-      });
+      .then(({ data }) => { if (data) setProfile(data); });
 
     supabase
       .from("matches")
@@ -69,234 +71,314 @@ export default function ProfilePage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50)
-      .then(({ data }) => {
-        if (data) setMatches(data);
-      });
+      .then(({ data }) => { if (data) setMatches(data); });
   }, [user]);
 
   const winRate = profile && profile.total_matches > 0
-    ? Math.round((profile.wins / profile.total_matches) * 100) + "%"
-    : "—";
-
-  const stats = profile
-    ? [
-        { label: "Matches", value: String(profile.total_matches), icon: "🏏" },
-        { label: "Wins", value: String(profile.wins), icon: "🏆" },
-        { label: "Losses", value: String(profile.losses), icon: "💔" },
-        { label: "Win Rate", value: winRate, icon: "📊" },
-        { label: "High Score", value: String(profile.high_score), icon: "⭐" },
-        { label: "Streak", value: String(profile.best_streak), icon: "🔥" },
-      ]
-    : [
-        { label: "Matches", value: "0", icon: "🏏" },
-        { label: "Wins", value: "0", icon: "🏆" },
-        { label: "Losses", value: "0", icon: "💔" },
-        { label: "Win Rate", value: "—", icon: "📊" },
-        { label: "High Score", value: "—", icon: "⭐" },
-        { label: "Streak", value: "0", icon: "🔥" },
-      ];
-
-  const unlockedCount = profile
-    ? ACHIEVEMENTS.filter((a) => a.check(profile)).length
+    ? Math.round((profile.wins / profile.total_matches) * 100)
     : 0;
+
+  const level = profile ? Math.floor(profile.total_matches / 5) + 1 : 1;
+  const unlockedCount = profile ? ACHIEVEMENTS.filter((a) => a.check(profile)).length : 0;
+
+  const tabs: { key: TabType; label: string; icon: string }[] = [
+    { key: "stats", label: "STATS", icon: "📊" },
+    { key: "matches", label: "MATCHES", icon: "🏏" },
+    { key: "squad", label: "SQUAD", icon: "⭐" },
+  ];
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden pb-24">
       <div className="absolute inset-0 stadium-gradient pointer-events-none" />
       <div className="absolute inset-0 vignette pointer-events-none" />
 
-      <div className="relative z-10 max-w-lg mx-auto px-4 pt-8">
-        {/* Profile header */}
+      <TopStatusBar />
+
+      <div className="relative z-10 max-w-lg mx-auto px-4 pt-4">
+        {/* Profile Hero Card */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6"
+          className="glass-premium rounded-2xl p-4 mb-4 relative overflow-hidden"
         >
-          <div className="relative inline-block">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 border-2 border-primary/40 flex items-center justify-center">
-              <span className="text-3xl">{user ? "🏏" : "👤"}</span>
-            </div>
-            {user && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-neon-green border border-neon-green/50 flex items-center justify-center">
-                <span className="text-[8px]">✓</span>
+          {/* Background accent */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
+
+          <div className="flex items-center gap-4 relative z-10">
+            {/* Avatar */}
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
+                <span className="text-3xl">{user ? "🏏" : "👤"}</span>
               </div>
-            )}
-          </div>
-          <h1 className="font-display text-lg font-black text-foreground tracking-wider mt-3">
-            {profile?.display_name || "PLAYER"}
-          </h1>
-          {user ? (
-            <div className="mt-2 space-y-1">
-              <p className="text-[9px] text-muted-foreground font-display">{user.email}</p>
-              <button
-                onClick={async () => { await signOut(); navigate("/"); }}
-                className="text-[9px] text-out-red/70 font-display tracking-wider"
-              >
-                SIGN OUT
-              </button>
+              {user && (
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-gradient-to-br from-neon-green to-neon-green/70 border border-neon-green/50 flex items-center justify-center">
+                  <span className="text-[8px] font-bold text-white">✓</span>
+                </div>
+              )}
+              {/* Level ring */}
+              <div className="absolute -top-1 -left-1 w-7 h-7 rounded-lg bg-gradient-to-br from-secondary to-secondary/70 border border-secondary/40 flex items-center justify-center">
+                <span className="font-display text-[8px] font-black text-secondary-foreground">{level}</span>
+              </div>
             </div>
+
+            {/* Info */}
+            <div className="flex-1">
+              <h1 className="font-display text-base font-black text-foreground tracking-wider">
+                {profile?.display_name || "PLAYER"}
+              </h1>
+              {user && (
+                <p className="text-[8px] text-muted-foreground font-display tracking-wider mt-0.5">
+                  {user.email}
+                </p>
+              )}
+              {/* Quick stats row */}
+              <div className="flex gap-3 mt-2">
+                <div className="text-center">
+                  <span className="font-display text-sm font-black text-primary block leading-none">{profile?.wins || 0}</span>
+                  <span className="text-[6px] text-muted-foreground font-display tracking-widest">WINS</span>
+                </div>
+                <div className="text-center">
+                  <span className="font-display text-sm font-black text-out-red block leading-none">{profile?.losses || 0}</span>
+                  <span className="text-[6px] text-muted-foreground font-display tracking-widest">LOSSES</span>
+                </div>
+                <div className="text-center">
+                  <span className="font-display text-sm font-black text-secondary block leading-none">{winRate}%</span>
+                  <span className="text-[6px] text-muted-foreground font-display tracking-widest">WIN RATE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Auth actions */}
+          {user ? (
+            <button
+              onClick={async () => { await signOut(); navigate("/"); }}
+              className="absolute top-3 right-3 px-3 py-1.5 rounded-lg glass-card text-[8px] text-out-red/70 font-display font-bold tracking-wider"
+            >
+              SIGN OUT
+            </button>
           ) : (
-            <>
-              <p className="text-[10px] text-muted-foreground font-display mt-1">
-                Sign in to save your progress
-              </p>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate("/auth")}
-                className="mt-3 px-6 py-2.5 bg-gradient-to-r from-primary/20 to-accent/10 text-primary font-display font-bold text-xs rounded-xl border border-primary/30 tracking-wider"
-              >
-                🔐 SIGN IN
-              </motion.button>
-            </>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/auth")}
+              className="absolute top-3 right-3 px-4 py-2 bg-gradient-to-r from-primary/20 to-accent/10 text-primary font-display font-bold text-[9px] rounded-xl border border-primary/30 tracking-wider"
+            >
+              🔐 SIGN IN
+            </motion.button>
           )}
         </motion.div>
 
-        {/* Stats grid */}
+        {/* Tab Switcher */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-6"
+          className="flex gap-1 mb-4 glass-card rounded-xl p-1"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-4 rounded-full bg-secondary" />
-            <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
-              CAREER STATS
-            </h2>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {stats.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15 + i * 0.05 }}
-                className="glass-score p-3 text-center"
-              >
-                <span className="text-sm block mb-0.5">{s.icon}</span>
-                <span className="font-display text-xl font-black text-foreground block leading-none">
-                  {s.value}
-                </span>
-                <span className="text-[7px] text-muted-foreground font-display font-bold tracking-wider mt-1 block">
-                  {s.label.toUpperCase()}
-                </span>
-              </motion.div>
-            ))}
-          </div>
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 py-2 rounded-lg font-display text-[9px] font-bold tracking-widest transition-all duration-300 flex items-center justify-center gap-1 ${
+                activeTab === tab.key
+                  ? "bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/20"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <span className="text-xs">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </motion.div>
 
-        {/* Achievements */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-4 rounded-full bg-primary" />
-            <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
-              ACHIEVEMENTS
-            </h2>
-            <span className="text-[8px] text-muted-foreground/50 font-display">
-              {unlockedCount} / {ACHIEVEMENTS.length}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {ACHIEVEMENTS.map((a, i) => {
-              const unlocked = profile ? a.check(profile) : false;
-              return (
-                <motion.div
-                  key={a.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 + i * 0.05 }}
-                  className={`glass-score p-3 relative overflow-hidden ${!unlocked ? "opacity-40" : ""}`}
-                >
-                  <span className="text-xl block mb-1">{a.icon}</span>
-                  <span className="font-display text-[10px] font-bold text-foreground block">
-                    {a.title}
-                  </span>
-                  <span className="text-[8px] text-muted-foreground">{a.desc}</span>
-                  {!unlocked && (
-                    <div className="absolute top-2 right-2">
-                      <span className="text-[7px] text-muted-foreground/50 font-display">🔒</span>
-                    </div>
-                  )}
-                  {unlocked && (
-                    <div className="absolute top-2 right-2">
-                      <span className="text-[7px] text-neon-green font-display">✅</span>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Match History */}
-        {matches.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1 h-4 rounded-full bg-score-gold" />
-              <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
-                MATCH HISTORY
-              </h2>
-              <span className="text-[8px] text-muted-foreground/50 font-display">
-                {matches.length} matches
-              </span>
-            </div>
-            <div className="space-y-2">
-              {(showAllMatches ? matches : matches.slice(0, 5)).map((m, i) => {
-                const modeIcon = m.mode === "ar" ? "📸" : m.mode === "tournament" ? "🏆" : m.mode === "multiplayer" ? "⚔️" : "👆";
-                const resultColor = m.result === "win" ? "text-neon-green" : m.result === "loss" ? "text-out-red" : "text-score-gold";
-                const timeAgo = getTimeAgo(m.created_at);
-                return (
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          {activeTab === "stats" && (
+            <motion.div
+              key="stats"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[
+                  { icon: "🏏", value: String(profile?.total_matches || 0), label: "MATCHES" },
+                  { icon: "⭐", value: String(profile?.high_score || 0), label: "HIGH SCORE" },
+                  { icon: "🔥", value: String(profile?.best_streak || 0), label: "BEST STREAK" },
+                  { icon: "🏆", value: String(profile?.wins || 0), label: "WINS" },
+                  { icon: "💔", value: String(profile?.losses || 0), label: "LOSSES" },
+                  { icon: "🤝", value: String(profile?.draws || 0), label: "DRAWS" },
+                ].map((s, i) => (
                   <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.35 + i * 0.04 }}
-                    className="glass-score p-3 flex items-center gap-3"
+                    key={s.label}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.15 + i * 0.05 }}
+                    className="glass-premium rounded-xl p-3 text-center relative overflow-hidden group"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-lg">
-                      {modeIcon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-display text-[10px] font-bold ${resultColor} tracking-wider`}>
-                          {m.result.toUpperCase()}
-                        </span>
-                        <span className="text-[8px] text-muted-foreground font-display">
-                          {m.mode.toUpperCase()}
-                        </span>
-                      </div>
-                      <span className="text-[8px] text-muted-foreground">
-                        {m.balls_played} balls • {timeAgo}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-display text-sm font-black text-score-gold">{m.user_score}</span>
-                      <span className="text-[9px] text-muted-foreground mx-1">-</span>
-                      <span className="font-display text-sm font-black text-accent">{m.ai_score}</span>
-                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-lg block mb-1">{s.icon}</span>
+                    <span className="font-display text-xl font-black text-foreground block leading-none">
+                      {s.value}
+                    </span>
+                    <span className="text-[6px] text-muted-foreground font-display font-bold tracking-[0.2em] mt-1 block">
+                      {s.label}
+                    </span>
                   </motion.div>
-                );
-              })}
-            </div>
-            {matches.length > 5 && (
-              <button
-                onClick={() => setShowAllMatches(!showAllMatches)}
-                className="w-full mt-2 py-2 text-[9px] font-display font-bold text-primary tracking-wider"
+                ))}
+              </div>
+
+              {/* Win Rate Bar */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="glass-premium rounded-xl p-4 mb-4"
               >
-                {showAllMatches ? "SHOW LESS ▲" : `VIEW ALL ${matches.length} MATCHES ▼`}
-              </button>
-            )}
-          </motion.div>
-        )}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-display text-[9px] font-bold text-muted-foreground tracking-widest">WIN RATE</span>
+                  <span className="font-display text-lg font-black text-primary">{winRate}%</span>
+                </div>
+                <div className="w-full h-2 bg-muted/40 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${winRate}%` }}
+                    transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Achievements */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-4 rounded-full bg-primary" />
+                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
+                  ACHIEVEMENTS
+                </span>
+                <span className="text-[8px] text-muted-foreground/50 font-display">
+                  {unlockedCount}/{ACHIEVEMENTS.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {ACHIEVEMENTS.map((a, i) => {
+                  const unlocked = profile ? a.check(profile) : false;
+                  return (
+                    <motion.div
+                      key={a.title}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 + i * 0.04 }}
+                      className={`glass-premium rounded-xl p-3 relative overflow-hidden ${!unlocked ? "opacity-35 grayscale" : ""}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-xl">{a.icon}</span>
+                        <div>
+                          <span className="font-display text-[10px] font-bold text-foreground block">{a.title}</span>
+                          <span className="text-[7px] text-muted-foreground">{a.desc}</span>
+                        </div>
+                      </div>
+                      {unlocked && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-neon-green/20 flex items-center justify-center">
+                          <span className="text-[8px]">✅</span>
+                        </div>
+                      )}
+                      {!unlocked && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-muted/30 flex items-center justify-center">
+                          <span className="text-[7px]">🔒</span>
+                        </div>
+                      )}
+                      {unlocked && <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-neon-green to-neon-green/30`} />}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "matches" && (
+            <motion.div
+              key="matches"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {matches.length === 0 ? (
+                <div className="glass-premium rounded-xl p-8 text-center">
+                  <span className="text-3xl block mb-2">🏏</span>
+                  <span className="font-display text-xs font-bold text-muted-foreground tracking-wider">NO MATCHES YET</span>
+                  <p className="text-[9px] text-muted-foreground/60 mt-1">Play your first match to see history</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {matches.map((m, i) => {
+                    const modeIcon = m.mode === "ar" ? "📸" : m.mode === "tournament" ? "🏆" : m.mode === "multiplayer" ? "⚔️" : "👆";
+                    const resultColor = m.result === "win" ? "text-neon-green" : m.result === "loss" ? "text-out-red" : "text-secondary";
+                    const resultBg = m.result === "win" ? "from-neon-green/10" : m.result === "loss" ? "from-out-red/10" : "from-secondary/10";
+                    return (
+                      <motion.div
+                        key={m.id}
+                        initial={{ opacity: 0, x: -15 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        className={`glass-premium rounded-xl p-3 flex items-center gap-3 relative overflow-hidden`}
+                      >
+                        <div className={`absolute inset-0 bg-gradient-to-r ${resultBg} to-transparent opacity-30`} />
+                        <div className="w-10 h-10 rounded-xl bg-muted/40 flex items-center justify-center text-lg relative z-10">
+                          {modeIcon}
+                        </div>
+                        <div className="flex-1 min-w-0 relative z-10">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-display text-[10px] font-bold ${resultColor} tracking-wider`}>
+                              {m.result.toUpperCase()}
+                            </span>
+                            <span className="text-[7px] text-muted-foreground font-display px-1.5 py-0.5 rounded bg-muted/30">
+                              {m.mode.toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-[8px] text-muted-foreground">
+                            {m.balls_played} balls • {getTimeAgo(m.created_at)}
+                          </span>
+                        </div>
+                        <div className="text-right relative z-10">
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-display text-base font-black text-secondary">{m.user_score}</span>
+                            <span className="text-[8px] text-muted-foreground">vs</span>
+                            <span className="font-display text-base font-black text-accent">{m.ai_score}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === "squad" && (
+            <motion.div
+              key="squad"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-4 rounded-full bg-secondary" />
+                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
+                  INDIAN LEGENDS
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {INDIAN_LEGENDS.map((player, i) => (
+                  <PlayerCard key={player.id} player={player} size="sm" delay={i * 0.1} />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <BottomNav />

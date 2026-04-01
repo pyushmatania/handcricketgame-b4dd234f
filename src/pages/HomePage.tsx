@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import ParticleField from "@/components/ParticleField";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
+import { PLAYER_IMAGES } from "@/components/PlayerCard";
 
 interface ProfileData {
   total_matches: number;
@@ -27,10 +28,10 @@ interface RecentMatch {
 }
 
 const PLAYERS = [
-  { name: "Virat Kohli", number: "18", role: "Batsman", emoji: "🏏", color: "from-primary/30 to-primary/10" },
-  { name: "MS Dhoni", number: "7", role: "Captain", emoji: "🧤", color: "from-secondary/30 to-secondary/10" },
-  { name: "Rohit Sharma", number: "45", role: "Opener", emoji: "🏏", color: "from-accent/30 to-accent/10" },
-  { name: "Jasprit Bumrah", number: "93", role: "Bowler", emoji: "🎯", color: "from-neon-green/30 to-neon-green/10" },
+  { name: "Virat Kohli", number: "18", role: "Batsman", id: "kohli", color: "from-primary/30 to-primary/10" },
+  { name: "MS Dhoni", number: "7", role: "Captain", id: "dhoni", color: "from-secondary/30 to-secondary/10" },
+  { name: "Rohit Sharma", number: "45", role: "Opener", id: "rohit", color: "from-accent/30 to-accent/10" },
+  { name: "Jasprit Bumrah", number: "93", role: "Bowler", id: "bumrah", color: "from-neon-green/30 to-neon-green/10" },
 ];
 
 const QUICK_MODES = [
@@ -145,9 +146,9 @@ export default function HomePage() {
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 20, scale: 0.8 }}
                 transition={{ duration: 0.4 }}
-                className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${PLAYERS[activePlayer].color} border border-primary/20 flex items-center justify-center relative shrink-0`}
+                className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${PLAYERS[activePlayer].color} border border-primary/20 flex items-center justify-center relative shrink-0 overflow-hidden`}
               >
-                <span className="text-4xl">{PLAYERS[activePlayer].emoji}</span>
+                <img src={PLAYER_IMAGES[PLAYERS[activePlayer].id]} alt={PLAYERS[activePlayer].name} className="w-full h-full object-cover object-top" />
                 {/* Pulse ring */}
                 <motion.div
                   animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0, 0.3] }}
