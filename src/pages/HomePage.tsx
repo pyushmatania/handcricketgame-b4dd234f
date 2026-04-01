@@ -146,9 +146,9 @@ export default function HomePage() {
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 20, scale: 0.8 }}
                 transition={{ duration: 0.4 }}
-                className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${PLAYERS[activePlayer].color} border border-primary/20 flex items-center justify-center relative shrink-0`}
+                className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${PLAYERS[activePlayer].color} border border-primary/20 flex items-center justify-center relative shrink-0 overflow-hidden`}
               >
-                <span className="text-4xl">{PLAYERS[activePlayer].emoji}</span>
+                <img src={PLAYER_IMAGES[PLAYERS[activePlayer].id]} alt={PLAYERS[activePlayer].name} className="w-full h-full object-cover object-top" />
                 {/* Pulse ring */}
                 <motion.div
                   animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0, 0.3] }}
