@@ -42,7 +42,8 @@ export default function RulesSheet() {
                     <li>✌️ 2 fingers = <strong className="text-primary">2 runs</strong></li>
                     <li>🤟 3 fingers = <strong className="text-primary">3 runs</strong></li>
                     <li>🖖 4 fingers = <strong className="text-primary">4 runs</strong></li>
-                    <li>🖐️ 5 fingers = <strong className="text-primary">5 runs</strong></li>
+                    <li>👍 Thumbs up = <strong className="text-primary">6 runs</strong></li>
+                    <li>🖐️ Open palm = <strong className="text-primary">INVALID</strong></li>
                   </ul>
                 </div>
                 <div>

@@ -77,7 +77,7 @@ export default function HandOverlay({
     }
 
     const colors = GLOVE_COLORS[gloveStyle];
-    const isStable = status === "stable" || status === "captured";
+    const isStable = status === "captured" || status === "result";
     const isCaptured = status === "captured";
 
     // Convert normalized landmarks to pixel coords with smoothing

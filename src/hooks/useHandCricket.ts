@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 
-export type Move = "DEF" | 1 | 2 | 3 | 4 | 5;
-export type AiMove = "DEF" | 1 | 2 | 3 | 4 | 5 | 6;
+export type Move = "DEF" | 1 | 2 | 3 | 4 | 6;
+export type AiMove = Move;
 export type InningsPhase = "not_started" | "first_batting" | "first_bowling" | "second_batting" | "second_bowling" | "finished";
 export type GameResult = "win" | "loss" | "draw" | null;
 
@@ -40,8 +40,12 @@ const initialState: GameState = {
   ballHistory: [],
 };
 
+function getMoveValue(move: Move | AiMove): number {
+  return move === "DEF" ? 0 : move;
+}
+
 function getAiMove(): AiMove {
-  const moves: AiMove[] = ["DEF", 1, 2, 3, 4, 5, 6];
+  const moves: AiMove[] = ["DEF", 1, 2, 3, 4, 6];
   return moves[Math.floor(Math.random() * moves.length)];
 }
 
@@ -52,24 +56,28 @@ function resolveResult(userMove: Move, aiMove: AiMove, isBatting: boolean): { ru
 
   if (isBatting) {
     if (userMove === "DEF") {
-      return { runs: aiMove as number, desc: `DEF vs ${aiMove} — you score ${aiMove} runs!` };
+      const defendedRuns = getMoveValue(aiMove);
+      return { runs: defendedRuns, desc: `You defended. AI played ${aiMove} — +${defendedRuns} runs` };
     }
     if (userMove === aiMove) {
       return { runs: "OUT", desc: `Both played ${userMove} — OUT!` };
     }
-    return { runs: userMove as number, desc: `You played ${userMove}, AI played ${aiMove} — +${userMove} runs` };
+    const battingRuns = getMoveValue(userMove);
+    return { runs: battingRuns, desc: `You played ${userMove}, AI played ${aiMove} — +${battingRuns} runs` };
   } else {
-    // Bowling: AI is batting
     if (aiMove === "DEF") {
-      return { runs: userMove as number === userMove ? 0 : 0, desc: `AI played DEF, you played ${userMove} — AI scores ${typeof userMove === "number" ? userMove : 0}` };
+      const defendedRuns = getMoveValue(userMove);
+      return { runs: -defendedRuns, desc: `AI defended against ${userMove} — AI scores ${defendedRuns}` };
     }
     if (userMove === "DEF") {
-      return { runs: -(aiMove as number), desc: `You played DEF, AI played ${aiMove} — AI scores ${aiMove}` };
+      const aiRuns = getMoveValue(aiMove);
+      return { runs: -aiRuns, desc: `You defended, AI played ${aiMove} — AI scores ${aiRuns}` };
     }
     if (userMove === aiMove) {
       return { runs: "OUT", desc: `Both played ${userMove} — AI is OUT!` };
     }
-    return { runs: -(aiMove as number), desc: `You played ${userMove}, AI played ${aiMove} — AI scores ${aiMove}` };
+    const aiRuns = getMoveValue(aiMove);
+    return { runs: -aiRuns, desc: `You played ${userMove}, AI played ${aiMove} — AI scores ${aiRuns}` };
   }
 }
 

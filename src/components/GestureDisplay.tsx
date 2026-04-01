@@ -16,7 +16,7 @@ interface GestureDisplayProps {
 }
 
 const moveEmoji: Record<string, string> = {
-  DEF: "✊", "1": "☝️", "2": "✌️", "3": "🤟", "4": "🖖", "5": "🖐️", "6": "6️⃣",
+  DEF: "✊", "1": "☝️", "2": "✌️", "3": "🤟", "4": "🖖", "6": "👍",
 };
 
 function moveLabel(m: Move | null): string {
