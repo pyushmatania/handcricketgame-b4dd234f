@@ -16,8 +16,6 @@ export type GamePhase =
   | "tracking_unavailable"
   | "wait_for_fist"
   | "countdown"
-  | "wait_for_motion"
-  | "detecting"
   | "captured"
   | "result"
   | "cooldown";
