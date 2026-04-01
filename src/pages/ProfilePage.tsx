@@ -38,6 +38,10 @@ interface ProfileData {
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [matches, setMatches] = useState<MatchRecord[]>([]);
+  const [showAllMatches, setShowAllMatches] = useState(false);
+
   const getTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
@@ -47,9 +51,6 @@ export default function ProfilePage() {
     const days = Math.floor(hrs / 24);
     return `${days}d ago`;
   };
-
-  const [matches, setMatches] = useState<MatchRecord[]>([]);
-  const [showAllMatches, setShowAllMatches] = useState(false);
 
   useEffect(() => {
     if (!user) return;
