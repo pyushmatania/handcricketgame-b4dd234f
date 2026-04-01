@@ -237,54 +237,58 @@ export default function PlayerDetailModal({ player, onClose }: PlayerDetailModal
             </div>
           </div>
 
-          {/* Player Hero */}
+          {/* Player Hero — Cinematic Image */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-premium rounded-2xl p-4 mb-4 relative overflow-hidden"
+            className="glass-premium rounded-2xl mb-4 relative overflow-hidden"
           >
-            {/* Jersey number bg */}
-            <div className="absolute top-0 right-0 opacity-[0.04]">
-              <span className="font-display text-[100px] font-black leading-none">{player.number}</span>
+            {/* Full-width cinematic player image */}
+            <div className="relative w-full h-64 overflow-hidden">
+              <motion.img
+                src={img}
+                alt={player.name}
+                className="w-full h-full object-cover object-top"
+                initial={{ scale: 1.1 }}
+                animate={{ scale: [1.1, 1.03, 1.05] }}
+                transition={{ duration: 6, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+              />
+              {/* Cinematic gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-background/60 to-transparent" />
+
+              {/* Rating badge */}
+              <div className={`absolute top-3 left-3 w-10 h-10 rounded-xl bg-gradient-to-br ${player.accentColor} flex items-center justify-center shadow-lg`}>
+                <span className="font-display text-xs font-black text-white">{player.rating}</span>
+              </div>
+
+              {/* Jersey number watermark */}
+              <div className="absolute top-0 right-2 opacity-[0.06]">
+                <span className="font-display text-[120px] font-black leading-none">{player.number}</span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4 relative z-10">
-              {/* Player image */}
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 100 }}
-                className="w-28 h-36 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-accent/5 border border-primary/20 flex-shrink-0 relative"
-              >
-                <img src={img} alt={player.name} className="w-full h-full object-cover object-top" />
-                {/* Rating badge */}
-                <div className={`absolute top-1.5 left-1.5 w-8 h-8 rounded-lg bg-gradient-to-br ${player.accentColor} flex items-center justify-center`}>
-                  <span className="font-display text-[10px] font-black text-white">{player.rating}</span>
-                </div>
-              </motion.div>
+            {/* Player info overlay at bottom of image */}
+            <div className="px-4 pb-4 pt-0 relative z-10 -mt-16">
+              <p className="text-[7px] text-primary/60 font-display tracking-[0.3em] font-bold">INDIAN LEGEND</p>
+              <h2 className="font-display text-2xl font-black text-foreground tracking-wider leading-tight mt-0.5">
+                {player.name.toUpperCase()}
+              </h2>
+              <p className="text-[9px] text-muted-foreground font-display tracking-widest mt-0.5">{player.role} • #{player.number}</p>
 
-              <div className="flex-1 min-w-0">
-                <p className="text-[7px] text-primary/60 font-display tracking-[0.3em] font-bold">INDIAN LEGEND</p>
-                <h2 className="font-display text-lg font-black text-foreground tracking-wider leading-tight mt-0.5">
-                  {player.name.toUpperCase()}
-                </h2>
-                <p className="text-[9px] text-muted-foreground font-display tracking-widest mt-0.5">{player.role}</p>
-                <p className="text-[9px] text-muted-foreground/50 font-display mt-0.5">#{player.number}</p>
-
-                {/* Quick stats */}
-                <div className="flex gap-2 mt-3">
-                  {player.stats.map((s) => (
-                    <div key={s.label} className="flex-1 glass-card rounded-lg p-1.5 text-center">
-                      <span className="font-display text-xs font-black text-foreground block leading-none">{s.value}</span>
-                      <span className="text-[5px] text-muted-foreground font-display tracking-widest">{s.label}</span>
-                    </div>
-                  ))}
-                </div>
+              {/* Quick stats */}
+              <div className="flex gap-2 mt-3">
+                {player.stats.map((s) => (
+                  <div key={s.label} className="flex-1 glass-card rounded-lg p-2 text-center">
+                    <span className="font-display text-sm font-black text-foreground block leading-none">{s.value}</span>
+                    <span className="text-[6px] text-muted-foreground font-display tracking-widest">{s.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Bottom accent */}
-            <div className={`h-0.5 w-full bg-gradient-to-r ${player.accentColor} mt-3 rounded-full`} />
+            <div className={`h-0.5 w-full bg-gradient-to-r ${player.accentColor} rounded-full`} />
           </motion.div>
 
           {/* Career Highlights */}
