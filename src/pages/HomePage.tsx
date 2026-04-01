@@ -25,13 +25,6 @@ interface RecentMatch {
   created_at: string;
 }
 
-const PLAYERS = [
-  { name: "Virat Kohli", number: "18", role: "Batsman", id: "kohli", color: "from-primary/30 to-primary/10" },
-  { name: "MS Dhoni", number: "7", role: "Captain", id: "dhoni", color: "from-secondary/30 to-secondary/10" },
-  { name: "Rohit Sharma", number: "45", role: "Opener", id: "rohit", color: "from-accent/30 to-accent/10" },
-  { name: "Jasprit Bumrah", number: "93", role: "Bowler", id: "bumrah", color: "from-neon-green/30 to-neon-green/10" },
-];
-
 const QUICK_MODES = [
   { icon: "📸", label: "AR Mode", mode: "ar", color: "from-primary/25 to-primary/5", border: "border-primary/25", glow: "shadow-[0_0_15px_hsl(217_91%_60%/0.15)]" },
   { icon: "👆", label: "Tap", mode: "tap", color: "from-accent/25 to-accent/5", border: "border-accent/25", glow: "shadow-[0_0_15px_hsl(168_80%_50%/0.15)]" },
