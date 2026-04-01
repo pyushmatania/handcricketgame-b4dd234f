@@ -8,6 +8,9 @@ import RulesSheet from "./RulesSheet";
 import { useHandCricket } from "@/hooks/useHandCricket";
 import { useHandDetection } from "@/hooks/useHandDetection";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
+import { SFX, Haptics } from "@/lib/sounds";
+import { getCommentary, getInningsChangeCommentary } from "@/lib/commentary";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface GameScreenProps {
   onHome: () => void;
