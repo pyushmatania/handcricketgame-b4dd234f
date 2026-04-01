@@ -50,15 +50,18 @@ const RAGE_TITLES = [
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [mainTab, setMainTab] = useState<MainTab>("global");
   const [sortBy, setSortBy] = useState(0);
   const [leaders, setLeaders] = useState<LeaderEntry[]>([]);
   const [friendLeaders, setFriendLeaders] = useState<LeaderEntry[]>([]);
+  const [rivalFriends, setRivalFriends] = useState<FriendProfile[]>([]);
   const [myRank, setMyRank] = useState<number | null>(null);
 
   useEffect(() => {
     if (mainTab === "global" || mainTab === "rage") loadGlobal();
     if (mainTab === "friends") loadFriends();
+    if (mainTab === "rivalry") loadRivalFriends();
   }, [mainTab, sortBy]);
 
   const loadGlobal = async () => {
