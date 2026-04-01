@@ -195,6 +195,7 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
     handDetected: false,
     rawGesture: "no_hand",
     debugInfo: "stage:idle",
+    landmarks: null,
   });
 
   const handsRef = useRef<any>(null);
