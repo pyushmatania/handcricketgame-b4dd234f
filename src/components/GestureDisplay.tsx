@@ -27,14 +27,13 @@ function moveLabel(m: Move | null): string {
 function StatusDot({ status }: { status: GestureStatus }) {
   const color =
     status === "captured" ? "bg-secondary" :
-    status === "detecting" ? "bg-accent" :
-    status === "wait_for_motion" ? "bg-primary" :
+    status === "tracking_active" ? "bg-primary" :
     status === "cooldown" || status === "result" ? "bg-accent" :
     status === "wait_for_fist" || status === "countdown" ? "bg-primary" :
     status === "tracking_unavailable" ? "bg-out-red" :
     "bg-muted-foreground";
 
-  return <div className={`w-2 h-2 rounded-full ${color} ${status === "detecting" || status === "wait_for_motion" ? "animate-pulse" : ""}`} />;
+  return <div className={`w-2 h-2 rounded-full ${color} ${status === "tracking_active" ? "animate-pulse" : ""}`} />;
 }
 
 export default function GestureDisplay({
@@ -122,7 +121,7 @@ export default function GestureDisplay({
           <div className="w-14 h-1.5 rounded-full bg-muted overflow-hidden">
             <motion.div
               className={`h-full rounded-full ${
-                status === "captured" ? "bg-primary" : status === "detecting" ? "bg-accent" : status === "wait_for_motion" ? "bg-primary/50" : "bg-muted-foreground"
+                status === "captured" ? "bg-primary" : status === "tracking_active" ? "bg-primary/50" : "bg-muted-foreground"
               }`}
               initial={{ width: 0 }}
               animate={{ width: `${Math.round(confidence * 100)}%` }}
@@ -188,13 +187,13 @@ export default function GestureDisplay({
               >
                 <span className="text-[10px] font-display font-bold text-muted-foreground">{status === "result" ? "⚡" : "⏳"}</span>
               </motion.div>
-            ) : status === "wait_for_motion" ? (
+            ) : status === "tracking_active" ? (
               <motion.div
-                key="wait"
-                className="w-12 h-12 rounded-full border-2 border-dashed border-primary/40 flex items-center justify-center animate-pulse"
+                key="ready"
+                className="w-12 h-12 rounded-full border-2 border-primary/40 flex items-center justify-center"
               >
                 <span className="text-[8px] font-display font-bold text-primary text-center leading-tight">
-                  MOVE
+                  ✋
                 </span>
               </motion.div>
             ) : (
@@ -203,7 +202,7 @@ export default function GestureDisplay({
                 className="w-12 h-12 rounded-full border-2 border-dashed border-glass flex items-center justify-center"
               >
                 <span className="text-[8px] font-display font-bold text-muted-foreground text-center leading-tight">
-                  {status === "detecting" ? "…" : "AUTO"}
+                  AUTO
                 </span>
               </motion.div>
             )}

@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   classifyHandCricketGesture,
-  computeHandMotion,
   rawGestureToMove,
   type RawGesture,
   type V3,
@@ -16,8 +15,6 @@ export type GamePhase =
   | "tracking_unavailable"
   | "wait_for_fist"
   | "countdown"
-  | "wait_for_motion"
-  | "detecting"
   | "captured"
   | "result"
   | "cooldown";
@@ -93,15 +90,13 @@ async function ensureVideoPlayable(video: HTMLVideoElement) {
 
 // === Timing constants ===
 const VALID_GESTURES: RawGesture[] = ["def", "1", "2", "3", "4", "6"];
-const FIST_STABLE_FRAMES = 10;
-const MOTION_THRESHOLD = 0.032;
-const DETECT_WINDOW_MS = 1300;
-const VOTE_WINDOW_SIZE = 10;
-const VOTES_REQUIRED = 7;
-const CAPTURE_DISPLAY_MS = 450;
-const RESULT_DISPLAY_MS = 1300;
-const COOLDOWN_MS = 2000;
-const COUNTDOWN_MS = 3000;
+const FIST_STABLE_FRAMES = 8;
+const VOTE_WINDOW_SIZE = 12;
+const VOTES_REQUIRED = 8;
+const CAPTURE_DISPLAY_MS = 500;
+const RESULT_DISPLAY_MS = 1400;
+const COOLDOWN_MS = 1800;
+const LAST_GESTURE_SAME_FRAMES = 6; // require gesture to differ from last captured
 
 export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | null>) {
   const [state, setState] = useState<HandDetectionState>({
@@ -129,11 +124,11 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
   const phaseRef = useRef<GamePhase>("idle");
   const prevLandmarksRef = useRef<V3[] | null>(null);
   const fistFrameCount = useRef(0);
-  const detectUntilRef = useRef(0);
   const predictionBufferRef = useRef<RawGesture[]>([]);
   const unlockAtRef = useRef(0);
   const onAutoCaptureRef = useRef<((move: Move) => void) | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastCapturedGesture = useRef<RawGesture | null>(null);
 
   const setPhase = useCallback((phase: GamePhase, hint: string, extra?: Partial<HandDetectionState>) => {
     phaseRef.current = phase;
@@ -164,8 +159,8 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
     predictionBufferRef.current = [];
     prevLandmarksRef.current = null;
     unlockAtRef.current = 0;
-    detectUntilRef.current = 0;
-    setPhase("wait_for_fist", "Make a fist ✊ to start", {
+    lastCapturedGesture.current = null;
+    setPhase("wait_for_fist", "Show fist ✊ to begin", {
       detectedMove: null, capturedMove: null, confidence: 0, countdownValue: null 
     });
   }, [setPhase]);
@@ -180,20 +175,19 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
         setPhase("countdown", "1…", { countdownValue: 1 });
         countdownTimerRef.current = setTimeout(() => {
           predictionBufferRef.current = [];
-          prevLandmarksRef.current = null;
-          setPhase("wait_for_motion", "Move your hand ✋", { countdownValue: null, detectedMove: null, confidence: 0 });
+          lastCapturedGesture.current = null;
+          setPhase("tracking_active", "Play!", { countdownValue: null, detectedMove: null, confidence: 0 });
         }, 1000);
       }, 1000);
     }, 1000);
   }, [setPhase]);
 
-  // Called after result is shown, starts cooldown then goes back to wait_for_motion
+  // After result → short cooldown → back to reading
   const startCooldown = useCallback(() => {
     setPhase("cooldown", "Next ball…", { countdownValue: null });
     countdownTimerRef.current = setTimeout(() => {
       predictionBufferRef.current = [];
-      prevLandmarksRef.current = null;
-      setPhase("wait_for_motion", "Move your hand ✋", { detectedMove: null, capturedMove: null, confidence: 0 });
+      setPhase("tracking_active", "Play!", { detectedMove: null, capturedMove: null, confidence: 0 });
     }, COOLDOWN_MS);
   }, [setPhase]);
 
@@ -205,7 +199,6 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
     const hasHand = Boolean(lm);
     const classification = classifyHandCricketGesture(lm, handedness);
     const raw = classification.rawGesture;
-    const motion = computeHandMotion(prevLandmarksRef.current, lm ?? null);
     if (lm) prevLandmarksRef.current = [...lm];
 
     const fingerCount = Object.values(classification.fingerStates).filter(Boolean).length;
@@ -217,15 +210,15 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
       handDetected: hasHand,
       rawGesture: raw,
       landmarks: lm ? [...lm] : null,
-      debugInfo: `phase:${phase} | raw:${raw} | motion:${motion.toFixed(3)} | hand:${hasHand} | marks:${lm?.length ?? 0} | fingers:${fingerCount} | state:T${Number(classification.fingerStates.thumb)} I${Number(classification.fingerStates.index)} M${Number(classification.fingerStates.middle)} R${Number(classification.fingerStates.ring)} P${Number(classification.fingerStates.pinky)} | orient:${classification.orientation} | handed:${classification.handedness} | votes:${bufferPreview}`,
+      debugInfo: `phase:${phase} | raw:${raw} | hand:${hasHand} | fingers:${fingerCount} | votes:${bufferPreview}`,
     }));
 
-    // If locked (post-capture/result/cooldown timers running), ignore classification
+    // If locked (post-capture/result/cooldown timers running), ignore
     if (now < unlockAtRef.current) return;
 
     // === WAIT_FOR_FIST: detect stable fist ===
     if (phase === "wait_for_fist") {
-      if (raw === "def" && hasHand && motion < MOTION_THRESHOLD * 1.6) {
+      if (raw === "def" && hasHand) {
         fistFrameCount.current++;
       } else {
         fistFrameCount.current = 0;
@@ -240,30 +233,22 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
     // === COUNTDOWN: ignore all input ===
     if (phase === "countdown") return;
 
-    // === WAIT_FOR_MOTION: wait for significant hand movement ===
-    if (phase === "wait_for_motion") {
-      if (hasHand && motion > MOTION_THRESHOLD) {
-        detectUntilRef.current = now + DETECT_WINDOW_MS;
-        predictionBufferRef.current = [];
-        setPhase("detecting", "Detecting…", { detectedMove: null, confidence: 0 });
-      }
-      return;
-    }
-
-    // === DETECTING: classify within time window ===
-    if (phase === "detecting") {
-      if (now > detectUntilRef.current) {
-        predictionBufferRef.current = [];
-        setPhase("wait_for_motion", "Move your hand ✋", { detectedMove: null, confidence: 0 });
-        return;
-      }
-
+    // === TRACKING_ACTIVE: continuously read hand, capture when stable non-fist gesture ===
+    if (phase === "tracking_active") {
       if (!hasHand || raw === "no_hand") {
         predictionBufferRef.current = [];
         setState((s) => ({ ...s, detectedMove: null, confidence: 0 }));
         return;
       }
 
+      // If hand is showing fist (def), just reset buffer — waiting for a move
+      if (raw === "def") {
+        predictionBufferRef.current = [];
+        setState((s) => ({ ...s, detectedMove: null, confidence: 0 }));
+        return;
+      }
+
+      // Accumulate votes for non-fist gestures
       predictionBufferRef.current.push(raw);
       if (predictionBufferRef.current.length > VOTE_WINDOW_SIZE) {
         predictionBufferRef.current.shift();
@@ -271,31 +256,29 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
 
       const counts = new Map<RawGesture, number>();
       for (const vote of predictionBufferRef.current) {
-        if (VALID_GESTURES.includes(vote)) {
+        if (VALID_GESTURES.includes(vote) && vote !== "def") {
           counts.set(vote, (counts.get(vote) ?? 0) + 1);
         }
       }
 
       let bestGesture: RawGesture | null = null;
       let bestVotes = 0;
-
       counts.forEach((count, gesture) => {
-        if (count > bestVotes) {
-          bestGesture = gesture;
-          bestVotes = count;
-        }
+        if (count > bestVotes) { bestGesture = gesture; bestVotes = count; }
       });
 
       const confidence = predictionBufferRef.current.length
         ? bestVotes / predictionBufferRef.current.length
         : 0;
-      const liveMove = bestGesture ? rawGestureToMove(bestGesture) : classification.move;
+      const liveMove = bestGesture ? rawGestureToMove(bestGesture) : null;
       setState((s) => ({ ...s, detectedMove: liveMove, confidence }));
 
-      if (bestGesture && bestVotes >= VOTES_REQUIRED && predictionBufferRef.current.length >= VOTES_REQUIRED) {
+      // Capture when we have enough consistent votes
+      if (bestGesture && bestVotes >= VOTES_REQUIRED) {
         const move = rawGestureToMove(bestGesture);
         if (move !== null) {
           predictionBufferRef.current = [];
+          lastCapturedGesture.current = bestGesture;
           unlockAtRef.current = now + CAPTURE_DISPLAY_MS + RESULT_DISPLAY_MS + COOLDOWN_MS + 100;
           
           setPhase("captured", `You played: ${move === "DEF" ? "DEF" : move}`, {
@@ -308,7 +291,7 @@ export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | nu
             if (onAutoCaptureRef.current) {
               onAutoCaptureRef.current(move);
             }
-            setPhase("result", "AI playing…");
+            setPhase("result", "");
             
             countdownTimerRef.current = setTimeout(() => {
               startCooldown();
