@@ -93,15 +93,13 @@ async function ensureVideoPlayable(video: HTMLVideoElement) {
 
 // === Timing constants ===
 const VALID_GESTURES: RawGesture[] = ["def", "1", "2", "3", "4", "6"];
-const FIST_STABLE_FRAMES = 10;
-const MOTION_THRESHOLD = 0.032;
-const DETECT_WINDOW_MS = 1300;
-const VOTE_WINDOW_SIZE = 10;
-const VOTES_REQUIRED = 7;
-const CAPTURE_DISPLAY_MS = 450;
-const RESULT_DISPLAY_MS = 1300;
-const COOLDOWN_MS = 2000;
-const COUNTDOWN_MS = 3000;
+const FIST_STABLE_FRAMES = 8;
+const VOTE_WINDOW_SIZE = 12;
+const VOTES_REQUIRED = 8;
+const CAPTURE_DISPLAY_MS = 500;
+const RESULT_DISPLAY_MS = 1400;
+const COOLDOWN_MS = 1800;
+const LAST_GESTURE_SAME_FRAMES = 6; // require gesture to differ from last captured
 
 export function useHandDetection(videoRef: React.RefObject<HTMLVideoElement | null>) {
   const [state, setState] = useState<HandDetectionState>({
