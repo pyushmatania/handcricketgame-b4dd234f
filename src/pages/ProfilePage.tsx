@@ -89,7 +89,6 @@ export default function ProfilePage() {
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
   const [friends, setFriends] = useState<any[]>([]);
   const [myCode, setMyCode] = useState("");
-  const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
 
   const getTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
