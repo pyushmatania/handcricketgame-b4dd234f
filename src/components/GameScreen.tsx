@@ -130,30 +130,41 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   return (
     <div className={`min-h-screen bg-background flex flex-col relative overflow-hidden ${immersive ? "immersive-mode" : ""}`}>
       {stadiumMode && <div className="absolute inset-0 stadium-gradient pointer-events-none" />}
+      {stadiumMode && <div className="absolute inset-0 vignette pointer-events-none" />}
+
+      {/* Top ambient glow */}
+      <div
+        className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.06) 0%, transparent 70%)" }}
+      />
 
       {/* Top bar */}
       {!immersive && (
         <div className="relative z-10 flex items-center justify-between px-3 pt-3 pb-1">
-          <button onClick={onHome} className="text-muted-foreground hover:text-foreground text-sm font-bold active:scale-95 transition-transform">
-            ← Back
-          </button>
-          <div className="flex items-center gap-1.5">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onHome}
+            className="w-9 h-9 rounded-xl glass-premium flex items-center justify-center text-sm"
+          >
+            ←
+          </motion.button>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass-card">
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <h1 className="font-display text-[9px] tracking-[0.15em] text-primary font-bold">HAND CRICKET AR</h1>
+            <span className="font-display text-[9px] tracking-[0.2em] text-primary font-bold">HAND CRICKET AR</span>
           </div>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setStadiumMode(!stadiumMode)}
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] active:scale-90 transition-all ${
-                stadiumMode ? "bg-primary/20 border border-primary/30" : "bg-muted border border-glass"
+              className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] active:scale-90 transition-all ${
+                stadiumMode ? "glass-premium border border-primary/20" : "glass-card"
               }`}
             >
               🏟️
             </button>
             <button
               onClick={toggleImmersive}
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] active:scale-90 transition-all ${
-                immersive ? "bg-accent/20 border border-accent/30" : "bg-muted border border-glass"
+              className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] active:scale-90 transition-all ${
+                immersive ? "glass-premium border border-accent/20" : "glass-card"
               }`}
             >
               📺
