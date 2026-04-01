@@ -122,7 +122,7 @@ export default function GestureDisplay({
           <div className="w-14 h-1.5 rounded-full bg-muted overflow-hidden">
             <motion.div
               className={`h-full rounded-full ${
-                status === "stable" || status === "captured" ? "bg-primary" : status === "detecting" ? "bg-accent" : "bg-out-red"
+                status === "captured" ? "bg-primary" : status === "detecting" ? "bg-accent" : status === "wait_for_motion" ? "bg-primary/50" : "bg-muted-foreground"
               }`}
               initial={{ width: 0 }}
               animate={{ width: `${Math.round(confidence * 100)}%` }}
