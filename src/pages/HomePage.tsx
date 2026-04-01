@@ -129,7 +129,7 @@ export default function HomePage() {
           transition={{ delay: 0.4 }}
           className="grid grid-cols-3 gap-2 mb-6"
         >
-          {QUICK_STATS.map((s, i) => (
+          {quickStats.map((s, i) => (
             <motion.div
               key={s.label}
               initial={{ opacity: 0, y: 10 }}
