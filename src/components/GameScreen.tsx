@@ -5,6 +5,8 @@ import HandOverlay from "./HandOverlay";
 import ScoreBoard from "./ScoreBoard";
 import GestureDisplay from "./GestureDisplay";
 import RulesSheet from "./RulesSheet";
+import OddEvenToss from "./OddEvenToss";
+import CelebrationEffects from "./CelebrationEffects";
 import { useHandCricket } from "@/hooks/useHandCricket";
 import { useHandDetection } from "@/hooks/useHandDetection";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
