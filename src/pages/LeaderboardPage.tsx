@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
+import RivalryCard from "@/components/RivalryCard";
 
 interface LeaderEntry {
   display_name: string;
@@ -17,7 +19,18 @@ interface LeaderEntry {
   user_id: string;
 }
 
-type MainTab = "global" | "friends" | "rage";
+interface FriendProfile {
+  user_id: string;
+  display_name: string;
+  wins: number;
+  losses: number;
+  total_matches: number;
+  high_score: number;
+  best_streak: number;
+  abandons: number;
+}
+
+type MainTab = "global" | "friends" | "rivalry" | "rage";
 
 const SORT_OPTIONS = [
   { label: "WINS", icon: "🏆", key: "wins" as const },
@@ -37,15 +50,18 @@ const RAGE_TITLES = [
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [mainTab, setMainTab] = useState<MainTab>("global");
   const [sortBy, setSortBy] = useState(0);
   const [leaders, setLeaders] = useState<LeaderEntry[]>([]);
   const [friendLeaders, setFriendLeaders] = useState<LeaderEntry[]>([]);
+  const [rivalFriends, setRivalFriends] = useState<FriendProfile[]>([]);
   const [myRank, setMyRank] = useState<number | null>(null);
 
   useEffect(() => {
     if (mainTab === "global" || mainTab === "rage") loadGlobal();
     if (mainTab === "friends") loadFriends();
+    if (mainTab === "rivalry") loadRivalFriends();
   }, [mainTab, sortBy]);
 
   const loadGlobal = async () => {
@@ -79,7 +95,37 @@ export default function LeaderboardPage() {
     if (data) setFriendLeaders(data as unknown as LeaderEntry[]);
   };
 
+  const loadRivalFriends = async () => {
+    if (!user) return;
+    const { data: friendRows } = await supabase.from("friends").select("friend_id").eq("user_id", user.id);
+    if (!friendRows || !friendRows.length) { setRivalFriends([]); return; }
+    const ids = friendRows.map((f: any) => f.friend_id);
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, abandons")
+      .in("user_id", ids);
+    if (data) setRivalFriends(data as unknown as FriendProfile[]);
+  };
+
+  const challengeFriend = async (friendId: string) => {
+    if (!user) return;
+    const { data: game } = await supabase
+      .from("multiplayer_games")
+      .insert({ host_id: user.id, target_guest_id: friendId, host_reserve_ms: 10000, guest_reserve_ms: 10000 } as any)
+      .select()
+      .single();
+    if (game) {
+      await supabase.from("match_invites").insert({
+        game_id: (game as any).id,
+        from_user_id: user.id,
+        to_user_id: friendId,
+      } as any);
+      navigate("/game/multiplayer");
+    }
+  };
+
   const getBadge = (rank: number) => {
+
     if (rank === 1) return "🥇";
     if (rank === 2) return "🥈";
     if (rank === 3) return "🥉";
@@ -98,6 +144,7 @@ export default function LeaderboardPage() {
   const mainTabs: { key: MainTab; label: string; icon: string }[] = [
     { key: "global", label: "GLOBAL", icon: "🌍" },
     { key: "friends", label: "FRIENDS", icon: "👥" },
+    { key: "rivalry", label: "RIVALRY", icon: "⚔️" },
     { key: "rage", label: "RAGE", icon: "😤" },
   ];
 
@@ -137,7 +184,7 @@ export default function LeaderboardPage() {
         </div>
 
         {/* Sort options (for global & friends) */}
-        {mainTab !== "rage" && (
+        {(mainTab === "global" || mainTab === "friends") && (
           <div className="flex gap-1 mb-4">
             {SORT_OPTIONS.map((opt, i) => (
               <button
@@ -156,6 +203,36 @@ export default function LeaderboardPage() {
         )}
 
         <AnimatePresence mode="wait">
+          {/* RIVALRY TAB */}
+          {mainTab === "rivalry" && (
+            <motion.div
+              key="rivalry"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-2"
+            >
+              {rivalFriends.length === 0 ? (
+                <div className="glass-premium rounded-2xl p-8 text-center">
+                  <span className="text-4xl block mb-3">⚔️</span>
+                  <p className="font-display text-sm font-bold text-foreground">Add friends to see rivalries!</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Play multiplayer against friends to build H2H stats</p>
+                </div>
+              ) : (
+                rivalFriends.map((f, i) => (
+                  <motion.div
+                    key={f.user_id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                  >
+                    <RivalryCard friend={f} onChallenge={challengeFriend} />
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
+          )}
+
           {/* RAGE STATS */}
           {mainTab === "rage" && (
             <motion.div
@@ -213,7 +290,7 @@ export default function LeaderboardPage() {
           )}
 
           {/* GLOBAL & FRIENDS RANKINGS */}
-          {mainTab !== "rage" && (
+          {(mainTab === "global" || mainTab === "friends") && (
             <motion.div
               key={`${mainTab}-${sortBy}`}
               initial={{ opacity: 0, y: 10 }}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
@@ -30,6 +31,7 @@ type Tab = "friends" | "requests" | "add";
 
 export default function FriendsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("friends");
   const [friends, setFriends] = useState<FriendProfile[]>([]);
   const [incoming, setIncoming] = useState<FriendRequest[]>([]);
@@ -178,6 +180,23 @@ export default function FriendsPage() {
     setTimeout(() => setFeedback(""), 2000);
   };
 
+  const challengeFriend = async (friendId: string) => {
+    if (!user) return;
+    const { data: game } = await supabase
+      .from("multiplayer_games")
+      .insert({ host_id: user.id, target_guest_id: friendId, host_reserve_ms: 10000, guest_reserve_ms: 10000 } as any)
+      .select()
+      .single();
+    if (game) {
+      await supabase.from("match_invites").insert({
+        game_id: (game as any).id,
+        from_user_id: user.id,
+        to_user_id: friendId,
+      } as any);
+      navigate("/game/multiplayer");
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -280,6 +299,13 @@ export default function FriendsPage() {
                           <span className="font-display text-[11px] font-bold text-foreground block truncate">{f.display_name}</span>
                           <span className="text-[8px] text-muted-foreground">{f.wins}W {f.losses}L • {winRate}% WR</span>
                         </div>
+                        <motion.button
+                          whileTap={{ scale: 0.85 }}
+                          onClick={() => challengeFriend(f.user_id)}
+                          className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display text-[7px] font-bold tracking-wider"
+                        >
+                          ⚔️
+                        </motion.button>
                         <div className="text-right">
                           <span className="font-display text-sm font-black text-secondary block leading-none">{f.high_score}</span>
                           <span className="text-[6px] text-muted-foreground font-display tracking-widest">HIGH</span>

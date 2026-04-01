@@ -16,6 +16,7 @@ import GamePage from "./pages/GamePage";
 import AuthPage from "./pages/AuthPage";
 import SettingsPage from "./pages/SettingsPage";
 import FriendsPage from "./pages/FriendsPage";
+import MatchInviteNotification from "@/components/MatchInviteNotification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => {
             <Sonner />
             {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
             <BrowserRouter>
+              <MatchInviteNotification />
               <AnimatedRoutes />
             </BrowserRouter>
           </TooltipProvider>

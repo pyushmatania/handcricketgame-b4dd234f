@@ -62,6 +62,33 @@ export type Database = {
         }
         Relationships: []
       }
+      match_invites: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          game_id: string
+          id: string
+          status: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          game_id: string
+          id?: string
+          status?: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          game_id?: string
+          id?: string
+          status?: string
+          to_user_id?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           ai_score: number
@@ -115,6 +142,7 @@ export type Database = {
           id: string
           innings: number
           status: string
+          target_guest_id: string | null
           updated_at: string
           winner_id: string | null
         }
@@ -134,6 +162,7 @@ export type Database = {
           id?: string
           innings?: number
           status?: string
+          target_guest_id?: string | null
           updated_at?: string
           winner_id?: string | null
         }
@@ -153,6 +182,7 @@ export type Database = {
           id?: string
           innings?: number
           status?: string
+          target_guest_id?: string | null
           updated_at?: string
           winner_id?: string | null
         }
