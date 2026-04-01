@@ -313,7 +313,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
           phase_started_at: new Date().toISOString(),
           turn_deadline_at: new Date(Date.now() + RESERVE_TIMER_MS).toISOString(),
           status: "playing" as any,
-        }).eq("id", currentGame.id).eq("phase", "pre_round_countdown");
+        } as any).eq("id", currentGame.id).eq("phase" as any, "pre_round_countdown");
       }
     }
     if (currentGame.phase === "action_window" && currentGame.turn_deadline_at && Date.now() >= new Date(currentGame.turn_deadline_at).getTime()) {
