@@ -10,6 +10,7 @@ import { useHandDetection } from "@/hooks/useHandDetection";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
 import { SFX, Haptics } from "@/lib/sounds";
 import { getCommentary, getInningsChangeCommentary } from "@/lib/commentary";
+import { speakCommentary, playCrowdForResult, CrowdSFX } from "@/lib/voiceCommentary";
 import { useSettings } from "@/contexts/SettingsContext";
 
 interface GameScreenProps {
