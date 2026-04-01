@@ -77,6 +77,7 @@ interface ProfileData {
   high_score: number;
   current_streak: number;
   best_streak: number;
+  abandons: number;
 }
 
 type TabType = "stats" | "matches" | "squad";
