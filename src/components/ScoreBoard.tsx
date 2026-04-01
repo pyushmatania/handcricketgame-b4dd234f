@@ -69,8 +69,41 @@ export default function ScoreBoard({ game }: ScoreBoardProps) {
         </div>
       </div>
 
-      {/* Main score card */}
+      {/* Main score card — cricket pitch themed */}
       <div className="glass-premium rounded-2xl p-4 relative overflow-hidden">
+        {/* Cricket pitch background */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Pitch strip */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-full">
+            <div className="absolute inset-0 bg-gradient-to-b from-[hsl(120_30%_18%/0.12)] via-[hsl(100_35%_22%/0.08)] to-[hsl(120_30%_18%/0.12)]" />
+            {/* Crease lines */}
+            <div className="absolute top-[15%] left-[10%] right-[10%] h-px bg-[hsl(0_0%_100%/0.06)]" />
+            <div className="absolute bottom-[15%] left-[10%] right-[10%] h-px bg-[hsl(0_0%_100%/0.06)]" />
+            {/* Good length area */}
+            <div className="absolute top-[30%] left-[20%] right-[20%] bottom-[40%] border border-[hsl(120_30%_40%/0.06)] rounded-sm" />
+          </div>
+          {/* Stumps */}
+          <div className="absolute top-[10%] left-1/2 -translate-x-1/2 flex gap-0.5">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="w-[2px] h-3 bg-gradient-to-b from-secondary/20 to-secondary/5 rounded-full" />
+            ))}
+          </div>
+          <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 flex gap-0.5">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="w-[2px] h-3 bg-gradient-to-t from-secondary/20 to-secondary/5 rounded-full" />
+            ))}
+          </div>
+          {/* Outfield radial */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(ellipse at center, transparent 30%, hsl(120 25% 12% / 0.06) 70%, transparent 100%)",
+            }}
+          />
+          {/* Boundary rope hint */}
+          <div className="absolute inset-2 rounded-[50%] border border-[hsl(0_0%_100%/0.03)]" />
+        </div>
+
         {/* Background shimmer */}
         <motion.div
           animate={{ x: ["-100%", "200%"] }}
@@ -117,16 +150,26 @@ export default function ScoreBoard({ game }: ScoreBoardProps) {
             </p>
           </div>
 
-          {/* VS divider */}
+          {/* VS divider with cricket ball */}
           <div className="flex flex-col items-center gap-1">
             <div className="w-px h-3 bg-gradient-to-b from-transparent to-primary/20" />
             <motion.div
               animate={{ rotate: [0, 360] }}
-              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-              className="w-11 h-11 rounded-full relative"
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              className="w-12 h-12 rounded-full relative"
             >
-              <div className="absolute inset-0 rounded-full bg-gradient-conic from-primary/30 via-transparent to-accent/30 animate-spin" style={{ animationDuration: "4s" }} />
-              <div className="absolute inset-[2px] rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center">
+              {/* Spinning seam effect */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-out-red/30 via-out-red/10 to-out-red/30 border border-out-red/20" />
+              <div className="absolute inset-[1px] rounded-full overflow-hidden">
+                <div className="absolute top-1/2 left-0 right-0 h-px bg-out-red/30 -translate-y-1/2" />
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    background: "conic-gradient(from 0deg, transparent 0%, hsl(0 72% 51% / 0.15) 25%, transparent 50%, hsl(0 72% 51% / 0.15) 75%, transparent 100%)",
+                  }}
+                />
+              </div>
+              <div className="absolute inset-[3px] rounded-full bg-background/70 backdrop-blur-sm flex items-center justify-center">
                 <span className="text-[8px] font-display font-black text-muted-foreground tracking-wider">VS</span>
               </div>
             </motion.div>
@@ -203,14 +246,13 @@ export default function ScoreBoard({ game }: ScoreBoardProps) {
                   animate={{ width: `${chasePct}%` }}
                   transition={{ duration: 0.5 }}
                 />
-                {/* Target marker */}
                 <div className="absolute top-0 right-0 h-full w-0.5 bg-secondary/50" />
               </div>
             )}
           </div>
         )}
 
-        {/* Ball history */}
+        {/* Ball history — styled as pitch map dots */}
         {game.ballHistory.length > 0 && (
           <div className="mt-3 pt-2 border-t border-primary/10 relative z-10">
             <div className="flex items-center gap-2 mb-2">
@@ -228,16 +270,16 @@ export default function ScoreBoard({ game }: ScoreBoardProps) {
                   className={`ball-chip shrink-0 ${
                     b.runs === "OUT"
                       ? "ball-chip-wicket"
-                      : typeof b.runs === "number" && b.runs >= 6
+                      : typeof b.runs === "number" && Math.abs(b.runs) >= 6
                       ? "ball-chip-run !bg-primary/20 !border-primary/40 !text-primary"
-                      : typeof b.runs === "number" && b.runs >= 4
+                      : typeof b.runs === "number" && Math.abs(b.runs) >= 4
                       ? "ball-chip-run !bg-secondary/20 !border-secondary/40 !text-secondary"
-                      : typeof b.runs === "number" && b.runs > 0
+                      : typeof b.runs === "number" && Math.abs(b.runs) > 0
                       ? "ball-chip-run"
                       : "ball-chip-def"
                   }`}
                 >
-                  {b.runs === "OUT" ? "W" : typeof b.runs === "number" && b.runs > 0 ? b.runs : "•"}
+                  {b.runs === "OUT" ? "W" : typeof b.runs === "number" && Math.abs(b.runs) > 0 ? Math.abs(b.runs) : "•"}
                 </motion.span>
               ))}
             </div>

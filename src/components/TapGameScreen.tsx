@@ -8,6 +8,8 @@ import { speakCommentary, playCrowdForResult, CrowdSFX } from "@/lib/voiceCommen
 import { useSettings } from "@/contexts/SettingsContext";
 import ScoreBoard from "./ScoreBoard";
 import RulesSheet from "./RulesSheet";
+import OddEvenToss from "./OddEvenToss";
+import CelebrationEffects from "./CelebrationEffects";
 
 interface TapGameScreenProps {
   onHome: () => void;
@@ -117,6 +119,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <div className="absolute inset-0 stadium-gradient pointer-events-none" />
       <div className="absolute inset-0 vignette pointer-events-none" />
+      <CelebrationEffects lastResult={game.lastResult} gameResult={game.result} phase={game.phase} />
 
       {/* Top ambient glow */}
       <div
@@ -142,44 +145,11 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
 
       {/* Main content */}
       <div className="relative z-10 flex-1 flex flex-col gap-3 px-4 pb-4 max-w-lg mx-auto w-full">
-        {/* Toss */}
+        {/* Odd/Even Toss */}
         {game.phase === "not_started" && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-premium rounded-2xl p-6 text-center space-y-5 mt-8 relative overflow-hidden"
-          >
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-accent/10 to-transparent rounded-bl-full" />
-            <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-primary/10 to-transparent rounded-tr-full" />
-
-            <motion.div
-              animate={{ rotate: [0, -5, 5, 0], scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-accent/20 to-primary/10 border border-accent/30 flex items-center justify-center relative"
-            >
-              <span className="text-4xl">👆</span>
-              <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 rounded-2xl border border-accent/20"
-              />
-            </motion.div>
-            <div>
-              <p className="font-display text-sm font-black text-foreground tracking-wider">CHOOSE YOUR INNINGS</p>
-              <p className="text-[11px] text-muted-foreground mt-1">Tap to play — no camera needed</p>
-            </div>
-            <div className="flex gap-3">
-              <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleStart(true)}
-                className="flex-1 py-4 bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(217_91%_60%/0.25)] border border-primary/30">
-                🏏 BAT FIRST
-              </motion.button>
-              <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleStart(false)}
-                className="flex-1 py-4 bg-gradient-to-br from-accent to-accent/70 text-accent-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(168_80%_50%/0.2)] border border-accent/30">
-                🎯 BOWL FIRST
-              </motion.button>
-            </div>
-          </motion.div>
+          <div className="mt-4">
+            <OddEvenToss onResult={(batFirst) => handleStart(batFirst)} />
+          </div>
         )}
 
         {/* Scoreboard */}
