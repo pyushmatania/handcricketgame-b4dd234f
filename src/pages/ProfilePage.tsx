@@ -86,7 +86,9 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>("stats");
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerInfo | null>(null);
+  const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [myCode, setMyCode] = useState("");
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
 
   const getTimeAgo = (dateStr: string) => {
