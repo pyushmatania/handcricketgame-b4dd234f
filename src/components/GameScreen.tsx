@@ -130,30 +130,41 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   return (
     <div className={`min-h-screen bg-background flex flex-col relative overflow-hidden ${immersive ? "immersive-mode" : ""}`}>
       {stadiumMode && <div className="absolute inset-0 stadium-gradient pointer-events-none" />}
+      {stadiumMode && <div className="absolute inset-0 vignette pointer-events-none" />}
+
+      {/* Top ambient glow */}
+      <div
+        className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.06) 0%, transparent 70%)" }}
+      />
 
       {/* Top bar */}
       {!immersive && (
         <div className="relative z-10 flex items-center justify-between px-3 pt-3 pb-1">
-          <button onClick={onHome} className="text-muted-foreground hover:text-foreground text-sm font-bold active:scale-95 transition-transform">
-            ← Back
-          </button>
-          <div className="flex items-center gap-1.5">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onHome}
+            className="w-9 h-9 rounded-xl glass-premium flex items-center justify-center text-sm"
+          >
+            ←
+          </motion.button>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass-card">
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            <h1 className="font-display text-[9px] tracking-[0.15em] text-primary font-bold">HAND CRICKET AR</h1>
+            <span className="font-display text-[9px] tracking-[0.2em] text-primary font-bold">HAND CRICKET AR</span>
           </div>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setStadiumMode(!stadiumMode)}
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] active:scale-90 transition-all ${
-                stadiumMode ? "bg-primary/20 border border-primary/30" : "bg-muted border border-glass"
+              className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] active:scale-90 transition-all ${
+                stadiumMode ? "glass-premium border border-primary/20" : "glass-card"
               }`}
             >
               🏟️
             </button>
             <button
               onClick={toggleImmersive}
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] active:scale-90 transition-all ${
-                immersive ? "bg-accent/20 border border-accent/30" : "bg-muted border border-glass"
+              className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] active:scale-90 transition-all ${
+                immersive ? "glass-premium border border-accent/20" : "glass-card"
               }`}
             >
               📺
@@ -298,7 +309,8 @@ export default function GameScreen({ onHome }: GameScreenProps) {
 
         {/* Toss */}
         {game.phase === "not_started" && tossChoice === null && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-score p-5 text-center space-y-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-premium rounded-2xl p-5 text-center space-y-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-8 h-0.5 bg-gradient-to-r from-transparent to-primary/50" />
               <p className="font-display text-xs font-black text-foreground tracking-wider">CHOOSE YOUR INNINGS</p>
@@ -309,14 +321,14 @@ export default function GameScreen({ onHome }: GameScreenProps) {
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => { setTossChoice(true); startGame(true); }}
-                className="flex-1 py-3.5 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl text-sm glow-primary"
+                className="flex-1 py-3.5 bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(217_91%_60%/0.25)] border border-primary/30"
               >
                 🏏 BAT FIRST
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => { setTossChoice(false); startGame(false); }}
-                className="flex-1 py-3.5 bg-gradient-to-br from-accent to-accent/80 text-accent-foreground font-display font-bold rounded-2xl text-sm glow-accent"
+                className="flex-1 py-3.5 bg-gradient-to-br from-accent to-accent/70 text-accent-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(168_80%_50%/0.2)] border border-accent/30"
               >
                 🎯 BOWL FIRST
               </motion.button>
@@ -375,14 +387,14 @@ export default function GameScreen({ onHome }: GameScreenProps) {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleStartNew}
-              className="flex-1 py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl glow-primary tracking-wider"
+              className="flex-1 py-3 bg-gradient-to-r from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl tracking-wider shadow-[0_0_20px_hsl(217_91%_60%/0.2)] border border-primary/30"
             >
               ⚡ NEW MATCH
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={onHome}
-              className="flex-1 py-3 bg-muted text-foreground font-display font-bold rounded-2xl tracking-wider"
+              className="flex-1 py-3 glass-premium text-foreground font-display font-bold rounded-2xl tracking-wider border border-primary/10"
             >
               HOME
             </motion.button>
