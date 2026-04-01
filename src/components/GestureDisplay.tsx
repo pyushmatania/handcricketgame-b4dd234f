@@ -279,7 +279,7 @@ export default function GestureDisplay({
         <span className="text-[8px] text-muted-foreground/30">✌️ 2</span>
         <span className="text-[8px] text-muted-foreground/30">🤟 3</span>
         <span className="text-[8px] text-muted-foreground/30">🖖 4</span>
-        <span className="text-[8px] text-muted-foreground/30">🖐️ 5</span>
+        <span className="text-[8px] text-muted-foreground/30">👍 6</span>
       </div>
     </div>
   );
