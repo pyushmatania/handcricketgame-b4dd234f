@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import OddEvenToss from "./OddEvenToss";
+import SpinningCricketBall from "./SpinningCricketBall";
 import type { Move } from "@/hooks/useHandCricket";
 
 const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
@@ -395,23 +396,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
         {/* WAITING FOR OPPONENT */}
         {phase === "waiting" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col items-center justify-center gap-5">
-            {/* Cricket stadium waiting animation */}
-            <div className="relative">
-              <motion.div
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="w-24 h-24 rounded-full border-2 border-dashed border-primary/30"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <motion.span
-                  animate={{ scale: [1, 1.15, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="text-4xl"
-                >
-                  🏏
-                </motion.span>
-              </div>
-            </div>
+            {/* Spinning cricket ball waiting animation */}
+            <SpinningCricketBall size={96} />
 
             <div className="text-center space-y-2">
               <h2 className="font-display text-lg font-black text-foreground tracking-wider">

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import SpinningCricketBall from "./SpinningCricketBall";
 
 interface HomeScreenProps {
   onStart: () => void;
@@ -32,11 +33,10 @@ export default function HomeScreen({ onStart }: HomeScreenProps) {
           transition={{ delay: 0.2, duration: 0.5, type: "spring" }}
           className="mb-6"
         >
-          <div className="w-28 h-28 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/10 border-2 border-primary/30 flex items-center justify-center glow-primary mb-4">
-            <span className="text-6xl">🏏</span>
-          </div>
+          <SpinningCricketBall size={100} className="mx-auto mb-4" />
           <h1 className="font-display text-3xl sm:text-4xl font-black text-foreground text-glow tracking-wider leading-tight">
-            HAND CRICKET
+            <span className="block">AR CRICKET</span>
+            <span className="block text-primary">2K26</span>
           </h1>
           <p className="font-display text-[10px] tracking-[0.4em] text-primary mt-1 font-bold">
             AUGMENTED REALITY
