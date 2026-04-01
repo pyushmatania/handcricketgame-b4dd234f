@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import PlayerAvatar from "@/components/PlayerAvatar";
+import { createMultiplayerRoom, mapCreateRoomError } from "@/lib/multiplayerRoom";
 
 interface FriendProfile {
   user_id: string;
@@ -187,13 +188,10 @@ export default function FriendsPage() {
 
   const challengeFriend = async (friendId: string, gameType: GameType) => {
     if (!user) return;
-    const { data: game, error: gameError } = await supabase
-      .from("multiplayer_games")
-      .insert({ host_id: user.id, target_guest_id: friendId, game_type: gameType, host_reserve_ms: 10000, guest_reserve_ms: 10000 } as any)
-      .select()
-      .single();
+    const { data: game, error: gameError } = await createMultiplayerRoom(user.id, gameType, friendId);
     if (gameError || !game) {
-      setFeedback("Failed to create battle room.");
+      console.error("challengeFriend create room failed", gameError);
+      setFeedback(mapCreateRoomError(gameError));
       return;
     }
     const { error: inviteError } = await supabase.from("match_invites").insert({
@@ -204,8 +202,9 @@ export default function FriendsPage() {
         expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
       } as any);
     if (inviteError) {
+      console.error("challengeFriend invite insert failed", inviteError);
       await supabase.from("multiplayer_games").update({ status: "cancelled" as any, phase: "abandoned" as any }).eq("id", (game as any).id);
-      setFeedback("Failed to send invite.");
+      setFeedback("Room created, but invite delivery failed.");
       return;
     }
     setFeedback("Battle invite sent! Waiting for opponent...");
@@ -491,16 +490,26 @@ export default function FriendsPage() {
           <div className="w-full max-w-sm glass-premium rounded-3xl p-4 space-y-3 border border-primary/30 shadow-[0_0_40px_hsl(217_91%_60%/0.2)]">
             <p className="font-display text-xs text-foreground font-black tracking-wider">Which game should we play?</p>
             <p className="text-[9px] text-muted-foreground">Send a battle invite with your chosen format.</p>
-            {(["ar", "tap", "tournament"] as GameType[]).map((gt) => (
+            {([
+              { key: "ar", icon: "📸", subtitle: "Futuristic AR showdown" },
+              { key: "tap", icon: "⚡", subtitle: "Arcade speed challenge" },
+              { key: "tournament", icon: "🏆", subtitle: "Championship clash" },
+            ] as { key: GameType; icon: string; subtitle: string }[]).map((mode) => (
               <button
-                key={gt}
+                key={mode.key}
                 onClick={() => {
-                  void challengeFriend(challengeTargetId, gt);
+                  void challengeFriend(challengeTargetId, mode.key);
                   setChallengeTargetId(null);
                 }}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-primary/20 to-accent/10 border border-primary/30 font-display text-xs font-bold uppercase tracking-wider"
+                className="w-full p-3 rounded-2xl text-left bg-gradient-to-r from-primary/20 to-accent/10 border border-primary/30 font-display tracking-wider transition-transform active:scale-[0.98]"
               >
-                {gt}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-background/40 border border-primary/30 flex items-center justify-center text-xl">{mode.icon}</div>
+                  <div>
+                    <p className="text-xs font-bold uppercase">{mode.key}</p>
+                    <p className="text-[10px] text-muted-foreground">{mode.subtitle}</p>
+                  </div>
+                </div>
               </button>
             ))}
             <button onClick={() => setChallengeTargetId(null)} className="w-full py-2 text-xs text-muted-foreground">Cancel</button>

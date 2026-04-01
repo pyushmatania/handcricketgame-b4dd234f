@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import OddEvenToss from "./OddEvenToss";
 import SpinningCricketBall from "./SpinningCricketBall";
 import type { Move } from "@/hooks/useHandCricket";
+import { createMultiplayerRoom, mapCreateRoomError } from "@/lib/multiplayerRoom";
 
 const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
   { move: "DEF", emoji: "✊", label: "DEF", color: "border-accent/30 bg-accent/5" },
@@ -446,9 +447,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
   const createGame = async (gameType: GameType = selectedGameType) => {
     if (!user) return;
-    const { data } = await supabase.from("multiplayer_games")
-      .insert({ host_id: user.id, game_type: gameType, host_reserve_ms: RESERVE_TIMER_MS, guest_reserve_ms: RESERVE_TIMER_MS } as any)
-      .select().single();
+    const { data, error } = await createMultiplayerRoom(user.id, gameType);
     if (data) {
       const g = data as unknown as MultiplayerGame;
       setCurrentGame(g);
@@ -457,7 +456,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
       navigate(`/game/multiplayer?game=${g.id}`, { replace: true });
       setLobbyMessage("Room created. Waiting for opponent...");
     } else {
-      setLobbyMessage("Failed to create room.");
+      console.error("createGame failed", error);
+      setLobbyMessage(mapCreateRoomError(error));
     }
   };
 
@@ -1026,17 +1026,27 @@ export default function MultiplayerScreen({ onHome }: Props) {
           <div className="w-full max-w-sm glass-premium rounded-3xl p-4 space-y-3 border border-primary/30 shadow-[0_0_40px_hsl(217_91%_60%/0.2)]">
             <p className="font-display text-xs text-foreground font-black tracking-wider">Which game do you want to play?</p>
             <p className="text-[9px] text-muted-foreground">Choose your arena and start a live duel.</p>
-            {(["ar", "tap", "tournament"] as GameType[]).map((gt) => (
+            {([
+              { key: "ar", icon: "📸", subtitle: "Camera + futuristic duel energy" },
+              { key: "tap", icon: "⚡", subtitle: "Fast arcade reflex battle" },
+              { key: "tournament", icon: "🏆", subtitle: "Championship style showdown" },
+            ] as { key: GameType; icon: string; subtitle: string }[]).map((mode) => (
               <button
-                key={gt}
+                key={mode.key}
                 onClick={() => {
-                  setSelectedGameType(gt);
+                  setSelectedGameType(mode.key);
                   setCreateModePickerOpen(false);
-                  void createGame(gt);
+                  void createGame(mode.key);
                 }}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-primary/20 to-accent/10 border border-primary/30 font-display text-xs font-bold uppercase tracking-wider"
+                className="w-full p-3 rounded-2xl text-left bg-gradient-to-r from-primary/20 to-accent/10 border border-primary/30 font-display tracking-wider transition-transform active:scale-[0.98]"
               >
-                {gt}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-background/40 border border-primary/30 flex items-center justify-center text-xl">{mode.icon}</div>
+                  <div>
+                    <p className="text-xs font-bold uppercase">{mode.key}</p>
+                    <p className="text-[10px] text-muted-foreground">{mode.subtitle}</p>
+                  </div>
+                </div>
               </button>
             ))}
             <button onClick={() => setCreateModePickerOpen(false)} className="w-full py-2 text-xs text-muted-foreground">Cancel</button>
