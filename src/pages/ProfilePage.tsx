@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ interface MatchRecord {
   result: string;
   balls_played: number;
   created_at: string;
+  innings_data: any;
 }
 
 const ACHIEVEMENTS = [
@@ -47,6 +48,7 @@ export default function ProfilePage() {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>("stats");
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerInfo | null>(null);
+  const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
 
   const getTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -56,6 +58,11 @@ export default function ProfilePage() {
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     return `${days}d ago`;
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   };
 
   useEffect(() => {
@@ -69,12 +76,34 @@ export default function ProfilePage() {
 
     supabase
       .from("matches")
-      .select("id, mode, user_score, ai_score, result, balls_played, created_at")
+      .select("id, mode, user_score, ai_score, result, balls_played, created_at, innings_data")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50)
       .then(({ data }) => { if (data) setMatches(data); });
   }, [user]);
+
+  // Computed advanced stats from match history
+  const advancedStats = useMemo(() => {
+    if (!matches.length) return null;
+    const totalRuns = matches.reduce((s, m) => s + m.user_score, 0);
+    const totalBalls = matches.reduce((s, m) => s + m.balls_played, 0);
+    const totalAiRuns = matches.reduce((s, m) => s + m.ai_score, 0);
+    const avgScore = matches.length ? Math.round(totalRuns / matches.length) : 0;
+    const strikeRate = totalBalls ? Math.round((totalRuns / totalBalls) * 100) : 0;
+    const highestWinMargin = matches.filter(m => m.result === "win").reduce((max, m) => Math.max(max, m.user_score - m.ai_score), 0);
+    const biggestLoss = matches.filter(m => m.result === "loss").reduce((max, m) => Math.max(max, m.ai_score - m.user_score), 0);
+    const modeCount: Record<string, number> = {};
+    matches.forEach(m => { modeCount[m.mode] = (modeCount[m.mode] || 0) + 1; });
+    const favMode = Object.entries(modeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || "tap";
+    const last5 = matches.slice(0, 5);
+    const last5Wins = last5.filter(m => m.result === "win").length;
+    const duckCount = matches.filter(m => m.user_score === 0).length;
+    const fifties = matches.filter(m => m.user_score >= 50 && m.user_score < 100).length;
+    const centuries = matches.filter(m => m.user_score >= 100).length;
+
+    return { totalRuns, totalBalls, totalAiRuns, avgScore, strikeRate, highestWinMargin, biggestLoss, favMode, last5Wins, duckCount, fifties, centuries };
+  }, [matches]);
 
   const winRate = profile && profile.total_matches > 0
     ? Math.round((profile.wins / profile.total_matches) * 100)
@@ -103,11 +132,8 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           className="glass-premium rounded-2xl p-4 mb-4 relative overflow-hidden"
         >
-          {/* Background accent */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
-
           <div className="flex items-center gap-4 relative z-10">
-            {/* Avatar */}
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
                 <span className="text-3xl">{user ? "🏏" : "👤"}</span>
@@ -117,13 +143,10 @@ export default function ProfilePage() {
                   <span className="text-[8px] font-bold text-white">✓</span>
                 </div>
               )}
-              {/* Level ring */}
               <div className="absolute -top-1 -left-1 w-7 h-7 rounded-lg bg-gradient-to-br from-secondary to-secondary/70 border border-secondary/40 flex items-center justify-center">
                 <span className="font-display text-[8px] font-black text-secondary-foreground">{level}</span>
               </div>
             </div>
-
-            {/* Info */}
             <div className="flex-1">
               <h1 className="font-display text-base font-black text-foreground tracking-wider">
                 {profile?.display_name || "PLAYER"}
@@ -133,7 +156,6 @@ export default function ProfilePage() {
                   {user.email}
                 </p>
               )}
-              {/* Quick stats row */}
               <div className="flex gap-3 mt-2">
                 <div className="text-center">
                   <span className="font-display text-sm font-black text-primary block leading-none">{profile?.wins || 0}</span>
@@ -151,7 +173,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Auth actions */}
           {user ? (
             <button
               onClick={async () => { await signOut(); navigate("/"); }}
@@ -203,7 +224,7 @@ export default function ProfilePage() {
               exit={{ opacity: 0, x: 10 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Stats Grid */}
+              {/* Primary Stats Grid */}
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {[
                   { icon: "🏏", value: String(profile?.total_matches || 0), label: "MATCHES" },
@@ -222,12 +243,8 @@ export default function ProfilePage() {
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <span className="text-lg block mb-1">{s.icon}</span>
-                    <span className="font-display text-xl font-black text-foreground block leading-none">
-                      {s.value}
-                    </span>
-                    <span className="text-[6px] text-muted-foreground font-display font-bold tracking-[0.2em] mt-1 block">
-                      {s.label}
-                    </span>
+                    <span className="font-display text-xl font-black text-foreground block leading-none">{s.value}</span>
+                    <span className="text-[6px] text-muted-foreground font-display font-bold tracking-[0.2em] mt-1 block">{s.label}</span>
                   </motion.div>
                 ))}
               </div>
@@ -253,15 +270,68 @@ export default function ProfilePage() {
                 </div>
               </motion.div>
 
+              {/* Advanced Stats */}
+              {advancedStats && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className="mb-4"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-4 rounded-full bg-accent" />
+                    <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">BATTING STATS</span>
+                  </div>
+                  <div className="glass-premium rounded-xl p-3 space-y-2">
+                    {[
+                      { label: "Total Runs Scored", value: advancedStats.totalRuns, icon: "🏃" },
+                      { label: "Total Balls Faced", value: advancedStats.totalBalls, icon: "⚾" },
+                      { label: "Batting Average", value: advancedStats.avgScore, icon: "📈" },
+                      { label: "Strike Rate", value: advancedStats.strikeRate, icon: "⚡" },
+                      { label: "50s", value: advancedStats.fifties, icon: "5️⃣" },
+                      { label: "100s", value: advancedStats.centuries, icon: "💯" },
+                      { label: "Ducks (0 score)", value: advancedStats.duckCount, icon: "🦆" },
+                    ].map((row, i) => (
+                      <div key={row.label} className="flex items-center justify-between py-1.5 border-b border-muted/10 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{row.icon}</span>
+                          <span className="text-[9px] text-muted-foreground font-display tracking-wider">{row.label}</span>
+                        </div>
+                        <span className="font-display text-sm font-black text-foreground">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3 mt-4">
+                    <div className="w-1 h-4 rounded-full bg-secondary" />
+                    <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">PERFORMANCE</span>
+                  </div>
+                  <div className="glass-premium rounded-xl p-3 space-y-2">
+                    {[
+                      { label: "Current Streak", value: `${profile?.current_streak || 0} 🔥`, icon: "📊" },
+                      { label: "Biggest Win Margin", value: `${advancedStats.highestWinMargin} runs`, icon: "🏆" },
+                      { label: "Biggest Loss Margin", value: `${advancedStats.biggestLoss} runs`, icon: "💔" },
+                      { label: "Runs Conceded (Total)", value: advancedStats.totalAiRuns, icon: "🎯" },
+                      { label: "Last 5 Form", value: `${advancedStats.last5Wins}/5 W`, icon: "📉" },
+                      { label: "Favourite Mode", value: advancedStats.favMode.toUpperCase(), icon: "🎮" },
+                    ].map((row) => (
+                      <div key={row.label} className="flex items-center justify-between py-1.5 border-b border-muted/10 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{row.icon}</span>
+                          <span className="text-[9px] text-muted-foreground font-display tracking-wider">{row.label}</span>
+                        </div>
+                        <span className="font-display text-sm font-black text-foreground">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
               {/* Achievements */}
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-4 rounded-full bg-primary" />
-                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
-                  ACHIEVEMENTS
-                </span>
-                <span className="text-[8px] text-muted-foreground/50 font-display">
-                  {unlockedCount}/{ACHIEVEMENTS.length}
-                </span>
+                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">ACHIEVEMENTS</span>
+                <span className="text-[8px] text-muted-foreground/50 font-display">{unlockedCount}/{ACHIEVEMENTS.length}</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {ACHIEVEMENTS.map((a, i) => {
@@ -291,7 +361,7 @@ export default function ProfilePage() {
                           <span className="text-[7px]">🔒</span>
                         </div>
                       )}
-                      {unlocked && <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-neon-green to-neon-green/30`} />}
+                      {unlocked && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-neon-green to-neon-green/30" />}
                     </motion.div>
                   );
                 })}
@@ -307,6 +377,31 @@ export default function ProfilePage() {
               exit={{ opacity: 0, x: 10 }}
               transition={{ duration: 0.2 }}
             >
+              {/* Match summary bar */}
+              {matches.length > 0 && (
+                <div className="glass-premium rounded-xl p-3 mb-4 flex items-center justify-between">
+                  <div className="text-center flex-1">
+                    <span className="font-display text-base font-black text-neon-green block leading-none">{matches.filter(m => m.result === "win").length}</span>
+                    <span className="text-[6px] text-muted-foreground font-display tracking-widest">WON</span>
+                  </div>
+                  <div className="w-px h-8 bg-muted/20" />
+                  <div className="text-center flex-1">
+                    <span className="font-display text-base font-black text-out-red block leading-none">{matches.filter(m => m.result === "loss").length}</span>
+                    <span className="text-[6px] text-muted-foreground font-display tracking-widest">LOST</span>
+                  </div>
+                  <div className="w-px h-8 bg-muted/20" />
+                  <div className="text-center flex-1">
+                    <span className="font-display text-base font-black text-secondary block leading-none">{matches.filter(m => m.result === "draw").length}</span>
+                    <span className="text-[6px] text-muted-foreground font-display tracking-widest">DRAW</span>
+                  </div>
+                  <div className="w-px h-8 bg-muted/20" />
+                  <div className="text-center flex-1">
+                    <span className="font-display text-base font-black text-foreground block leading-none">{matches.length}</span>
+                    <span className="text-[6px] text-muted-foreground font-display tracking-widest">TOTAL</span>
+                  </div>
+                </div>
+              )}
+
               {matches.length === 0 ? (
                 <div className="glass-premium rounded-xl p-8 text-center">
                   <span className="text-3xl block mb-2">🏏</span>
@@ -319,38 +414,109 @@ export default function ProfilePage() {
                     const modeIcon = m.mode === "ar" ? "📸" : m.mode === "tournament" ? "🏆" : m.mode === "multiplayer" ? "⚔️" : "👆";
                     const resultColor = m.result === "win" ? "text-neon-green" : m.result === "loss" ? "text-out-red" : "text-secondary";
                     const resultBg = m.result === "win" ? "from-neon-green/10" : m.result === "loss" ? "from-out-red/10" : "from-secondary/10";
+                    const isExpanded = expandedMatch === m.id;
+                    const margin = Math.abs(m.user_score - m.ai_score);
+                    const runRate = m.balls_played > 0 ? (m.user_score / m.balls_played * 6).toFixed(1) : "0.0";
+                    const aiRunRate = m.balls_played > 0 ? (m.ai_score / m.balls_played * 6).toFixed(1) : "0.0";
+
                     return (
                       <motion.div
                         key={m.id}
                         initial={{ opacity: 0, x: -15 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.04 }}
-                        className={`glass-premium rounded-xl p-3 flex items-center gap-3 relative overflow-hidden`}
+                        className="glass-premium rounded-xl relative overflow-hidden cursor-pointer"
+                        onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
                       >
                         <div className={`absolute inset-0 bg-gradient-to-r ${resultBg} to-transparent opacity-30`} />
-                        <div className="w-10 h-10 rounded-xl bg-muted/40 flex items-center justify-center text-lg relative z-10">
-                          {modeIcon}
-                        </div>
-                        <div className="flex-1 min-w-0 relative z-10">
-                          <div className="flex items-center gap-2">
-                            <span className={`font-display text-[10px] font-bold ${resultColor} tracking-wider`}>
-                              {m.result.toUpperCase()}
-                            </span>
-                            <span className="text-[7px] text-muted-foreground font-display px-1.5 py-0.5 rounded bg-muted/30">
-                              {m.mode.toUpperCase()}
+                        
+                        {/* Main row */}
+                        <div className="p-3 flex items-center gap-3 relative z-10">
+                          <div className="w-10 h-10 rounded-xl bg-muted/40 flex items-center justify-center text-lg">
+                            {modeIcon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-display text-[10px] font-bold ${resultColor} tracking-wider`}>
+                                {m.result.toUpperCase()}
+                              </span>
+                              <span className="text-[7px] text-muted-foreground font-display px-1.5 py-0.5 rounded bg-muted/30">
+                                {m.mode.toUpperCase()}
+                              </span>
+                              {m.result === "win" && (
+                                <span className="text-[7px] text-neon-green/70 font-display">
+                                  by {margin} runs
+                                </span>
+                              )}
+                              {m.result === "loss" && (
+                                <span className="text-[7px] text-out-red/70 font-display">
+                                  by {margin} runs
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[8px] text-muted-foreground">
+                              {m.balls_played} balls • RR {runRate} • {getTimeAgo(m.created_at)}
                             </span>
                           </div>
-                          <span className="text-[8px] text-muted-foreground">
-                            {m.balls_played} balls • {getTimeAgo(m.created_at)}
-                          </span>
-                        </div>
-                        <div className="text-right relative z-10">
-                          <div className="flex items-baseline gap-1">
-                            <span className="font-display text-base font-black text-secondary">{m.user_score}</span>
-                            <span className="text-[8px] text-muted-foreground">vs</span>
-                            <span className="font-display text-base font-black text-accent">{m.ai_score}</span>
+                          <div className="text-right">
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-display text-base font-black text-secondary">{m.user_score}</span>
+                              <span className="text-[8px] text-muted-foreground">vs</span>
+                              <span className="font-display text-base font-black text-accent">{m.ai_score}</span>
+                            </div>
+                            <span className="text-[7px] text-muted-foreground/50">
+                              {isExpanded ? "▲" : "▼"}
+                            </span>
                           </div>
                         </div>
+
+                        {/* Expanded details */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-3 pb-3 pt-1 border-t border-muted/10 relative z-10">
+                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                  <div className="glass-card rounded-lg p-2 text-center">
+                                    <span className="text-[7px] text-muted-foreground font-display tracking-widest block">YOUR SCORE</span>
+                                    <span className="font-display text-lg font-black text-secondary">{m.user_score}</span>
+                                    <span className="text-[7px] text-muted-foreground block">RR {runRate}</span>
+                                  </div>
+                                  <div className="glass-card rounded-lg p-2 text-center">
+                                    <span className="text-[7px] text-muted-foreground font-display tracking-widest block">AI SCORE</span>
+                                    <span className="font-display text-lg font-black text-accent">{m.ai_score}</span>
+                                    <span className="text-[7px] text-muted-foreground block">RR {aiRunRate}</span>
+                                  </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between">
+                                    <span className="text-[8px] text-muted-foreground">Balls Played</span>
+                                    <span className="text-[8px] font-bold text-foreground">{m.balls_played}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-[8px] text-muted-foreground">Win Margin</span>
+                                    <span className={`text-[8px] font-bold ${resultColor}`}>
+                                      {m.result === "draw" ? "Tied" : `${margin} runs`}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-[8px] text-muted-foreground">Game Mode</span>
+                                    <span className="text-[8px] font-bold text-foreground">{m.mode.toUpperCase()}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-[8px] text-muted-foreground">Played On</span>
+                                    <span className="text-[8px] font-bold text-foreground">{formatDate(m.created_at)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </motion.div>
                     );
                   })}
@@ -369,9 +535,7 @@ export default function ProfilePage() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-4 rounded-full bg-secondary" />
-                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">
-                  INDIAN LEGENDS
-                </span>
+                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">INDIAN LEGENDS</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {INDIAN_LEGENDS.map((player, i) => (
