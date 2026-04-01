@@ -56,6 +56,7 @@ export default function HomePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [recentMatch, setRecentMatch] = useState<RecentMatch | null>(null);
   const [activePlayer, setActivePlayer] = useState(0);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerInfo | null>(null);
 
   useEffect(() => {
     const seen = localStorage.getItem("hc_onboarding_done");
