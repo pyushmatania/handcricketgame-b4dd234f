@@ -309,7 +309,8 @@ export default function GameScreen({ onHome }: GameScreenProps) {
 
         {/* Toss */}
         {game.phase === "not_started" && tossChoice === null && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-score p-5 text-center space-y-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-premium rounded-2xl p-5 text-center space-y-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-8 h-0.5 bg-gradient-to-r from-transparent to-primary/50" />
               <p className="font-display text-xs font-black text-foreground tracking-wider">CHOOSE YOUR INNINGS</p>
@@ -320,14 +321,14 @@ export default function GameScreen({ onHome }: GameScreenProps) {
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => { setTossChoice(true); startGame(true); }}
-                className="flex-1 py-3.5 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl text-sm glow-primary"
+                className="flex-1 py-3.5 bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(217_91%_60%/0.25)] border border-primary/30"
               >
                 🏏 BAT FIRST
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => { setTossChoice(false); startGame(false); }}
-                className="flex-1 py-3.5 bg-gradient-to-br from-accent to-accent/80 text-accent-foreground font-display font-bold rounded-2xl text-sm glow-accent"
+                className="flex-1 py-3.5 bg-gradient-to-br from-accent to-accent/70 text-accent-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(168_80%_50%/0.2)] border border-accent/30"
               >
                 🎯 BOWL FIRST
               </motion.button>
