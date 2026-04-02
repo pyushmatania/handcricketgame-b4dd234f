@@ -638,6 +638,9 @@ export default function LeaderboardPage() {
                 </div>
               ) : (
                 <>
+                  {/* Player of the Week */}
+                  <PlayerOfTheWeek player={playerOfWeek} loading={potwLoading} />
+
                   {/* Top 3 podium */}
                   {top3.length >= 3 && (
                     <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex items-end justify-center gap-3 mb-5">
