@@ -79,7 +79,7 @@ export async function speakDuoCommentary(
 
   const useElevenLabs = engine === "elevenlabs" || (engine === "auto" && isElevenLabsAvailable());
 
-  if (useElevenLabs && engine !== "system") {
+  if (useElevenLabs) {
     const ttsLines = keyLines.map(l => ({
       text: l.text,
       voiceId: (commentators.find(c => c.name === l.commentatorId || c.id === l.commentatorId) || commentators[0]).voiceId,
