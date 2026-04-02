@@ -66,6 +66,29 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>("audio");
+  const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
+
+  const previewSystemVoice = useCallback(async (personaId: string) => {
+    if (previewingVoice) return;
+    setPreviewingVoice(personaId);
+    const persona = SYSTEM_VOICE_PERSONAS.find(p => p.id === personaId);
+    if (!persona) { setPreviewingVoice(null); return; }
+    const isHindi = settings.commentaryLanguage === "hindi";
+    const lines = isHindi ? PREVIEW_LINES_HI : PREVIEW_LINES_EN;
+    const line = lines[Math.floor(Math.random() * lines.length)];
+    await speakWithSystemPersona(line, persona);
+    setPreviewingVoice(null);
+  }, [previewingVoice, settings.commentaryLanguage]);
+
+  const previewElevenLabsVoice = useCallback(async (voiceId: string) => {
+    if (previewingVoice) return;
+    setPreviewingVoice(voiceId);
+    const isHindi = settings.commentaryLanguage === "hindi";
+    const lines = isHindi ? PREVIEW_LINES_HI : PREVIEW_LINES_EN;
+    const line = lines[Math.floor(Math.random() * lines.length)];
+    await speakElevenLabs(line, voiceId);
+    setPreviewingVoice(null);
+  }, [previewingVoice, settings.commentaryLanguage]);
 
   const clearData = () => {
     localStorage.removeItem("hc_onboarding_done");
