@@ -156,16 +156,20 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
 
       {/* Main scorecard — cricket pitch style */}
       <div className="glass-premium rounded-xl p-2.5 relative overflow-hidden">
-        {/* Cricket pitch background */}
+        {/* Cricket pitch photo background */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-full">
-            <div className="absolute inset-0 bg-gradient-to-b from-[hsl(120_30%_18%/0.06)] via-transparent to-[hsl(120_30%_18%/0.06)]" />
-          </div>
+          <img src={pitchStrips} alt="" className="w-full h-full object-cover opacity-[0.12]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/80" />
+          {/* Green strip overlays */}
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="absolute h-full pointer-events-none" style={{
+              left: `${10 + i * 18}%`, width: '14%',
+              background: i % 2 === 0 ? 'hsl(120 35% 22% / 0.08)' : 'hsl(120 25% 15% / 0.04)',
+            }} />
+          ))}
           {/* Crease lines */}
-          <div className="absolute top-[20%] left-[20%] right-[20%] h-px bg-[hsl(45_50%_50%/0.08)]" />
-          <div className="absolute bottom-[20%] left-[20%] right-[20%] h-px bg-[hsl(45_50%_50%/0.08)]" />
-          {/* Pitch strip */}
-          <div className="absolute top-[20%] bottom-[20%] left-1/2 -translate-x-1/2 w-8 bg-[hsl(45_30%_40%/0.04)] rounded-sm" />
+          <div className="absolute top-[18%] left-[15%] right-[15%] h-px bg-[hsl(45_50%_50%/0.1)]" />
+          <div className="absolute bottom-[18%] left-[15%] right-[15%] h-px bg-[hsl(45_50%_50%/0.1)]" />
         </div>
 
         <div className="relative z-10">

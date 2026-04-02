@@ -238,7 +238,7 @@ export default function OverBreakScreen({ stats, commentaryLines, commentators, 
       </div>
 
       {/* Continue button */}
-      <div className="p-4 pb-8">
+      <div className="relative z-10 p-4 pb-8">
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onContinue}
