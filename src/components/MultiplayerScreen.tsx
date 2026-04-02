@@ -1011,6 +1011,26 @@ export default function MultiplayerScreen({ onHome }: Props) {
               </div>
             </div>
             <div className="flex gap-3 w-full max-w-xs">
+              {/* Rematch button - creates new room with same opponent */}
+              <motion.button whileTap={{ scale: 0.95 }}
+                onClick={async () => {
+                  if (!user || !currentGame) return;
+                  const opponentId = isHost ? currentGame.guest_id : currentGame.host_id;
+                  if (!opponentId) return;
+                  const gameType = (currentGame.game_type || "tap") as GameType;
+                  const { data: newGame, error } = await createMultiplayerRoom(user.id, gameType, opponentId);
+                  if (newGame && !error) {
+                    setCurrentGame(newGame as unknown as MultiplayerGame);
+                    setPhase("waiting");
+                    setReserveTime(RESERVE_TIMER_MS);
+                    setCooldown(false);
+                    setLastResult(null);
+                    navigate(`/game/multiplayer?game=${newGame.id}`, { replace: true });
+                  }
+                }}
+                className="flex-1 py-3.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-display font-bold rounded-2xl tracking-wider shadow-[0_0_20px_hsl(38_100%_50%/0.3)] border border-yellow-400/40">
+                🔄 REMATCH
+              </motion.button>
               <motion.button whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   setPhase("lobby");
@@ -1019,13 +1039,13 @@ export default function MultiplayerScreen({ onHome }: Props) {
                   navigate("/game/multiplayer", { replace: true });
                 }}
                 className="flex-1 py-3.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl glow-primary tracking-wider">
-                ⚡ PLAY AGAIN
-              </motion.button>
-              <motion.button whileTap={{ scale: 0.95 }} onClick={onHome}
-                className="flex-1 py-3.5 bg-muted text-foreground font-display font-bold rounded-2xl tracking-wider">
-                HOME
+                ⚡ NEW
               </motion.button>
             </div>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={onHome}
+              className="py-2.5 px-8 bg-muted text-foreground font-display font-bold rounded-2xl tracking-wider text-xs">
+              HOME
+            </motion.button>
           </motion.div>
         )}
       </div>

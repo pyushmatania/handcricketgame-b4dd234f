@@ -188,7 +188,9 @@
 
   /* ── Background Effects ────────────────────── */
   .stadium-gradient {
-    background: radial-gradient(ellipse at bottom, hsl(217 50% 15% / 0.4) 0%, hsl(var(--background)) 70%);
+    background:
+      radial-gradient(ellipse at bottom, hsl(217 50% 15% / 0.4) 0%, hsl(var(--background)) 70%),
+      radial-gradient(ellipse at 50% 100%, hsl(142 50% 25% / 0.08) 0%, transparent 50%);
   }
 
   .hero-gradient {
