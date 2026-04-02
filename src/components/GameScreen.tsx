@@ -56,6 +56,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const [showFilterPicker, setShowFilterPicker] = useState(false);
   const [commentary, setCommentary] = useState<string | null>(null);
   const savedRef = useRef(false);
+  const [matchCommentators] = useState<[Commentator, Commentator]>(() => pickMatchCommentators());
   const prevPhaseRef = useRef(game.phase);
 
   // Fireworks state
