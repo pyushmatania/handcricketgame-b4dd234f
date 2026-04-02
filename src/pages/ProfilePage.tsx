@@ -8,6 +8,7 @@ import TopStatusBar from "@/components/TopStatusBar";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import TrophyCase from "@/components/TrophyCase";
 import FriendStatsModal from "@/components/FriendStatsModal";
+import { usePvpStats } from "@/hooks/usePvpStats";
 
 interface BallRecord {
   userMove: string | number;
@@ -146,6 +147,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFriend, setSelectedFriend] = useState<any>(null);
+  const { pvpRecord } = usePvpStats(user?.id);
 
   const getTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -390,14 +392,14 @@ export default function ProfilePage() {
               {/* Primary Stats Grid */}
               <div className="grid grid-cols-4 gap-2 mb-4">
                 {[
-                  { icon: "🏏", value: String(profile?.total_matches || 0), label: "MATCHES" },
-                  { icon: "⭐", value: String(profile?.high_score || 0), label: "HIGH SCORE" },
-                  { icon: "🔥", value: String(profile?.best_streak || 0), label: "BEST STREAK" },
-                  { icon: "🏆", value: String(profile?.wins || 0), label: "WINS" },
-                  { icon: "💔", value: String(profile?.losses || 0), label: "LOSSES" },
-                  { icon: "🤝", value: String(profile?.draws || 0), label: "DRAWS" },
-                  { icon: "🏳️", value: String(profile?.abandons || 0), label: "ABANDONS" },
-                  { icon: "📊", value: `${winRate}%`, label: "WIN RATE" },
+                  { icon: "🏏", value: String((profile?.total_matches || 0) + (pvpRecord?.totalGames || 0)), label: "MATCHES" },
+                  { icon: "⭐", value: String(Math.max(profile?.high_score || 0, pvpRecord?.highScore || 0)), label: "HIGH SCORE" },
+                  { icon: "🔥", value: String(Math.max(profile?.best_streak || 0, pvpRecord?.bestStreak || 0)), label: "BEST STREAK" },
+                  { icon: "🏆", value: String((profile?.wins || 0) + (pvpRecord?.wins || 0)), label: "WINS" },
+                  { icon: "💔", value: String((profile?.losses || 0) + (pvpRecord?.losses || 0)), label: "LOSSES" },
+                  { icon: "🤝", value: String((profile?.draws || 0) + (pvpRecord?.draws || 0)), label: "DRAWS" },
+                  { icon: "🏳️", value: String((profile?.abandons || 0) + (pvpRecord?.abandons || 0)), label: "ABANDONS" },
+                  { icon: "📊", value: `${(() => { const tw = (profile?.wins || 0) + (pvpRecord?.wins || 0); const tm = (profile?.total_matches || 0) + (pvpRecord?.totalGames || 0); return tm > 0 ? Math.round((tw / tm) * 100) : 0; })()}%`, label: "WIN RATE" },
                 ].map((s, i) => (
                   <motion.div key={s.label} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 + i * 0.05 }} className="glass-premium rounded-xl p-3 text-center relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -407,6 +409,44 @@ export default function ProfilePage() {
                   </motion.div>
                 ))}
               </div>
+
+              {/* PvP Record Section */}
+              {pvpRecord && pvpRecord.totalGames > 0 && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="glass-premium rounded-xl p-4 mb-4 border border-primary/15">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-4 rounded-full bg-primary" />
+                    <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">⚔️ PvP RECORD</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    {[
+                      { icon: "⚔️", value: pvpRecord.totalGames, label: "PVP GAMES", color: "text-foreground" },
+                      { icon: "🏆", value: pvpRecord.wins, label: "PVP WINS", color: "text-neon-green" },
+                      { icon: "💔", value: pvpRecord.losses, label: "PVP LOSSES", color: "text-out-red" },
+                      { icon: "📊", value: `${pvpRecord.totalGames > 0 ? Math.round((pvpRecord.wins / pvpRecord.totalGames) * 100) : 0}%`, label: "PVP WIN%", color: "text-primary" },
+                    ].map((s) => (
+                      <div key={s.label} className="text-center">
+                        <span className="text-sm block">{s.icon}</span>
+                        <span className={`font-display text-lg font-black ${s.color} block leading-none mt-0.5`}>{s.value}</span>
+                        <span className="text-[5px] font-display text-muted-foreground tracking-widest">{s.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="glass-card rounded-lg p-1.5 text-center">
+                      <span className="text-[5px] font-display text-muted-foreground tracking-widest block">HIGH</span>
+                      <span className="font-display text-sm font-black text-score-gold">{pvpRecord.highScore}</span>
+                    </div>
+                    <div className="glass-card rounded-lg p-1.5 text-center">
+                      <span className="text-[5px] font-display text-muted-foreground tracking-widest block">AVG</span>
+                      <span className="font-display text-sm font-black text-foreground">{pvpRecord.avgScore}</span>
+                    </div>
+                    <div className="glass-card rounded-lg p-1.5 text-center">
+                      <span className="text-[5px] font-display text-muted-foreground tracking-widest block">BEST WIN</span>
+                      <span className="font-display text-sm font-black text-neon-green">+{pvpRecord.biggestWin}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Win Rate */}
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-premium rounded-xl p-4 mb-4">

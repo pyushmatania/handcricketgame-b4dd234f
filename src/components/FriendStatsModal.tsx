@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import PlayerAvatar from "./PlayerAvatar";
+import { usePvpStats } from "@/hooks/usePvpStats";
 import RankBadge from "./RankBadge";
 import { getRankTier, calculateRankPoints } from "@/lib/rankTiers";
 
@@ -155,6 +156,7 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
   const [records, setRecords] = useState<RecordBreak[]>([]);
   const [fullFriendProfile, setFullFriendProfile] = useState<FriendProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const { pvpRecord: friendPvp } = usePvpStats(friend?.user_id);
 
   useEffect(() => {
     if (!friend || !user) return;
@@ -418,6 +420,29 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
                       ))}
                     </div>
 
+                    {/* PvP Record */}
+                    {friendPvp && friendPvp.totalGames > 0 && (
+                      <div className="glass-card rounded-xl p-2.5 border border-primary/15">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="text-xs">⚔️</span>
+                          <span className="text-[6px] font-display text-muted-foreground tracking-widest">PvP RECORD</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { label: "GAMES", value: friendPvp.totalGames, color: "text-foreground" },
+                            { label: "WINS", value: friendPvp.wins, color: "text-neon-green" },
+                            { label: "LOSSES", value: friendPvp.losses, color: "text-out-red" },
+                            { label: "WIN%", value: `${friendPvp.totalGames > 0 ? Math.round((friendPvp.wins / friendPvp.totalGames) * 100) : 0}%`, color: "text-primary" },
+                          ].map((s) => (
+                            <div key={s.label} className="text-center">
+                              <span className={`font-display text-sm font-black ${s.color} block leading-none`}>{s.value}</span>
+                              <span className="text-[5px] font-display text-muted-foreground tracking-widest">{s.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Login streak */}
                     {(fp.login_streak ?? 0) > 0 && (
                       <div className="glass-card rounded-xl p-2.5 flex items-center gap-3">
@@ -629,84 +654,232 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
                   </motion.div>
                 )}
 
-                {/* H2H RIVALRY TAB */}
+                {/* H2H RIVALRY TAB — REDESIGNED */}
                 {tab === "rivalry" && (
                   <motion.div key="rivalry" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
                     {h2h && h2h.totalGames > 0 ? (
                       <>
-                        {/* W/L record */}
-                        <div className="glass-card rounded-xl p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-center">
-                              <span className="font-display text-2xl font-black text-neon-green block leading-none">{h2h.myWins}</span>
-                              <span className="text-[6px] font-display text-muted-foreground tracking-widest">YOU</span>
+                        {/* Hero W/L record */}
+                        <div className="glass-premium rounded-xl p-4 border border-primary/15">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="text-center flex-1">
+                              <span className="font-display text-3xl font-black text-neon-green block leading-none">{h2h.myWins}</span>
+                              <span className="text-[7px] font-display text-muted-foreground tracking-widest">YOU</span>
                             </div>
-                            <div className="text-center px-3">
-                              <span className="text-[8px] font-display text-muted-foreground tracking-widest">RIVALRY</span>
-                              <span className="font-display text-sm font-bold text-foreground block">{h2h.totalGames} games</span>
-                              {h2h.draws > 0 && <span className="text-[7px] text-secondary font-display">{h2h.draws} draws</span>}
+                            <div className="text-center px-4">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 flex items-center justify-center mx-auto mb-1">
+                                <span className="text-sm">⚔️</span>
+                              </div>
+                              <span className="font-display text-sm font-bold text-foreground block">{h2h.totalGames}</span>
+                              <span className="text-[6px] font-display text-muted-foreground tracking-widest">BATTLES</span>
                             </div>
-                            <div className="text-center">
-                              <span className="font-display text-2xl font-black text-out-red block leading-none">{h2h.theirWins}</span>
-                              <span className="text-[6px] font-display text-muted-foreground tracking-widest">{fp.display_name.slice(0, 8).toUpperCase()}</span>
+                            <div className="text-center flex-1">
+                              <span className="font-display text-3xl font-black text-out-red block leading-none">{h2h.theirWins}</span>
+                              <span className="text-[7px] font-display text-muted-foreground tracking-widest">{fp.display_name.slice(0, 8).toUpperCase()}</span>
                             </div>
                           </div>
-                          <div className="h-3 rounded-full overflow-hidden flex bg-muted/30">
-                            <div className="bg-gradient-to-r from-neon-green to-neon-green/70 rounded-l-full transition-all" style={{ width: `${h2h.totalGames > 0 ? (h2h.myWins / h2h.totalGames) * 100 : 50}%` }} />
-                            <div className="bg-gradient-to-l from-out-red to-out-red/70 rounded-r-full flex-1" />
+                          {/* Win bar */}
+                          <div className="h-3 rounded-full overflow-hidden flex bg-muted/30 mb-1">
+                            {h2h.totalGames > 0 && (
+                              <>
+                                <div className="bg-gradient-to-r from-neon-green to-neon-green/70 rounded-l-full transition-all" style={{ width: `${(h2h.myWins / h2h.totalGames) * 100}%` }} />
+                                {h2h.draws > 0 && <div className="bg-secondary/40" style={{ width: `${(h2h.draws / h2h.totalGames) * 100}%` }} />}
+                                <div className="bg-gradient-to-l from-out-red to-out-red/70 rounded-r-full flex-1" />
+                              </>
+                            )}
+                          </div>
+                          <div className="flex justify-between text-[6px] font-display text-muted-foreground">
+                            <span>{h2h.totalGames > 0 ? Math.round((h2h.myWins / h2h.totalGames) * 100) : 0}%</span>
+                            {h2h.draws > 0 && <span>{h2h.draws} draws</span>}
+                            <span>{h2h.totalGames > 0 ? Math.round((h2h.theirWins / h2h.totalGames) * 100) : 0}%</span>
                           </div>
                         </div>
 
-                        {/* Detailed rivalry stats */}
-                        <div className="grid grid-cols-2 gap-2">
+                        {/* Scoring Comparison */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-4 rounded-full bg-secondary" />
+                          <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">SCORING COMPARISON</span>
+                        </div>
+                        <div className="space-y-1.5">
                           {[
                             { label: "HIGH SCORE", mine: h2h.myHighScore, theirs: h2h.theirHighScore, emoji: "⭐" },
                             { label: "TOTAL RUNS", mine: h2h.myTotalRuns, theirs: h2h.theirTotalRuns, emoji: "🏃" },
                             { label: "AVG SCORE", mine: h2h.totalGames > 0 ? Math.round(h2h.myTotalRuns / h2h.totalGames) : 0, theirs: h2h.totalGames > 0 ? Math.round(h2h.theirTotalRuns / h2h.totalGames) : 0, emoji: "📊" },
                             { label: "BIGGEST WIN", mine: h2h.biggestWinMargin, theirs: "—", emoji: "💪" },
-                          ].map((s) => (
-                            <div key={s.label} className="glass-card rounded-lg p-2">
-                              <div className="flex items-center gap-1 mb-1">
-                                <span className="text-[8px]">{s.emoji}</span>
-                                <span className="text-[5px] font-display text-muted-foreground tracking-widest">{s.label}</span>
+                          ].map((s) => {
+                            const mN = typeof s.mine === "number" ? s.mine : 0;
+                            const tN = typeof s.theirs === "number" ? s.theirs : 0;
+                            return (
+                              <div key={s.label} className="flex items-center gap-2 glass-card rounded-lg px-3 py-2">
+                                <span className={`font-display text-xs font-black flex-1 text-left ${mN > tN ? "text-neon-green" : mN < tN ? "text-out-red" : "text-foreground"}`}>{s.mine}</span>
+                                <div className="flex items-center gap-1 w-24 justify-center">
+                                  <span className="text-[9px]">{s.emoji}</span>
+                                  <span className="text-[6px] font-display text-muted-foreground tracking-widest">{s.label}</span>
+                                </div>
+                                <span className={`font-display text-xs font-black flex-1 text-right ${tN > mN ? "text-neon-green" : tN < mN ? "text-out-red" : "text-foreground"}`}>{s.theirs}</span>
                               </div>
-                              <div className="flex items-center justify-between">
-                                <span className={`font-display text-xs font-black ${typeof s.mine === "number" && typeof s.theirs === "number" && s.mine > s.theirs ? "text-neon-green" : "text-foreground"}`}>{s.mine}</span>
-                                <span className="text-[5px] text-muted-foreground">vs</span>
-                                <span className={`font-display text-xs font-black ${typeof s.theirs === "number" && typeof s.mine === "number" && s.theirs > s.mine ? "text-out-red" : "text-foreground"}`}>{s.theirs}</span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
+                          <div className="flex justify-between text-[6px] font-display text-muted-foreground tracking-widest px-1">
+                            <span>YOU</span>
+                            <span>{fp.display_name.toUpperCase()}</span>
+                          </div>
                         </div>
 
-                        {/* Streaks & milestones */}
-                        <div className="flex gap-2">
-                          <div className="flex-1 glass-card rounded-lg p-2 text-center">
-                            <span className="text-[5px] font-display text-muted-foreground tracking-widest block mb-1">CURRENT STREAK</span>
-                            <span className={`font-display text-sm font-black ${h2h.currentStreak > 0 ? "text-neon-green" : h2h.currentStreak < 0 ? "text-out-red" : "text-foreground"}`}>
+                        {/* Streaks & Milestones */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-4 rounded-full bg-score-gold" />
+                          <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">STREAKS & MILESTONES</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="glass-card rounded-lg p-2.5 text-center">
+                            <span className="text-[6px] font-display text-muted-foreground tracking-widest block mb-1">CURRENT STREAK</span>
+                            <span className={`font-display text-lg font-black ${h2h.currentStreak > 0 ? "text-neon-green" : h2h.currentStreak < 0 ? "text-out-red" : "text-foreground"}`}>
                               {h2h.currentStreak > 0 ? `🔥 ${h2h.currentStreak}W` : h2h.currentStreak < 0 ? `${Math.abs(h2h.currentStreak)}L` : "—"}
                             </span>
                           </div>
-                          <div className="flex-1 glass-card rounded-lg p-2 text-center">
-                            <span className="text-[5px] font-display text-muted-foreground tracking-widest block mb-1">BEST STREAK</span>
-                            <span className={`font-display text-sm font-black ${h2h.bestStreak > 0 ? "text-neon-green" : "text-out-red"}`}>
+                          <div className="glass-card rounded-lg p-2.5 text-center">
+                            <span className="text-[6px] font-display text-muted-foreground tracking-widest block mb-1">BEST STREAK</span>
+                            <span className={`font-display text-lg font-black ${h2h.bestStreak > 0 ? "text-neon-green" : "text-out-red"}`}>
                               {h2h.bestStreak > 0 ? `${h2h.bestStreak}W` : h2h.bestStreak < 0 ? `${Math.abs(h2h.bestStreak)}L` : "—"}
                             </span>
                           </div>
                         </div>
-
+                        
                         {h2h.firstMatchDate && (
-                          <div className="flex gap-2">
-                            <div className="flex-1 glass-card rounded-lg p-2 text-center">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="glass-card rounded-lg p-2 text-center">
                               <span className="text-[5px] font-display text-muted-foreground tracking-widest block mb-1">FIRST MATCH</span>
                               <span className="font-display text-[9px] font-bold text-foreground">{formatDate(h2h.firstMatchDate)}</span>
                             </div>
-                            <div className="flex-1 glass-card rounded-lg p-2 text-center">
+                            <div className="glass-card rounded-lg p-2 text-center">
                               <span className="text-[5px] font-display text-muted-foreground tracking-widest block mb-1">LAST PLAYED</span>
                               <span className="font-display text-[9px] font-bold text-foreground">{h2h.lastPlayed ? formatDate(h2h.lastPlayed) : "—"}</span>
                             </div>
                           </div>
                         )}
+
+                        {/* Match Timeline Graph */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-4 rounded-full bg-primary" />
+                          <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">MATCH TIMELINE</span>
+                        </div>
+                        <div className="glass-premium rounded-xl p-3 border border-primary/10">
+                          {(() => {
+                            const chronoMatches = [...h2h.matches].reverse();
+                            const maxScore = Math.max(...chronoMatches.map(m => {
+                              const isHost = m.host_id === user?.id;
+                              return Math.max(isHost ? m.host_score : m.guest_score, isHost ? m.guest_score : m.host_score);
+                            }), 1);
+                            const graphH = 80;
+                            const graphW = 100;
+                            const step = chronoMatches.length > 1 ? graphW / (chronoMatches.length - 1) : graphW / 2;
+
+                            const myPoints = chronoMatches.map((m, i) => {
+                              const isHost = m.host_id === user?.id;
+                              const score = isHost ? m.host_score : m.guest_score;
+                              return { x: chronoMatches.length > 1 ? i * step : graphW / 2, y: graphH - (score / maxScore) * graphH };
+                            });
+                            const theirPoints = chronoMatches.map((m, i) => {
+                              const isHost = m.host_id === user?.id;
+                              const score = isHost ? m.guest_score : m.host_score;
+                              return { x: chronoMatches.length > 1 ? i * step : graphW / 2, y: graphH - (score / maxScore) * graphH };
+                            });
+
+                            const toPath = (pts: { x: number; y: number }[]) =>
+                              pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+
+                            return (
+                              <>
+                                <svg viewBox={`-2 -5 ${graphW + 4} ${graphH + 15}`} className="w-full h-20">
+                                  {/* Grid lines */}
+                                  {[0, 0.25, 0.5, 0.75, 1].map(f => (
+                                    <line key={f} x1="0" y1={graphH - f * graphH} x2={graphW} y2={graphH - f * graphH} stroke="hsl(217 91% 60% / 0.08)" strokeWidth="0.3" />
+                                  ))}
+                                  {/* Their line */}
+                                  <path d={toPath(theirPoints)} fill="none" stroke="hsl(0 72% 51% / 0.5)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                  {/* My line */}
+                                  <path d={toPath(myPoints)} fill="none" stroke="hsl(142 71% 45% / 0.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  {/* My dots */}
+                                  {myPoints.map((p, i) => (
+                                    <circle key={`m${i}`} cx={p.x} cy={p.y} r="2" fill="hsl(142 71% 45%)" />
+                                  ))}
+                                  {/* Their dots */}
+                                  {theirPoints.map((p, i) => (
+                                    <circle key={`t${i}`} cx={p.x} cy={p.y} r="1.5" fill="hsl(0 72% 51%)" opacity="0.7" />
+                                  ))}
+                                  {/* Win/loss indicators at bottom */}
+                                  {chronoMatches.map((m, i) => {
+                                    const won = m.winner_id === user?.id;
+                                    const lost = m.winner_id === friend?.user_id;
+                                    return (
+                                      <rect key={`r${i}`} x={myPoints[i].x - 2} y={graphH + 4} width="4" height="4" rx="1"
+                                        fill={won ? "hsl(142 71% 45% / 0.6)" : lost ? "hsl(0 72% 51% / 0.6)" : "hsl(45 93% 58% / 0.4)"} />
+                                    );
+                                  })}
+                                </svg>
+                                <div className="flex justify-between mt-1">
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-2 h-0.5 rounded-full bg-neon-green" />
+                                    <span className="text-[6px] font-display text-muted-foreground">You</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-2 h-0.5 rounded-full bg-out-red" />
+                                    <span className="text-[6px] font-display text-muted-foreground">{fp.display_name}</span>
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Scoring Trends */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-4 rounded-full bg-accent" />
+                          <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">SCORING TRENDS</span>
+                        </div>
+                        <div className="glass-card rounded-xl p-3">
+                          {(() => {
+                            const recent5 = h2h.matches.slice(0, 5);
+                            const myRecent5Avg = recent5.length > 0 ? Math.round(recent5.reduce((s, m) => s + (m.host_id === user?.id ? m.host_score : m.guest_score), 0) / recent5.length) : 0;
+                            const theirRecent5Avg = recent5.length > 0 ? Math.round(recent5.reduce((s, m) => s + (m.host_id === user?.id ? m.guest_score : m.host_score), 0) / recent5.length) : 0;
+                            const myOverallAvg = h2h.totalGames > 0 ? Math.round(h2h.myTotalRuns / h2h.totalGames) : 0;
+                            const theirOverallAvg = h2h.totalGames > 0 ? Math.round(h2h.theirTotalRuns / h2h.totalGames) : 0;
+                            const myTrend = myRecent5Avg - myOverallAvg;
+                            const theirTrend = theirRecent5Avg - theirOverallAvg;
+                            return (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[7px] font-display text-muted-foreground tracking-wider">YOUR LAST 5 AVG</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-display text-sm font-black text-foreground">{myRecent5Avg}</span>
+                                    <span className={`text-[8px] font-display font-bold ${myTrend > 0 ? "text-neon-green" : myTrend < 0 ? "text-out-red" : "text-muted-foreground"}`}>
+                                      {myTrend > 0 ? `↑${myTrend}` : myTrend < 0 ? `↓${Math.abs(myTrend)}` : "→"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[7px] font-display text-muted-foreground tracking-wider">{fp.display_name.toUpperCase()} LAST 5 AVG</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-display text-sm font-black text-foreground">{theirRecent5Avg}</span>
+                                    <span className={`text-[8px] font-display font-bold ${theirTrend > 0 ? "text-neon-green" : theirTrend < 0 ? "text-out-red" : "text-muted-foreground"}`}>
+                                      {theirTrend > 0 ? `↑${theirTrend}` : theirTrend < 0 ? `↓${Math.abs(theirTrend)}` : "→"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="h-px bg-muted/20" />
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[7px] font-display text-muted-foreground tracking-wider">RUNS PER GAME (YOU)</span>
+                                  <span className="font-display text-xs font-black text-primary">{myOverallAvg}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[7px] font-display text-muted-foreground tracking-wider">RUNS PER GAME ({fp.display_name.slice(0, 6).toUpperCase()})</span>
+                                  <span className="font-display text-xs font-black text-out-red">{theirOverallAvg}</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
 
                         {/* Verdict */}
                         <div className={`text-center py-2.5 rounded-xl ${
@@ -721,30 +894,40 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
                           </span>
                         </div>
 
-                        {/* Recent matches */}
+                        {/* Recent matches with expandable details */}
                         <div className="flex items-center gap-2">
                           <div className="w-1 h-4 rounded-full bg-accent" />
-                          <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">RECENT MATCHES</span>
+                          <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">MATCH HISTORY ({h2h.matches.length})</span>
                         </div>
-                        <div className="space-y-1">
-                          {h2h.matches.slice(0, 5).map((m) => {
+                        <div className="space-y-1.5">
+                          {h2h.matches.slice(0, 10).map((m) => {
                             const isHost = m.host_id === user?.id;
                             const myScore = isHost ? m.host_score : m.guest_score;
                             const theirScore = isHost ? m.guest_score : m.host_score;
                             const won = m.winner_id === user?.id;
-                            const lost = m.winner_id === friend.user_id;
+                            const lost = m.winner_id === friend?.user_id;
+                            const margin = Math.abs(myScore - theirScore);
                             return (
-                              <div key={m.id} className={`flex items-center gap-2 p-2 rounded-lg ${
+                              <div key={m.id} className={`p-2.5 rounded-xl ${
                                 won ? "bg-neon-green/5 border border-neon-green/10" : lost ? "bg-out-red/5 border border-out-red/10" : "bg-secondary/5 border border-secondary/10"
                               }`}>
-                                <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[7px] font-display font-black ${
-                                  won ? "bg-neon-green/20 text-neon-green" : lost ? "bg-out-red/20 text-out-red" : "bg-secondary/20 text-secondary"
-                                }`}>{won ? "W" : lost ? "L" : "D"}</div>
-                                <span className={`font-display text-xs font-black ${won ? "text-neon-green" : "text-foreground"}`}>{myScore}</span>
-                                <span className="text-[5px] text-muted-foreground">-</span>
-                                <span className={`font-display text-xs font-black ${lost ? "text-out-red" : "text-foreground"}`}>{theirScore}</span>
-                                <span className="flex-1" />
-                                <span className="text-[6px] text-muted-foreground font-display">{formatDate(m.created_at)}</span>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[8px] font-display font-black ${
+                                    won ? "bg-neon-green/20 text-neon-green" : lost ? "bg-out-red/20 text-out-red" : "bg-secondary/20 text-secondary"
+                                  }`}>{won ? "W" : lost ? "L" : "D"}</div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`font-display text-sm font-black ${won ? "text-neon-green" : "text-foreground"}`}>{myScore}</span>
+                                    <span className="text-[6px] text-muted-foreground font-display">vs</span>
+                                    <span className={`font-display text-sm font-black ${lost ? "text-out-red" : "text-foreground"}`}>{theirScore}</span>
+                                  </div>
+                                  <span className="flex-1" />
+                                  {margin > 0 && (
+                                    <span className={`text-[7px] font-display font-bold ${won ? "text-neon-green/70" : "text-out-red/70"}`}>
+                                      {won ? "+" : "-"}{margin} runs
+                                    </span>
+                                  )}
+                                  <span className="text-[6px] text-muted-foreground font-display">{formatDate(m.created_at)}</span>
+                                </div>
                               </div>
                             );
                           })}

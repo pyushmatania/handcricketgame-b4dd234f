@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { computePvpRecord, type PvpGame } from "@/hooks/usePvpStats";
 import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
@@ -16,6 +17,7 @@ import FormSparkline from "@/components/FormSparkline";
 import PlayerOfTheWeek from "@/components/PlayerOfTheWeek";
 import MostActiveTicker from "@/components/MostActiveTicker";
 import CanvasFireworks from "@/components/CanvasFireworks";
+import FriendsNetworkGraph from "@/components/FriendsNetworkGraph";
 import { getRankTier } from "@/lib/rankTiers";
 import { useWeeklyChallenges } from "@/hooks/useWeeklyChallenges";
 import { toast } from "@/components/ui/use-toast";
@@ -63,7 +65,7 @@ interface FriendProfile {
   rank_tier?: string;
 }
 
-type MainTab = "friends" | "global" | "challenges" | "rivalry" | "records" | "seasons" | "rage";
+type MainTab = "friends" | "global" | "challenges" | "rivalry" | "records" | "seasons" | "rage" | "network";
 
 interface SeasonEntry {
   user_id: string;
@@ -218,12 +220,51 @@ export default function LeaderboardPage() {
     if (!friendRows) { setFriendLeaders([]); return; }
     const ids = [user.id, ...friendRows.map((f: any) => f.friend_id)];
     const col = SORT_OPTIONS[sortBy].key;
-    const { data } = await supabase
-      .from("profiles")
-      .select("display_name, wins, losses, draws, high_score, total_matches, best_streak, abandons, user_id, avatar_index, xp, coins, rank_tier, current_streak, avatar_url")
-      .in("user_id", ids)
-      .order(col, { ascending: false });
-    if (data) setFriendLeaders(data as unknown as LeaderEntry[]);
+    const [profilesRes, pvpRes] = await Promise.all([
+      supabase.from("profiles")
+        .select("display_name, wins, losses, draws, high_score, total_matches, best_streak, abandons, user_id, avatar_index, xp, coins, rank_tier, current_streak, avatar_url")
+        .in("user_id", ids),
+      supabase.from("multiplayer_games")
+        .select("id, host_id, guest_id, host_score, guest_score, winner_id, status, abandoned_by, created_at, game_type")
+        .in("status", ["finished", "abandoned"])
+        .or(ids.map(id => `host_id.eq.${id}`).join(","))
+        .limit(1000),
+    ]);
+    
+    const profiles = profilesRes.data || [];
+    const pvpGames = (pvpRes.data as unknown as PvpGame[]) || [];
+    
+    // Build PvP record per user
+    const pvpByUser: Record<string, PvpGame[]> = {};
+    for (const g of pvpGames) {
+      if (ids.includes(g.host_id)) {
+        if (!pvpByUser[g.host_id]) pvpByUser[g.host_id] = [];
+        pvpByUser[g.host_id].push(g);
+      }
+      if (g.guest_id && ids.includes(g.guest_id)) {
+        if (!pvpByUser[g.guest_id]) pvpByUser[g.guest_id] = [];
+        pvpByUser[g.guest_id].push(g);
+      }
+    }
+    
+    // Combine AI + PvP stats
+    const combined: LeaderEntry[] = profiles.map((p: any) => {
+      const pvp = pvpByUser[p.user_id] ? computePvpRecord(pvpByUser[p.user_id], p.user_id) : null;
+      return {
+        ...p,
+        wins: p.wins + (pvp?.wins || 0),
+        losses: p.losses + (pvp?.losses || 0),
+        draws: p.draws + (pvp?.draws || 0),
+        total_matches: p.total_matches + (pvp?.totalGames || 0),
+        high_score: Math.max(p.high_score, pvp?.highScore || 0),
+        best_streak: Math.max(p.best_streak, pvp?.bestStreak || 0),
+        abandons: p.abandons + (pvp?.abandons || 0),
+      };
+    });
+    
+    // Sort by selected column
+    combined.sort((a, b) => (b[col] ?? 0) - (a[col] ?? 0));
+    setFriendLeaders(combined);
   };
 
   const loadRivalFriends = async () => {
@@ -395,6 +436,7 @@ export default function LeaderboardPage() {
     { key: "seasons", label: "SEASON", icon: "📅" },
     { key: "rivalry", label: "RIVALRY", icon: "⚔️" },
     { key: "rage", label: "RAGE", icon: "😤" },
+    { key: "network", label: "NETWORK", icon: "🕸️" },
   ];
 
   return (
@@ -652,6 +694,16 @@ export default function LeaderboardPage() {
                   </motion.div>
                 );
               })}
+            </motion.div>
+          )}
+
+          {/* FRIENDS NETWORK */}
+          {mainTab === "network" && (
+            <motion.div key="network" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <FriendsNetworkGraph onSelectFriend={(fid) => {
+                const fp = friendLeaders.find(f => f.user_id === fid);
+                if (fp) setSelectedFriendId(fid);
+              }} />
             </motion.div>
           )}
 
