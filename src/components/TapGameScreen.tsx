@@ -162,8 +162,21 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
-      <div className="absolute inset-0 stadium-gradient pointer-events-none" />
-      <div className="absolute inset-0 vignette pointer-events-none" />
+      {/* Immersive cricket ground background layers */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 stadium-gradient" />
+        <div className="absolute inset-0 vignette" />
+        {/* Outfield gradient */}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-[radial-gradient(ellipse_at_center,hsl(142_71%_45%/0.12),hsl(142_71%_45%/0.04)_55%,transparent_70%)]" />
+        {/* Pitch strip */}
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-32 w-16 h-40 bg-[linear-gradient(to_bottom,hsl(45_30%_60%/0.06),hsl(45_30%_60%/0.12),hsl(45_30%_60%/0.06))] rounded-sm" />
+        {/* Crease line */}
+        <div className="absolute inset-x-0 bottom-28 h-px bg-white/10 shadow-[0_0_16px_hsl(0_0%_100%/0.15)]" />
+        {/* Floodlight glows */}
+        <div className="absolute top-0 left-[15%] w-24 h-32 bg-[radial-gradient(circle,hsl(45_93%_70%/0.04),transparent_70%)]" />
+        <div className="absolute top-0 right-[15%] w-24 h-32 bg-[radial-gradient(circle,hsl(45_93%_70%/0.04),transparent_70%)]" />
+      </div>
+
       <CelebrationEffects lastResult={game.lastResult} gameResult={game.result} phase={game.phase} />
 
       {/* Pre-match ceremony */}
@@ -211,8 +224,8 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
         <RulesSheet />
       </div>
 
-      {/* Main content */}
-      <div className="relative z-10 flex-1 flex flex-col gap-3 px-4 pb-4 max-w-lg mx-auto w-full">
+      {/* Main content - flex layout with bottom-pinned controls */}
+      <div className="relative z-10 flex-1 flex flex-col px-4 pb-4 max-w-lg mx-auto w-full overflow-hidden">
         {/* Odd/Even Toss */}
         {game.phase === "not_started" && !showPreMatch && (
           <div className="mt-4">
