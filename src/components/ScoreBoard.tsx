@@ -173,24 +173,34 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
         </div>
 
         <div className="relative z-10">
-          {/* Batting indicator */}
+          {/* Batting indicator — prominent role banner */}
           <div className="flex items-center justify-center gap-2 mb-1.5">
-            <span className={`text-[8px] font-display font-black tracking-[0.25em] px-2 py-0.5 rounded-full ${
-              game.isBatting 
-                ? "bg-secondary/15 border border-secondary/25 text-secondary" 
-                : "bg-primary/15 border border-primary/25 text-primary"
-            }`}>
-              {game.isBatting ? "🏏 YOU BAT" : "🎯 YOU BOWL"}
-            </span>
+            <motion.span
+              key={game.isBatting ? "bat" : "bowl"}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className={`text-[8px] font-display font-black tracking-[0.25em] px-2.5 py-1 rounded-full ${
+                game.isBatting 
+                  ? "bg-secondary/15 border border-secondary/25 text-secondary" 
+                  : "bg-primary/15 border border-primary/25 text-primary"
+              }`}
+            >
+              {game.isBatting ? "🏏 YOU'RE BATTING" : "🎯 YOU'RE BOWLING"}
+            </motion.span>
           </div>
 
           {/* Score layout — two sides */}
           <div className="flex items-center justify-between mb-1.5">
             {/* Left side */}
             <div className="flex-1 text-center">
-              <p className="text-[7px] text-muted-foreground font-display font-bold tracking-[0.2em] mb-0.5">
-                {leftName.toUpperCase().slice(0, 10)}
-              </p>
+              <div className="flex items-center justify-center gap-1 mb-0.5">
+                <span className={`text-[7px] ${leftLabel === "BAT" ? "text-secondary" : "text-primary"}`}>
+                  {leftLabel === "BAT" ? "🏏" : "🎯"}
+                </span>
+                <p className="text-[7px] text-muted-foreground font-display font-bold tracking-[0.2em]">
+                  {leftName.toUpperCase().slice(0, 10)}
+                </p>
+              </div>
               <motion.div
                 key={`left-${leftScore}`}
                 initial={{ scale: 1.15 }}
@@ -205,7 +215,7 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
               </motion.div>
               <span className={`text-[6px] px-1.5 py-0.5 rounded-full font-display font-bold tracking-wider mt-0.5 inline-block ${
                 leftLabel === "BAT" ? "bg-secondary/10 border border-secondary/20 text-secondary" : "bg-primary/10 border border-primary/20 text-primary"
-              }`}>{leftLabel}</span>
+              }`}>{leftLabel === "BAT" ? "🏏 BATTING" : "🎯 BOWLING"}</span>
             </div>
 
             {/* VS / overs center */}
@@ -223,9 +233,14 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
 
             {/* Right side */}
             <div className="flex-1 text-center">
-              <p className="text-[7px] text-muted-foreground font-display font-bold tracking-[0.2em] mb-0.5">
-                {rightName.toUpperCase().slice(0, 10)}
-              </p>
+              <div className="flex items-center justify-center gap-1 mb-0.5">
+                <span className={`text-[7px] ${rightLabel === "BAT" ? "text-secondary" : "text-primary"}`}>
+                  {rightLabel === "BAT" ? "🏏" : "🎯"}
+                </span>
+                <p className="text-[7px] text-muted-foreground font-display font-bold tracking-[0.2em]">
+                  {rightName.toUpperCase().slice(0, 10)}
+                </p>
+              </div>
               <motion.div
                 key={`right-${rightScore}`}
                 initial={{ scale: 1.15 }}
@@ -240,7 +255,7 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
               </motion.div>
               <span className={`text-[6px] px-1.5 py-0.5 rounded-full font-display font-bold tracking-wider mt-0.5 inline-block ${
                 rightLabel === "BAT" ? "bg-secondary/10 border border-secondary/20 text-secondary" : "bg-primary/10 border border-primary/20 text-primary"
-              }`}>{rightLabel}</span>
+              }`}>{rightLabel === "BAT" ? "🏏 BATTING" : "🎯 BOWLING"}</span>
             </div>
           </div>
 
