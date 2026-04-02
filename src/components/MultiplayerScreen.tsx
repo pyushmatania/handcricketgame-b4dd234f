@@ -11,6 +11,7 @@ import VSIntroScreen from "./VSIntroScreen";
 import TapPlayingUI from "./TapPlayingUI";
 import EnhancedPreMatch from "./EnhancedPreMatch";
 import EnhancedPostMatch from "./EnhancedPostMatch";
+import { pickMatchCommentators, type Commentator } from "@/lib/commentaryDuo";
 import type { Move, BallResult } from "@/hooks/useHandCricket";
 import {
   claimMultiplayerGame,
