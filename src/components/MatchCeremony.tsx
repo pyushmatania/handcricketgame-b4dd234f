@@ -312,16 +312,18 @@ export function PostMatchCeremony({ playerName, opponentName, result, playerScor
                     ))}
                   </div>
 
-                  {/* Stats commentary line */}
+                  {/* Stats/PvP commentary line */}
                   <AnimatePresence mode="wait">
                     <motion.p
                       key={lineIndex}
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -5 }}
-                      className="text-[9px] text-muted-foreground text-center font-display"
+                      className={`text-[9px] text-center font-display ${lineIndex >= 100 ? "text-out-red font-bold" : "text-muted-foreground"}`}
                     >
-                      🎙️ {statsLines[Math.min(lineIndex, statsLines.length - 1)]}
+                      {lineIndex >= 100
+                        ? `😈 ${pvpLines[lineIndex - 100] || ""}`
+                        : `🎙️ ${statsLines[Math.min(lineIndex, statsLines.length - 1)]}`}
                     </motion.p>
                   </AnimatePresence>
 
