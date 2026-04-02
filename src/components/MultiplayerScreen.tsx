@@ -1082,7 +1082,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
         {/* PvP Post-match ceremony overlay */}
         {showPvPPostMatch && currentGame && (
-          <PostMatchCeremony
+          <EnhancedPostMatch
             playerName={myName}
             opponentName={opponentName}
             result={currentGame.winner_id === user?.id ? "win" : currentGame.winner_id ? "loss" : "draw"}
@@ -1091,6 +1091,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
             ballHistory={pvpBallHistory}
             onComplete={() => setShowPvPPostMatch(false)}
             isPvP={true}
+            rivalryStats={rivalryStats}
           />
         )}
 
