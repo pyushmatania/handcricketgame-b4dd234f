@@ -1,7 +1,7 @@
 /**
  * ElevenLabs Audio Engine
- * Primary audio system with automatic fallback to Web Speech/Audio API
- * Uses Brian voice (nPczCjzI2devNBz1zQrb) — deep, authoritative sports broadcaster
+ * Multi-voice TTS with automatic fallback to Web Speech/Audio API
+ * Supports 5 commentator voices for duo commentary system
  */
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -9,20 +9,21 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const BRIAN_VOICE_ID = "nPczCjzI2devNBz1zQrb";
 
 // ─── Audio Cache ─────────────────────────────────────────────────
-const audioCache = new Map<string, string>(); // text → blobURL
+const audioCache = new Map<string, string>(); // text:voiceId → blobURL
 let elevenLabsAvailable = true; // flips false on 402 (tokens exhausted)
 let currentAudio: HTMLAudioElement | null = null;
 
-function getCacheKey(text: string): string {
-  return text.trim().toLowerCase().slice(0, 200);
+function getCacheKey(text: string, voiceId?: string): string {
+  return `${(voiceId || BRIAN_VOICE_ID)}:${text.trim().toLowerCase().slice(0, 200)}`;
 }
 
 // ─── TTS ─────────────────────────────────────────────────────────
 
-export async function speakElevenLabs(text: string): Promise<boolean> {
+export async function speakElevenLabs(text: string, voiceId?: string): Promise<boolean> {
   if (!elevenLabsAvailable) return false;
 
-  const key = getCacheKey(text);
+  const vid = voiceId || BRIAN_VOICE_ID;
+  const key = getCacheKey(text, vid);
   
   // Check cache first
   if (audioCache.has(key)) {
@@ -39,7 +40,7 @@ export async function speakElevenLabs(text: string): Promise<boolean> {
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${SUPABASE_KEY}`,
         },
-        body: JSON.stringify({ text, voiceId: BRIAN_VOICE_ID }),
+        body: JSON.stringify({ text, voiceId: vid }),
       }
     );
 
@@ -59,6 +60,38 @@ export async function speakElevenLabs(text: string): Promise<boolean> {
     console.warn("[ElevenLabs] TTS failed, will use fallback:", err);
     return false;
   }
+}
+
+/** Speak a sequence of lines with different voices, one after another */
+export async function speakDuoLines(lines: { text: string; voiceId: string }[]): Promise<void> {
+  for (const line of lines) {
+    const clean = line.text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").trim();
+    if (!clean) continue;
+    const success = await speakElevenLabs(clean, line.voiceId);
+    if (!success) {
+      // Fallback to web speech
+      await speakWebSpeech(clean);
+    }
+    // Small pause between speakers
+    await new Promise(r => setTimeout(r, 300));
+  }
+}
+
+function speakWebSpeech(text: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (!("speechSynthesis" in window)) { resolve(); return; }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.92;
+    utterance.pitch = 1.05;
+    utterance.volume = 0.85;
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Daniel"))) || voices.find(v => v.lang.startsWith("en"));
+    if (preferred) utterance.voice = preferred;
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    window.speechSynthesis.speak(utterance);
+  });
 }
 
 function playAudioUrl(url: string): Promise<boolean> {
