@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Commentator, CommentaryLine } from "@/lib/commentaryDuo";
+import stadiumNight from "@/assets/stadium-night.jpg";
 
 interface OverBreakStats {
   overRuns: number;
