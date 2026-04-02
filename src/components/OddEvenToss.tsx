@@ -4,7 +4,7 @@ import { SFX } from "@/lib/sounds";
 import { useSettings } from "@/contexts/SettingsContext";
 
 const HAND_EMOJIS: Record<number, string> = {
-  1: "☝️", 2: "✌️", 3: "🤟", 4: "🖖", 5: "🖐️", 6: "👍",
+  1: "☝️", 2: "✌️", 3: "🤟", 4: "🖖", 6: "👍",
 };
 
 interface OddEvenTossProps {
@@ -35,7 +35,8 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
   const handleChooseNumber = (num: number) => {
     if (soundEnabled) SFX.tossHandPick();
     setPlayerNumber(num);
-    const ai = Math.floor(Math.random() * 6) + 1;
+    const aiOptions = [1, 2, 3, 4, 6];
+    const ai = aiOptions[Math.floor(Math.random() * aiOptions.length)];
     setAiNumber(ai);
 
     const total = num + ai;
@@ -161,7 +162,7 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
               You chose <span className="text-primary font-bold uppercase">{playerChoice}</span>. Show your hand!
             </p>
             <div className="grid grid-cols-3 gap-2">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
+              {[1, 2, 3, 4, 6].map((n) => (
                 <motion.button
                   key={n}
                   whileTap={{ scale: 0.85 }}
