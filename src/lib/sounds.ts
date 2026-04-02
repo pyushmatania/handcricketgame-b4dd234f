@@ -170,6 +170,16 @@ export const SFX = {
     setTimeout(() => playTone(400, 0.2, "sine", 0.08), 150);
   },
 
+  /** Match invite notification — attention-grabbing alert */
+  matchInvite() {
+    playTone(880, 0.08, "sine", 0.12);
+    setTimeout(() => playTone(1100, 0.08, "sine", 0.14), 100);
+    setTimeout(() => playTone(1320, 0.1, "sine", 0.16), 200);
+    setTimeout(() => playTone(1100, 0.08, "sine", 0.12), 350);
+    setTimeout(() => playTone(1320, 0.12, "sine", 0.16), 450);
+    setTimeout(() => playChord([880, 1100, 1320], 0.3, "sine", 0.1), 550);
+  },
+
   /** Firework whoosh */
   fireworkWhoosh() {
     try {
@@ -250,4 +260,6 @@ export const Haptics = {
   error() { navigator?.vibrate?.([40, 30, 40]); },
   out() { navigator?.vibrate?.([50, 30, 80]); },
   firework() { navigator?.vibrate?.([10, 20, 10, 20, 30]); },
+  /** Match invite buzz */
+  matchInvite() { navigator?.vibrate?.([30, 50, 30, 50, 60]); },
 };
