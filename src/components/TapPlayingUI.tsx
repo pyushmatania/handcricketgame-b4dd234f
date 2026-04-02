@@ -68,6 +68,7 @@ export default function TapPlayingUI({
   const [overBreakData, setOverBreakData] = useState<any>(null);
   const [showWicketBreakdown, setShowWicketBreakdown] = useState(false);
   const [wicketBreakdownData, setWicketBreakdownData] = useState<WicketBreakdownData | null>(null);
+  const [floodlightFlicker, setFloodlightFlicker] = useState(false);
   const prevPhaseRef = useRef(phase);
   const prevBallCountRef = useRef(0);
   const prevWicketsRef = useRef({ user: 0, ai: 0 });
