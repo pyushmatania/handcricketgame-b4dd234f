@@ -178,7 +178,7 @@ export default function SettingsPage() {
                       );
                     })}
 
-                    {/* Voice picker inside Commentary group */}
+                    {/* Voice Engine selector inside Commentary group */}
                     {group.title === "COMMENTARY" && settings.voiceEnabled && (
                       <motion.div
                         initial={{ opacity: 0, y: -5 }}
@@ -186,8 +186,45 @@ export default function SettingsPage() {
                         className="glass-premium rounded-xl p-3.5"
                       >
                         <div className="flex items-center gap-2 mb-3">
+                          <span className="text-base">🔊</span>
+                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">VOICE ENGINE</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {VOICE_ENGINES.map((engine) => {
+                            const isActive = settings.voiceEngine === engine.id;
+                            return (
+                              <button
+                                key={engine.id}
+                                onClick={() => settings.setVoiceEngine(engine.id)}
+                                className={`p-2.5 rounded-xl text-center transition-all ${
+                                  isActive
+                                    ? "glass-premium border border-primary/30 shadow-[0_0_12px_hsl(217_91%_60%/0.15)]"
+                                    : "glass-card border border-transparent hover:border-muted-foreground/10"
+                                }`}
+                              >
+                                <span className="text-lg block mb-1">{engine.emoji}</span>
+                                <span className={`font-display text-[8px] font-bold block ${isActive ? "text-primary" : "text-foreground"}`}>{engine.name}</span>
+                                <span className="text-[6px] text-muted-foreground block mt-0.5">{engine.desc}</span>
+                                {isActive && (
+                                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-primary text-xs block mt-1">✓</motion.span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Voice picker inside Commentary group — only show for ElevenLabs/Auto */}
+                    {group.title === "COMMENTARY" && settings.voiceEnabled && settings.voiceEngine !== "system" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-premium rounded-xl p-3.5"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
                           <span className="text-base">🗣️</span>
-                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">COMMENTARY VOICE</span>
+                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">ELEVENLABS VOICE</span>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                           {COMMENTARY_VOICES.map((voice) => {
