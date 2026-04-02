@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import PlayerAvatar from "@/components/PlayerAvatar";
+import FriendStatsModal from "@/components/FriendStatsModal";
 import {
   createMultiplayerRoom,
   formatPostgrestError,
@@ -54,6 +55,7 @@ export default function FriendsPage() {
   const [feedback, setFeedback] = useState("");
   const [challengeTargetId, setChallengeTargetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<FriendProfile | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -335,7 +337,8 @@ export default function FriendsPage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="glass-premium rounded-xl p-3 flex items-center gap-3"
+                        className="glass-premium rounded-xl p-3 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+                        onClick={() => setSelectedFriend(f)}
                       >
                         <PlayerAvatar avatarUrl={f.avatar_url} avatarIndex={f.avatar_index ?? 0} size="sm" />
                         <div className="flex-1 min-w-0">
@@ -344,7 +347,7 @@ export default function FriendsPage() {
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.85 }}
-                          onClick={() => setChallengeTargetId(f.user_id)}
+                          onClick={(e) => { e.stopPropagation(); setChallengeTargetId(f.user_id); }}
                           className="px-3 py-2 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display text-[8px] font-bold tracking-wider"
                         >
                           LET'S BATTLE
@@ -546,6 +549,17 @@ export default function FriendsPage() {
             <button onClick={() => setChallengeTargetId(null)} className="w-full py-2 text-xs text-muted-foreground">Cancel</button>
           </div>
         </div>
+      )}
+
+      {selectedFriend && (
+        <FriendStatsModal
+          friend={selectedFriend}
+          onClose={() => setSelectedFriend(null)}
+          onChallenge={(friendId) => {
+            setSelectedFriend(null);
+            setChallengeTargetId(friendId);
+          }}
+        />
       )}
 
       <BottomNav />

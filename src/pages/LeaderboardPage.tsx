@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import RivalryCard from "@/components/RivalryCard";
+import FriendStatsModal from "@/components/FriendStatsModal";
 import { toast } from "@/components/ui/use-toast";
 import {
   createMultiplayerRoom,
@@ -98,7 +99,7 @@ const RAGE_TITLES = [
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [mainTab, setMainTab] = useState<MainTab>("global");
+  const [mainTab, setMainTab] = useState<MainTab>("friends");
   const [sortBy, setSortBy] = useState(0);
   const [leaders, setLeaders] = useState<LeaderEntry[]>([]);
   const [friendLeaders, setFriendLeaders] = useState<LeaderEntry[]>([]);
@@ -110,6 +111,7 @@ export default function LeaderboardPage() {
   const [viewingArchive, setViewingArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<any[]>([]);
   const [challengeTargetId, setChallengeTargetId] = useState<string | null>(null);
+  const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
 
   useEffect(() => {
     if (mainTab === "global" || mainTab === "rage") loadGlobal();
@@ -711,7 +713,8 @@ export default function LeaderboardPage() {
                           initial={{ opacity: 0, x: -15 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.2 + i * 0.04 }}
-                          className={`glass-premium rounded-xl p-3 flex items-center gap-3 ${isMe ? "border border-primary/25 shadow-[0_0_15px_hsl(217_91%_60%/0.1)]" : ""}`}
+                          onClick={() => { if (mainTab === "friends" && !isMe) setSelectedFriendId(player.user_id); }}
+                          className={`glass-premium rounded-xl p-3 flex items-center gap-3 ${isMe ? "border border-primary/25 shadow-[0_0_15px_hsl(217_91%_60%/0.1)]" : ""} ${mainTab === "friends" && !isMe ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
                         >
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-display font-black text-xs ${isMe ? "bg-gradient-to-br from-primary/20 to-primary/10 text-primary" : "bg-muted/40 text-muted-foreground"}`}>
                             #{i + 4}
@@ -799,6 +802,20 @@ export default function LeaderboardPage() {
           </div>
         </div>
       )}
+      {selectedFriendId && (() => {
+        const fl = friendLeaders.find(f => f.user_id === selectedFriendId);
+        if (!fl) return null;
+        return (
+          <FriendStatsModal
+            friend={{ ...fl, avatar_index: 0 }}
+            onClose={() => setSelectedFriendId(null)}
+            onChallenge={(friendId) => {
+              setSelectedFriendId(null);
+              setChallengeTargetId(friendId);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
