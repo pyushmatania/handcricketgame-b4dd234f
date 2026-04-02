@@ -17,6 +17,7 @@ interface PostMatchProps {
   opponentScore: number;
   ballHistory: BallResult[];
   onComplete: () => void;
+  isPvP?: boolean;
 }
 
 type Stage = "result" | "commentary" | "stats" | "done";
