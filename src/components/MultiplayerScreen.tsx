@@ -256,8 +256,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
       setCurrentGame(game);
       setPhase(statusToPhase(game.status));
-      const isHostGame = game.host_id === user.id;
-      setReserveTime(isHostGame ? game.host_reserve_ms : game.guest_reserve_ms);
+      // Timer resets happen in useEffect
       if (game.guest_id) {
         loadOpponentName(game);
       }
