@@ -13,6 +13,7 @@ import AchievementFeed from "@/components/AchievementFeed";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import FormSparkline from "@/components/FormSparkline";
 import PlayerOfTheWeek from "@/components/PlayerOfTheWeek";
+import MostActiveTicker from "@/components/MostActiveTicker";
 import { getRankTier } from "@/lib/rankTiers";
 import { useWeeklyChallenges } from "@/hooks/useWeeklyChallenges";
 import { toast } from "@/components/ui/use-toast";
@@ -422,8 +423,10 @@ export default function LeaderboardPage() {
           </div>
         )}
 
+        {/* Most Active Today ticker */}
+        {(mainTab === "global" || mainTab === "friends") && <MostActiveTicker />}
+
         <AnimatePresence mode="wait">
-          {/* CHALLENGES TAB */}
           {mainTab === "challenges" && (
             <motion.div key="challenges" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               {myStats && (
