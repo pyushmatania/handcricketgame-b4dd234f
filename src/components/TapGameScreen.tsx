@@ -243,34 +243,30 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
           <ScoreBoard game={game} playerName={playerName} aiName={AI_NAME} aiEmoji={AI_EMOJI} />
         )}
 
-        {/* Batting/Bowling indicator */}
+        {/* Batting/Bowling indicator - compact inline */}
         {game.phase !== "not_started" && game.phase !== "finished" && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center justify-center gap-2"
-          >
-            <div className={`px-4 py-2 rounded-xl font-display text-[10px] font-black tracking-[0.2em] border ${
+          <div className="flex items-center justify-center">
+            <div className={`px-3 py-1 rounded-lg font-display text-[9px] font-black tracking-[0.15em] border ${
               game.isBatting
-                ? "bg-gradient-to-r from-secondary/15 to-secondary/5 border-secondary/30 text-secondary"
-                : "bg-gradient-to-r from-primary/15 to-primary/5 border-primary/30 text-primary"
+                ? "bg-secondary/10 border-secondary/25 text-secondary"
+                : "bg-primary/10 border-primary/25 text-primary"
             }`}>
               {game.isBatting ? "⚡ YOU ARE BATTING" : "🎯 YOU ARE BOWLING"}
             </div>
-          </motion.div>
+          </div>
         )}
 
-        {/* Commentary bar */}
+        {/* Commentary bar - compact */}
         <AnimatePresence>
           {commentary && (
             <motion.div
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              className="glass-card rounded-xl px-4 py-2.5 text-center flex items-center justify-center gap-2"
+              className="glass-card rounded-lg px-3 py-1.5 text-center flex items-center justify-center gap-1.5"
             >
-              <span className="text-xs">📢</span>
-              <p className="font-display text-[10px] font-bold text-foreground tracking-wider">
+              <span className="text-[10px]">📢</span>
+              <p className="font-display text-[9px] font-bold text-foreground tracking-wider line-clamp-1">
                 {commentary}
               </p>
             </motion.div>
