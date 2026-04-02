@@ -191,7 +191,7 @@ export default function LeaderboardPage() {
     const ids = friendRows.map((f: any) => f.friend_id);
     const { data } = await supabase
       .from("profiles")
-      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, abandons")
+      .select("user_id, display_name, wins, losses, draws, total_matches, high_score, best_streak, abandons, current_streak, avatar_url, avatar_index, xp, coins, rank_tier")
       .in("user_id", ids);
     if (data) setRivalFriends(data as unknown as FriendProfile[]);
   };
