@@ -176,10 +176,10 @@ export default function TapPlayingUI({
         {lastResult && phase !== "not_started" && phase !== "finished" && !waitingForOpponent && (
           <motion.div
             key={lastResult.description}
-            initial={{ opacity: 0, scale: 0.8, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="glass-premium rounded-2xl p-4 text-center relative overflow-hidden"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="glass-premium rounded-xl p-2.5 text-center relative overflow-hidden"
           >
             <motion.div
               initial={{ opacity: 0.4 }}
@@ -187,17 +187,17 @@ export default function TapPlayingUI({
               transition={{ duration: 0.6 }}
               className={`absolute inset-0 ${lastResult.runs === "OUT" ? "bg-out-red/15" : "bg-primary/10"}`}
             />
-            <div className="flex items-center justify-center gap-8 relative z-10">
+            <div className="flex items-center justify-center gap-5 relative z-10">
               <div className="text-center">
-                <p className="text-[7px] text-muted-foreground font-bold tracking-[0.2em] mb-1">{playerName.toUpperCase().slice(0, 8)}</p>
+                <p className="text-[6px] text-muted-foreground font-bold tracking-[0.2em] mb-0.5">{playerName.toUpperCase().slice(0, 8)}</p>
                 <motion.div
                   initial={{ rotateY: 90 }}
                   animate={{ rotateY: 0 }}
-                  className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center mx-auto"
+                  className="w-11 h-11 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center mx-auto"
                 >
-                  <span className="text-3xl">{MOVES_CONFIG.find((m) => m.move === lastResult?.userMove)?.emoji || "❓"}</span>
+                  <span className="text-2xl">{MOVES_CONFIG.find((m) => m.move === lastResult?.userMove)?.emoji || "❓"}</span>
                 </motion.div>
-                <p className="text-[10px] font-display font-bold text-primary mt-1.5 tracking-wider">
+                <p className="text-[9px] font-display font-bold text-primary mt-1 tracking-wider">
                   {lastResult.userMove === "DEF" ? "DEF" : lastResult.userMove}
                 </p>
               </div>
@@ -205,7 +205,7 @@ export default function TapPlayingUI({
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", delay: 0.15 }}
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center font-display font-black text-sm ${
+                className={`w-11 h-11 rounded-xl flex items-center justify-center font-display font-black text-xs ${
                   lastResult.runs === "OUT"
                     ? "bg-gradient-to-br from-out-red/20 to-out-red/10 border-2 border-out-red/30 text-out-red"
                     : "bg-gradient-to-br from-neon-green/20 to-neon-green/10 border-2 border-neon-green/30 text-neon-green"
@@ -215,16 +215,16 @@ export default function TapPlayingUI({
                 {lastResult.runs === "OUT" ? "OUT" : `+${lastResult.runs}`}
               </motion.div>
               <div className="text-center">
-                <p className="text-[7px] text-muted-foreground font-bold tracking-[0.2em] mb-1">{opponentName.toUpperCase()}</p>
+                <p className="text-[6px] text-muted-foreground font-bold tracking-[0.2em] mb-0.5">{opponentName.toUpperCase()}</p>
                 <motion.div
                   initial={{ rotateY: -90 }}
                   animate={{ rotateY: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/20 flex items-center justify-center mx-auto relative"
+                  className="w-11 h-11 rounded-lg bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/20 flex items-center justify-center mx-auto relative"
                 >
-                  <span className="text-3xl">{MOVES_CONFIG.find((m) => m.move === lastResult?.aiMove)?.emoji || opponentEmoji}</span>
+                  <span className="text-2xl">{MOVES_CONFIG.find((m) => m.move === lastResult?.aiMove)?.emoji || opponentEmoji}</span>
                 </motion.div>
-                <p className="text-[10px] font-display font-bold text-accent mt-1.5 tracking-wider">
+                <p className="text-[9px] font-display font-bold text-accent mt-1 tracking-wider">
                   {lastResult.aiMove === "DEF" ? "DEF" : lastResult.aiMove}
                 </p>
               </div>
@@ -267,7 +267,7 @@ export default function TapPlayingUI({
                 whileTap={{ scale: 0.8 }}
                 onClick={() => handleMove(m.move)}
                 disabled={effectiveCooldown}
-                className={`relative py-4 rounded-2xl font-display font-bold text-sm flex flex-col items-center gap-1 transition-all border backdrop-blur-sm ${
+                className={`relative py-3 rounded-xl font-display font-bold text-sm flex flex-col items-center gap-0.5 transition-all border backdrop-blur-sm ${
                   effectiveCooldown
                     ? "opacity-30 cursor-not-allowed border-transparent bg-muted/20"
                     : lastPlayed === m.move
@@ -275,14 +275,14 @@ export default function TapPlayingUI({
                     : `bg-gradient-to-br ${m.color} text-foreground ${m.glow}`
                 }`}
               >
-                <span className="text-2xl">{m.emoji}</span>
-                <span className="text-[9px] tracking-wider">{m.label}</span>
+                <span className="text-xl">{m.emoji}</span>
+                <span className="text-[8px] tracking-wider">{m.label}</span>
                 {effectiveCooldown && lastPlayed === m.move && (
                   <motion.div
                     initial={{ scaleX: 1 }}
                     animate={{ scaleX: 0 }}
                     transition={{ duration: 0.8, ease: "linear" }}
-                    className="absolute bottom-1 left-3 right-3 h-0.5 bg-primary rounded-full origin-left"
+                    className="absolute bottom-0.5 left-2 right-2 h-0.5 bg-primary rounded-full origin-left"
                   />
                 )}
               </motion.button>
