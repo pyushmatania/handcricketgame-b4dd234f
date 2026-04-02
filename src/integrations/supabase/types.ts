@@ -14,6 +14,82 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievement_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message: string | null
+          record_break_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message?: string | null
+          record_break_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message?: string | null
+          record_break_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievement_reactions_record_break_id_fkey"
+            columns: ["record_break_id"]
+            isOneToOne: false
+            referencedRelation: "record_breaks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_progress: {
+        Row: {
+          challenge_id: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_value: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friend_requests: {
         Row: {
           created_at: string
@@ -374,6 +450,42 @@ export type Database = {
           total_matches?: number
           user_id?: string
           wins?: number
+        }
+        Relationships: []
+      }
+      weekly_challenges: {
+        Row: {
+          challenge_type: string
+          created_at: string
+          description: string
+          id: string
+          reward_label: string | null
+          target_value: number
+          title: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          challenge_type: string
+          created_at?: string
+          description: string
+          id?: string
+          reward_label?: string | null
+          target_value: number
+          title: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          challenge_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          reward_label?: string | null
+          target_value?: number
+          title?: string
+          week_end?: string
+          week_start?: string
         }
         Relationships: []
       }
