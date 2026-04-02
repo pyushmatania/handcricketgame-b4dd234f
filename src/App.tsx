@@ -33,6 +33,7 @@ function AnimatedRoutes() {
       <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
       <Route path="/settings" element={<PageTransition><SettingsPage /></PageTransition>} />
       <Route path="/friends" element={<PageTransition><FriendsPage /></PageTransition>} />
+      <Route path="/history" element={<PageTransition><MatchHistoryPage /></PageTransition>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
