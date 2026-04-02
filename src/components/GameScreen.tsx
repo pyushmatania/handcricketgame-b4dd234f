@@ -272,6 +272,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           playerScore={game.userScore}
           opponentScore={game.aiScore}
           ballHistory={game.ballHistory}
+          commentators={matchCommentators}
           onComplete={() => setShowPostMatch(false)}
         />
       )}
