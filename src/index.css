@@ -189,8 +189,32 @@
   /* ── Background Effects ────────────────────── */
   .stadium-gradient {
     background:
-      radial-gradient(ellipse at bottom, hsl(217 50% 15% / 0.4) 0%, hsl(var(--background)) 70%),
-      radial-gradient(ellipse at 50% 100%, hsl(142 50% 25% / 0.08) 0%, transparent 50%);
+      radial-gradient(ellipse at bottom, hsl(142 60% 30% / 0.15) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 80%, hsl(142 50% 35% / 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at top, hsl(217 50% 15% / 0.4) 0%, hsl(var(--background)) 70%);
+  }
+
+  .stadium-ground {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .stadium-ground-overlay {
+    background:
+      linear-gradient(180deg, hsl(222 47% 6% / 0.3) 0%, hsl(222 47% 6% / 0.1) 30%, hsl(222 47% 6% / 0.5) 80%, hsl(222 47% 6% / 0.95) 100%),
+      radial-gradient(ellipse at 50% 40%, transparent 30%, hsl(222 47% 6% / 0.6) 100%);
+  }
+
+  .floodlight-glow {
+    background:
+      radial-gradient(circle at 15% 10%, hsl(60 80% 95% / 0.06) 0%, transparent 25%),
+      radial-gradient(circle at 85% 10%, hsl(60 80% 95% / 0.06) 0%, transparent 25%),
+      radial-gradient(circle at 50% 5%, hsl(217 80% 75% / 0.04) 0%, transparent 30%);
+  }
+
+  .boundary-glow {
+    box-shadow: inset 0 0 60px hsl(142 50% 40% / 0.08), inset 0 0 120px hsl(217 60% 50% / 0.04);
   }
 
   .hero-gradient {
