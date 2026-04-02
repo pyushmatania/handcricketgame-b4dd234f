@@ -214,8 +214,8 @@ export default function OverBreakScreen({ stats, commentaryLines, commentators, 
                 transition={{ duration: 0.3 }}
                 className={`flex gap-2 ${isLeft ? "" : "flex-row-reverse"}`}
               >
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                  isLeft ? "bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20" : "bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20"
+                <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm backdrop-blur-md ${
+                  isLeft ? "bg-primary/15 border border-primary/25 shadow-[0_0_12px_hsl(217_91%_60%/0.15)]" : "bg-accent/15 border border-accent/25 shadow-[0_0_12px_hsl(168_80%_50%/0.15)]"
                 }`}>
                   {comm.avatar}
                 </div>
@@ -223,12 +223,12 @@ export default function OverBreakScreen({ stats, commentaryLines, commentators, 
                   <p className={`text-[7px] font-display font-bold tracking-wider mb-0.5 ${isLeft ? "text-primary" : "text-accent"}`}>
                     {comm.name.toUpperCase()}
                   </p>
-                  <div className={`px-3 py-2 rounded-2xl ${
+                  <div className={`px-3 py-2.5 rounded-2xl backdrop-blur-lg ${
                     isLeft 
-                      ? "bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15 rounded-tl-sm" 
-                      : "bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/15 rounded-tr-sm"
+                      ? "bg-white/[0.06] border border-white/[0.12] rounded-tl-sm shadow-[inset_0_1px_0_hsl(217_91%_60%/0.1),0_2px_8px_rgba(0,0,0,0.3)]" 
+                      : "bg-white/[0.06] border border-white/[0.12] rounded-tr-sm shadow-[inset_0_1px_0_hsl(168_80%_50%/0.1),0_2px_8px_rgba(0,0,0,0.3)]"
                   }`}>
-                    <p className="text-[10px] font-body text-foreground leading-relaxed">{line.text}</p>
+                    <p className="text-[10px] font-body text-foreground/90 leading-relaxed">{line.text}</p>
                   </div>
                 </div>
               </motion.div>
