@@ -43,6 +43,7 @@ export default function CelebrationEffects({ lastResult, gameResult, phase }: Ce
   const [effectType, setEffectType] = useState<"none" | "four" | "six" | "wicket" | "win">("none");
   const [showFlash, setShowFlash] = useState(false);
   const [flashColor, setFlashColor] = useState("primary");
+  const [crowdWave, setCrowdWave] = useState<{ active: boolean; intensity: "normal" | "big" | "massive" }>({ active: false, intensity: "normal" });
 
   // Handle ball results
   useEffect(() => {
