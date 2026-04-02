@@ -25,6 +25,9 @@ interface FriendProfile {
   rank_tier?: string;
   login_streak?: number;
   best_login_streak?: number;
+  total_runs?: number;
+  total_sixes?: number;
+  total_fours?: number;
 }
 
 interface MyProfile {
@@ -156,6 +159,8 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
   const [records, setRecords] = useState<RecordBreak[]>([]);
   const [fullFriendProfile, setFullFriendProfile] = useState<FriendProfile | null>(null);
   const [recentFriendMatches, setRecentFriendMatches] = useState<any[]>([]);
+  const [allFriendMatches, setAllFriendMatches] = useState<any[]>([]);
+  const [showAllMatches, setShowAllMatches] = useState(false);
   const [loading, setLoading] = useState(true);
   const { pvpRecord: friendPvp } = usePvpStats(friend?.user_id);
 
@@ -170,7 +175,7 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
   const loadFullFriendProfile = async () => {
     if (!friend) return;
     const { data } = await supabase.from("profiles")
-      .select("user_id, display_name, wins, losses, draws, total_matches, high_score, best_streak, current_streak, abandons, avatar_url, avatar_index, xp, coins, rank_tier, login_streak, best_login_streak")
+      .select("user_id, display_name, wins, losses, draws, total_matches, high_score, best_streak, current_streak, abandons, avatar_url, avatar_index, xp, coins, rank_tier, login_streak, best_login_streak, total_runs, total_sixes, total_fours")
       .eq("user_id", friend.user_id).single();
     if (data) setFullFriendProfile(data as unknown as FriendProfile);
   };
@@ -242,6 +247,7 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
     const { data: myMatches } = await supabase
       .from("matches").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1000);
 
+    setAllFriendMatches(friendMatches || []);
     setRecentFriendMatches((friendMatches || []).slice(0, 15));
     setFriendMatchStats(computeMatchStats(friendMatches || []));
     setMyMatchStats(computeMatchStats(myMatches || []));
@@ -736,15 +742,59 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
                       );
                     })()}
 
-                    {/* Recent Match History */}
-                    {recentFriendMatches.length > 0 && (
+                    {/* Lifetime Stats */}
+                    <div className="glass-premium rounded-xl p-3 border border-score-gold/15">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm">📊</span>
+                        <span className="text-[6px] font-display text-muted-foreground tracking-widest">LIFETIME STATS</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: "TOTAL RUNS", value: fp.total_runs ?? friendMatchStats?.totalRuns ?? 0, emoji: "🏃", color: "text-foreground" },
+                          { label: "TOTAL 6s", value: fp.total_sixes ?? friendMatchStats?.sixes ?? 0, emoji: "💥", color: "text-primary" },
+                          { label: "TOTAL 4s", value: fp.total_fours ?? friendMatchStats?.fours ?? 0, emoji: "🎯", color: "text-neon-green" },
+                        ].map((s) => (
+                          <div key={s.label} className="glass-card rounded-lg p-2 text-center">
+                            <span className="text-sm block">{s.emoji}</span>
+                            <span className={`font-display text-lg font-black ${s.color} block leading-none mt-0.5`}>{s.value}</span>
+                            <span className="text-[5px] font-display text-muted-foreground tracking-widest">{s.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {friendMatchStats && (
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div className="glass-card rounded-lg p-2 text-center">
+                            <span className="text-[5px] font-display text-muted-foreground tracking-widest block">AVG SCORE</span>
+                            <span className="font-display text-sm font-black text-foreground">{friendMatchStats.avgScore}</span>
+                          </div>
+                          <div className="glass-card rounded-lg p-2 text-center">
+                            <span className="text-[5px] font-display text-muted-foreground tracking-widest block">STRIKE RATE</span>
+                            <span className="font-display text-sm font-black text-primary">{friendMatchStats.strikeRate}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Full Match History */}
+                    {allFriendMatches.length > 0 && (
                       <>
-                        <div className="flex items-center gap-2">
-                          <div className="w-1 h-4 rounded-full bg-primary" />
-                          <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">RECENT MATCHES</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1 h-4 rounded-full bg-primary" />
+                            <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">MATCH HISTORY ({allFriendMatches.length})</span>
+                          </div>
+                          {allFriendMatches.length > 10 && (
+                            <motion.button
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setShowAllMatches(!showAllMatches)}
+                              className="text-[7px] font-display font-bold text-primary tracking-wider"
+                            >
+                              {showAllMatches ? "SHOW LESS ▲" : "SHOW ALL ▼"}
+                            </motion.button>
+                          )}
                         </div>
                         <div className="space-y-1.5">
-                          {recentFriendMatches.slice(0, 10).map((m) => {
+                          {(showAllMatches ? allFriendMatches : allFriendMatches.slice(0, 10)).map((m) => {
                             const won = m.result === "win";
                             const lost = m.result === "loss";
                             const margin = Math.abs(m.user_score - m.ai_score);
