@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { BallResult, GameResult } from "@/hooks/useHandCricket";
+import CrowdWave from "./CrowdWave";
 
 interface Particle {
   id: number;
