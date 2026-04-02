@@ -64,39 +64,24 @@ export type Database = {
       }
       match_invites: {
         Row: {
-          accepted_at: string | null
-          cancelled_at: string | null
           created_at: string
-          declined_at: string | null
-          expires_at: string
           from_user_id: string
-          game_type: string
           game_id: string
           id: string
           status: string
           to_user_id: string
         }
         Insert: {
-          accepted_at?: string | null
-          cancelled_at?: string | null
           created_at?: string
-          declined_at?: string | null
-          expires_at?: string
           from_user_id: string
-          game_type?: string
           game_id: string
           id?: string
           status?: string
           to_user_id: string
         }
         Update: {
-          accepted_at?: string | null
-          cancelled_at?: string | null
           created_at?: string
-          declined_at?: string | null
-          expires_at?: string
           from_user_id?: string
-          game_type?: string
           game_id?: string
           id?: string
           status?: string
