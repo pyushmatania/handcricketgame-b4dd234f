@@ -378,7 +378,7 @@ type PreStage = "players" | "rivalry" | "toss" | "go";
 export function PreMatchCeremony({ playerName, opponentName, tossWinner, battingFirst, rivalryStats, onComplete }: PreMatchProps) {
   const [stage, setStage] = useState<PreStage>("players");
   const [visible, setVisible] = useState(true);
-  const { voiceEnabled, soundEnabled } = useSettings();
+  const { voiceEnabled, soundEnabled, voiceEngine } = useSettings();
 
   const hasRivalry = rivalryStats && rivalryStats.totalGames > 0;
 
