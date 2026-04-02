@@ -165,7 +165,7 @@ export default function TapPlayingUI({
           { commentatorId: matchCommentators[0].name, text, isKeyMoment: true },
         ];
         setCommentary(lines);
-        if (voiceEnabled) speakCommentary(text, true);
+        if (voiceEnabled) speakCommentary(text, true, voiceEngine);
         setTimeout(() => setCommentary(null), 3000);
       }
       if (crowdEnabled) CrowdSFX.ambientMurmur(2);
