@@ -347,38 +347,42 @@ export default function EnhancedPostMatch({
                 </div>
               </motion.div>
             </AnimatePresence>
-
-            {/* Progress dots */}
-            <div className="flex justify-center gap-1.5 pt-1">
-              {pages.map((_, i) => (
-                <motion.div
-                  key={i}
-                  animate={{ scale: currentPage === i ? [1, 1.3, 1] : 1 }}
-                  transition={{ duration: 1, repeat: currentPage === i ? Infinity : 0 }}
-                  className={`w-2 h-2 rounded-full transition-colors duration-300 ${currentPage >= i ? "bg-primary" : "bg-white/20"}`}
-                />
-              ))}
             </div>
 
-            {/* Tap hint + skip */}
-            <div className="flex items-center justify-between px-4 pt-1">
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={(e) => { e.stopPropagation(); handleSkip(); }}
-                className="text-[10px] text-foreground/40 font-display tracking-wider underline"
-              >
-                SKIP
-              </motion.button>
-              <motion.span
-                animate={{ opacity: [0.3, 0.8, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="text-[9px] text-foreground/50 font-display tracking-wider"
-              >
-                {currentPage < pages.length - 1 ? "TAP TO CONTINUE →" : "TAP TO CLOSE →"}
-              </motion.span>
+            {/* Bottom bar: dots + controls */}
+            <div className="relative z-10 px-4 pb-4 pt-2">
+              {/* Progress dots */}
+              <div className="flex justify-center gap-2 mb-3">
+                {pages.map((_, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ scale: currentPage === i ? [1, 1.3, 1] : 1 }}
+                    transition={{ duration: 1, repeat: currentPage === i ? Infinity : 0 }}
+                    className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${currentPage >= i ? "bg-primary" : "bg-white/20"}`}
+                  />
+                ))}
+              </div>
+
+              {/* Tap hint + skip */}
+              <div className="flex items-center justify-between">
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => { e.stopPropagation(); handleSkip(); }}
+                  className="text-[11px] text-foreground/40 font-display tracking-wider underline"
+                >
+                  SKIP
+                </motion.button>
+                <motion.span
+                  animate={{ opacity: [0.3, 0.8, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="text-[10px] text-foreground/50 font-display tracking-wider"
+                >
+                  {currentPage < pages.length - 1 ? "TAP TO CONTINUE →" : "TAP TO CLOSE →"}
+                </motion.span>
+              </div>
             </div>
           </div>
         </motion.div>
