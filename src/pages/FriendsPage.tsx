@@ -342,7 +342,10 @@ export default function FriendsPage() {
                       >
                         <PlayerAvatar avatarUrl={f.avatar_url} avatarIndex={f.avatar_index ?? 0} size="sm" />
                         <div className="flex-1 min-w-0">
-                          <span className="font-display text-[11px] font-bold text-foreground block truncate">{f.display_name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-display text-[11px] font-bold text-foreground block truncate">{f.display_name}</span>
+                            <span className="text-[7px] text-primary/40 font-display">›</span>
+                          </div>
                           <span className="text-[8px] text-muted-foreground">{f.wins}W {f.losses}L • {winRate}% WR</span>
                         </div>
                         <motion.button

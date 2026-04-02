@@ -546,7 +546,8 @@ export default function LeaderboardPage() {
                           "shadow-[0_0_10px_hsl(30_70%_55%/0.1)]",
                         ];
                         return (
-                          <div key={p.user_id} className="flex flex-col items-center">
+                          <div key={p.user_id} className={`flex flex-col items-center ${mainTab === "friends" && !isMe ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}
+                            onClick={() => { if (mainTab === "friends" && !isMe) setSelectedFriendId(p.user_id); }}>
                             <span className={`${sizes[i]} mb-1`}>{getBadge(rank)}</span>
                             <div className={`mb-1`}>
                               <PlayerAvatar avatarIndex={p.avatar_index ?? 0} size="sm" />
@@ -585,6 +586,7 @@ export default function LeaderboardPage() {
                                 {player.display_name}{isMe && <span className="text-[7px] text-primary/60 ml-1">(YOU)</span>}
                               </span>
                               <span className={`text-[7px] ${tier.color} font-display`}>{tier.emoji}</span>
+                              {mainTab === "friends" && !isMe && <span className="text-[7px] text-primary/40 font-display">›</span>}
                             </div>
                             <span className="text-[8px] text-muted-foreground font-display">{player.total_matches} matches • {winRate}% WR</span>
                           </div>
