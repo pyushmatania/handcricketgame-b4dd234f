@@ -3,6 +3,9 @@ import type { GameState } from "@/hooks/useHandCricket";
 
 interface ScoreBoardProps {
   game: GameState;
+  playerName?: string;
+  aiName?: string;
+  aiEmoji?: string;
 }
 
 const commentary = [
@@ -16,7 +19,7 @@ const commentary = [
   "The crowd roars!",
 ];
 
-export default function ScoreBoard({ game }: ScoreBoardProps) {
+export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit AI", aiEmoji = "🏏" }: ScoreBoardProps) {
   const phaseLabel = () => {
     switch (game.phase) {
       case "first_batting":
@@ -119,7 +122,7 @@ export default function ScoreBoard({ game }: ScoreBoardProps) {
               <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-secondary/30 to-secondary/10 flex items-center justify-center">
                 <span className="text-[10px]">🏏</span>
               </div>
-              <p className="text-[8px] text-muted-foreground font-display font-bold uppercase tracking-[0.2em]">YOU</p>
+              <p className="text-[8px] text-muted-foreground font-display font-bold uppercase tracking-[0.2em]">{playerName.toUpperCase().slice(0, 12)}</p>
             </div>
             <div className="flex items-baseline justify-center gap-0.5">
               <motion.p
@@ -180,9 +183,9 @@ export default function ScoreBoard({ game }: ScoreBoardProps) {
           <div className="text-center">
             <div className="flex items-center justify-center gap-1.5 mb-2">
               <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-accent/30 to-accent/10 flex items-center justify-center">
-                <span className="text-[10px]">🤖</span>
+                <span className="text-[10px]">{aiEmoji}</span>
               </div>
-              <p className="text-[8px] text-muted-foreground font-display font-bold uppercase tracking-[0.2em]">AI</p>
+              <p className="text-[8px] text-muted-foreground font-display font-bold uppercase tracking-[0.2em]">{aiName.toUpperCase().slice(0, 12)}</p>
             </div>
             <div className="flex items-baseline justify-center gap-0.5">
               <motion.p
@@ -350,9 +353,9 @@ export default function ScoreBoard({ game }: ScoreBoardProps) {
                 {game.result === "win" ? "🏆" : game.result === "loss" ? "💔" : "🤝"}
               </motion.span>
               <span className="relative z-10 tracking-widest" style={{ textShadow: "0 0 30px currentColor" }}>
-                {game.result === "win" && "YOU WIN!"}
-                {game.result === "loss" && "YOU LOSE"}
-                {game.result === "draw" && "DRAW"}
+                {game.result === "win" && `${playerName.toUpperCase()} WINS!`}
+                {game.result === "loss" && `${aiName.toUpperCase()} WINS!`}
+                {game.result === "draw" && "IT'S A DRAW!"}
               </span>
               <motion.p
                 initial={{ opacity: 0 }}
@@ -360,9 +363,9 @@ export default function ScoreBoard({ game }: ScoreBoardProps) {
                 transition={{ delay: 0.5 }}
                 className="text-sm font-normal text-muted-foreground mt-2 relative z-10"
               >
-                <span className="text-secondary font-bold">{game.userScore}</span>
+                <span className="text-secondary font-bold">{playerName} {game.userScore}</span>
                 <span className="mx-2">vs</span>
-                <span className="text-accent font-bold">{game.aiScore}</span>
+                <span className="text-accent font-bold">{aiName} {game.aiScore}</span>
               </motion.p>
             </div>
           </motion.div>

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { logPostgrestError } from "@/lib/multiplayerRoom";
+import { SFX, Haptics } from "@/lib/sounds";
 
 const INVITE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -42,6 +43,7 @@ export default function MatchInviteNotification() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [joiningInviteId, setJoiningInviteId] = useState<string | null>(null);
   const [, setTick] = useState(0);
+  const prevInviteCountRef = useRef(0);
 
   useEffect(() => {
     if (!user) return;
@@ -64,6 +66,15 @@ export default function MatchInviteNotification() {
 
     return () => { clearInterval(pollInterval); supabase.removeChannel(channel); };
   }, [user]);
+
+  // Play sound & vibration when new invites arrive
+  useEffect(() => {
+    if (invites.length > prevInviteCountRef.current && prevInviteCountRef.current >= 0) {
+      try { SFX.matchInvite(); } catch {}
+      try { Haptics.matchInvite(); } catch {}
+    }
+    prevInviteCountRef.current = invites.length;
+  }, [invites.length]);
 
   // Tick every second for countdown & auto-expire
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHandCricket, type Move } from "@/hooks/useHandCricket";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
@@ -6,10 +6,16 @@ import { SFX, Haptics } from "@/lib/sounds";
 import { getCommentary, getInningsChangeCommentary } from "@/lib/commentary";
 import { speakCommentary, playCrowdForResult, CrowdSFX } from "@/lib/voiceCommentary";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import ScoreBoard from "./ScoreBoard";
 import RulesSheet from "./RulesSheet";
 import OddEvenToss from "./OddEvenToss";
 import CelebrationEffects from "./CelebrationEffects";
+import { PreMatchCeremony, PostMatchCeremony } from "./MatchCeremony";
+
+const AI_NAME = "Rohit AI";
+const AI_EMOJI = "🏏";
 
 interface TapGameScreenProps {
   onHome: () => void;
@@ -28,6 +34,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   const { game, startGame, playBall, resetGame } = useHandCricket();
   const { saveMatch } = useMatchSaver();
   const { soundEnabled, hapticsEnabled, commentaryEnabled, voiceEnabled, crowdEnabled } = useSettings();
+  const { user } = useAuth();
   const [lastPlayed, setLastPlayed] = useState<Move | null>(null);
   const [cooldown, setCooldown] = useState(false);
   const [showExplosion, setShowExplosion] = useState<{ emoji: string; key: number } | null>(null);
@@ -35,12 +42,37 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   const savedRef = useRef(false);
   const prevPhaseRef = useRef(game.phase);
 
+  // Ceremony states
+  const [showPreMatch, setShowPreMatch] = useState(false);
+  const [showPostMatch, setShowPostMatch] = useState(false);
+  const [tossInfo, setTossInfo] = useState<{ winner: string; battingFirst: string } | null>(null);
+  const [pendingBatFirst, setPendingBatFirst] = useState<boolean | null>(null);
+  const postMatchShownRef = useRef(false);
+
+  const [playerName, setPlayerName] = useState("You");
+
+  // Fetch display name
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => { if (data?.display_name) setPlayerName(data.display_name); });
+  }, [user]);
+
+  const handleTossComplete = useCallback((tossWinner: string, battingFirst: string) => {
+    setTossInfo({ winner: tossWinner, battingFirst });
+  }, []);
+
   useEffect(() => {
     if (game.phase === "finished" && !savedRef.current) {
       savedRef.current = true;
       saveMatch(game, "tap");
       if (game.result === "win") { if (soundEnabled) SFX.win(); if (hapticsEnabled) Haptics.success(); if (crowdEnabled) playCrowdForResult(0, true, true, "win"); }
       else if (game.result === "loss") { if (soundEnabled) SFX.loss(); if (hapticsEnabled) Haptics.error(); if (crowdEnabled) playCrowdForResult(0, true, true, "loss"); }
+      // Show post-match ceremony
+      if (!postMatchShownRef.current) {
+        postMatchShownRef.current = true;
+        setTimeout(() => setShowPostMatch(true), game.result === "win" ? 2500 : 1000);
+      }
     }
   }, [game.phase, game, saveMatch]);
 
@@ -103,9 +135,17 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   };
 
   const handleStart = (batFirst: boolean) => {
-    if (soundEnabled) SFX.gameStart();
-    if (hapticsEnabled) Haptics.medium();
-    startGame(batFirst);
+    setPendingBatFirst(batFirst);
+    setTimeout(() => setShowPreMatch(true), 500);
+  };
+
+  const handlePreMatchComplete = () => {
+    setShowPreMatch(false);
+    if (pendingBatFirst !== null) {
+      if (soundEnabled) SFX.gameStart();
+      if (hapticsEnabled) Haptics.medium();
+      startGame(pendingBatFirst);
+    }
   };
 
   const handleStartNew = () => {
@@ -113,6 +153,11 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
     setLastPlayed(null);
     savedRef.current = false;
     setCommentary(null);
+    setPendingBatFirst(null);
+    setTossInfo(null);
+    setShowPreMatch(false);
+    setShowPostMatch(false);
+    postMatchShownRef.current = false;
   };
 
   return (
@@ -120,6 +165,29 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
       <div className="absolute inset-0 stadium-gradient pointer-events-none" />
       <div className="absolute inset-0 vignette pointer-events-none" />
       <CelebrationEffects lastResult={game.lastResult} gameResult={game.result} phase={game.phase} />
+
+      {/* Pre-match ceremony */}
+      {showPreMatch && tossInfo && (
+        <PreMatchCeremony
+          playerName={playerName}
+          opponentName={AI_NAME}
+          tossWinner={tossInfo.winner}
+          battingFirst={tossInfo.battingFirst}
+          onComplete={handlePreMatchComplete}
+        />
+      )}
+
+      {/* Post-match ceremony */}
+      {showPostMatch && game.result && (
+        <PostMatchCeremony
+          playerName={playerName}
+          opponentName={AI_NAME}
+          result={game.result}
+          playerScore={game.userScore}
+          opponentScore={game.aiScore}
+          onComplete={() => setShowPostMatch(false)}
+        />
+      )}
 
       {/* Top ambient glow */}
       <div
@@ -146,14 +214,38 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
       {/* Main content */}
       <div className="relative z-10 flex-1 flex flex-col gap-3 px-4 pb-4 max-w-lg mx-auto w-full">
         {/* Odd/Even Toss */}
-        {game.phase === "not_started" && (
+        {game.phase === "not_started" && !showPreMatch && (
           <div className="mt-4">
-            <OddEvenToss onResult={(batFirst) => handleStart(batFirst)} />
+            <OddEvenToss
+              onResult={handleStart}
+              onTossComplete={handleTossComplete}
+              playerName={playerName}
+              opponentName={AI_NAME}
+            />
           </div>
         )}
 
         {/* Scoreboard */}
-        {game.phase !== "not_started" && <ScoreBoard game={game} />}
+        {game.phase !== "not_started" && (
+          <ScoreBoard game={game} playerName={playerName} aiName={AI_NAME} aiEmoji={AI_EMOJI} />
+        )}
+
+        {/* Batting/Bowling indicator */}
+        {game.phase !== "not_started" && game.phase !== "finished" && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center justify-center gap-2"
+          >
+            <div className={`px-4 py-2 rounded-xl font-display text-[10px] font-black tracking-[0.2em] border ${
+              game.isBatting
+                ? "bg-gradient-to-r from-secondary/15 to-secondary/5 border-secondary/30 text-secondary"
+                : "bg-gradient-to-r from-primary/15 to-primary/5 border-primary/30 text-primary"
+            }`}>
+              {game.isBatting ? "⚡ YOU ARE BATTING" : "🎯 YOU ARE BOWLING"}
+            </div>
+          </motion.div>
+        )}
 
         {/* Commentary bar */}
         <AnimatePresence>
@@ -191,7 +283,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
               />
               <div className="flex items-center justify-center gap-8 relative z-10">
                 <div className="text-center">
-                  <p className="text-[7px] text-muted-foreground font-bold tracking-[0.2em] mb-1">YOU</p>
+                  <p className="text-[7px] text-muted-foreground font-bold tracking-[0.2em] mb-1">{playerName.toUpperCase().slice(0, 8)}</p>
                   <motion.div
                     initial={{ rotateY: 90 }}
                     animate={{ rotateY: 0 }}
@@ -217,14 +309,14 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
                   {game.lastResult.runs === "OUT" ? "OUT" : `+${game.lastResult.runs}`}
                 </motion.div>
                 <div className="text-center">
-                  <p className="text-[7px] text-muted-foreground font-bold tracking-[0.2em] mb-1">AI</p>
+                  <p className="text-[7px] text-muted-foreground font-bold tracking-[0.2em] mb-1">{AI_NAME.toUpperCase()}</p>
                   <motion.div
                     initial={{ rotateY: -90 }}
                     animate={{ rotateY: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/20 flex items-center justify-center mx-auto"
+                    className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/20 flex items-center justify-center mx-auto relative"
                   >
-                    <span className="text-3xl">{MOVES.find((m) => m.move === game.lastResult?.aiMove)?.emoji || "🤖"}</span>
+                    <span className="text-3xl">{MOVES.find((m) => m.move === game.lastResult?.aiMove)?.emoji || AI_EMOJI}</span>
                   </motion.div>
                   <p className="text-[10px] font-display font-bold text-accent mt-1.5 tracking-wider">
                     {game.lastResult.aiMove === "DEF" ? "DEF" : game.lastResult.aiMove}
@@ -292,7 +384,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 mt-4">
             <div className="glass-card rounded-xl px-4 py-3 text-center">
               <p className="font-display text-xs font-bold text-foreground tracking-wider">
-                {game.result === "win" ? "🏆 CHAMPION! What a performance!" : game.result === "loss" ? "Better luck next time!" : "🤝 A TIE! What a match!"}
+                {game.result === "win" ? `🏆 ${playerName.toUpperCase()} WINS! What a performance!` : game.result === "loss" ? `${AI_NAME} wins! Better luck next time!` : "🤝 A TIE! What a match!"}
               </p>
             </div>
             <div className="flex gap-3">

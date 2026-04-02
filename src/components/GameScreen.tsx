@@ -68,7 +68,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
 
   const { user } = useAuth();
   const [playerName, setPlayerName] = useState("You");
-  const opponentName = "AI";
+  const opponentName = "Rohit AI";
 
   // Fetch display name from profile
   useEffect(() => {
@@ -427,7 +427,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
                     LIVE
                   </div>
                 </div>
-                <ImmersiveScoreStrip game={game} />
+                <ImmersiveScoreStrip game={game} playerName={playerName} aiName={opponentName} />
               </div>
               <div className="pointer-events-auto space-y-1">
                 <GestureDisplay
@@ -487,7 +487,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           </motion.div>
         )}
 
-        {!immersive && game.phase !== "not_started" && <ScoreBoard game={game} />}
+        {!immersive && game.phase !== "not_started" && <ScoreBoard game={game} playerName={playerName} aiName={opponentName} aiEmoji="🏏" />}
 
         {!immersive && game.phase !== "not_started" && (
           <GestureDisplay
@@ -531,7 +531,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   );
 }
 
-function ImmersiveScoreStrip({ game }: { game: import("@/hooks/useHandCricket").GameState }) {
+function ImmersiveScoreStrip({ game, playerName = "You", aiName = "Rohit AI" }: { game: import("@/hooks/useHandCricket").GameState; playerName?: string; aiName?: string }) {
   const needRuns = game.target && game.isBatting && game.phase !== "finished"
     ? Math.max(0, game.target - game.userScore)
     : null;
@@ -541,13 +541,13 @@ function ImmersiveScoreStrip({ game }: { game: import("@/hooks/useHandCricket").
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="text-center">
-            <span className="text-[7px] text-muted-foreground font-bold block tracking-widest">YOU</span>
+            <span className="text-[7px] text-muted-foreground font-bold block tracking-widest">{playerName.toUpperCase().slice(0, 8)}</span>
             <span className="font-display text-xl font-black text-score-gold text-glow-gold leading-none">{game.userScore}</span>
             {game.userWickets > 0 && <span className="text-[9px] text-out-red font-bold">/{game.userWickets}</span>}
           </div>
           <span className="text-[8px] font-display text-muted-foreground font-bold">VS</span>
           <div className="text-center">
-            <span className="text-[7px] text-muted-foreground font-bold block tracking-widest">AI</span>
+            <span className="text-[7px] text-muted-foreground font-bold block tracking-widest">{aiName.toUpperCase().slice(0, 8)}</span>
             <span className="font-display text-xl font-black text-accent leading-none">{game.aiScore}</span>
             {game.aiWickets > 0 && <span className="text-[9px] text-out-red font-bold">/{game.aiWickets}</span>}
           </div>
