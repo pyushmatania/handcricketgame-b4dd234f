@@ -16,6 +16,7 @@ import GamePage from "./pages/GamePage";
 import AuthPage from "./pages/AuthPage";
 import SettingsPage from "./pages/SettingsPage";
 import FriendsPage from "./pages/FriendsPage";
+import MatchHistoryPage from "./pages/MatchHistoryPage";
 import MatchInviteNotification from "@/components/MatchInviteNotification";
 import NotFound from "./pages/NotFound";
 
