@@ -337,7 +337,8 @@ export default function FriendsPage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="glass-premium rounded-xl p-3 flex items-center gap-3"
+                        className="glass-premium rounded-xl p-3 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+                        onClick={() => setSelectedFriend(f)}
                       >
                         <PlayerAvatar avatarUrl={f.avatar_url} avatarIndex={f.avatar_index ?? 0} size="sm" />
                         <div className="flex-1 min-w-0">
