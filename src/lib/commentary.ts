@@ -1234,6 +1234,28 @@ export const PVP_RAGE_WIN = [
   (p: string, o: string) => `${p} collected ${o}'s soul with that performance! 👻`,
   (p: string, o: string) => `${o} was the participation trophy today. ${p} took the real one! 🏆`,
   (p: string, o: string) => `${p} absolutely VIOLATED ${o}'s cricket career! Someone call an ambulance! 🚑`,
+  // Indian cricket culture
+  (p: string, o: string) => `${o} just graduated from the Dinda Academy of Getting Smashed! ${p} was the professor! 🎓`,
+  (p: string, o: string) => `${p} channeled prime Dhoni — cool, calm, and ${o} is absolutely destroyed! Thala for a reason! 🦁`,
+  (p: string, o: string) => `${o} bowled like it was a friendly gully cricket match. ${p} treated it like an IPL final! 🏏`,
+  (p: string, o: string) => `${p} hit ${o} for more sixes than Yuvraj hit Stuart Broad! That's INTENT™! 💥`,
+  (p: string, o: string) => `${o} needs chai and a timeout after that beating from ${p}! ☕💀`,
+  (p: string, o: string) => `${p} played like Kohli on a revenge spree — ${o} never stood a chance! 👑`,
+  (p: string, o: string) => `${o} got Mankaded, Bamboozled, and Humiliated by ${p}! Triple combo! 🎪`,
+  (p: string, o: string) => `${p} turned ${o} into a meme! Screenshot this scoreboard! 📱😂`,
+  (p: string, o: string) => `Even the third umpire couldn't save ${o} from ${p}'s wrath! All decisions FINAL! 🔴`,
+  (p: string, o: string) => `${o}'s batting average against ${p} is lower than the team bus number! 🚌`,
+  // Universal savage
+  (p: string, o: string) => `${p} speed-ran a victory and ${o} was just a tutorial boss! 🎮`,
+  (p: string, o: string) => `${o} brought a spoon to a sword fight! ${p} is RUTHLESS! ⚔️`,
+  (p: string, o: string) => `Scientists confirm: ${o}'s chance of beating ${p} is statistically zero! 📊`,
+  (p: string, o: string) => `${p} won so hard the scoreboard filed a complaint! ${o} is finished! 📋`,
+  (p: string, o: string) => `${o}'s gameplay was like WiFi in a tunnel — completely disconnected! ${p} feasts! 📶`,
+  (p: string, o: string) => `${p} made ${o} look like an NPC in a cutscene! No control whatsoever! 🤖`,
+  (p: string, o: string) => `If ${o}'s performance was a movie, critics would give it 1 star. ${p} is the blockbuster! ⭐`,
+  (p: string, o: string) => `${o} rage-quit mentally 3 balls in. ${p} just kept farming! 🌾`,
+  (p: string, o: string) => `${p} didn't break a sweat. ${o} broke everything else though! 💔`,
+  (p: string, o: string) => `Autopsy report: ${o}'s innings — cause of death: ${p}! ☠️`,
 ];
 
 export const PVP_RAGE_LOSS = [
@@ -1247,6 +1269,28 @@ export const PVP_RAGE_LOSS = [
   (p: string, o: string) => `${p} brought a plastic bat to a steel bat fight! ${o} domination! 🔨`,
   (p: string, o: string) => `${o} treated ${p} like a training dummy! Brutal! 💥`,
   (p: string, o: string) => `${p} needs to delete the app and start fresh after what ${o} just did! 📱`,
+  // Indian cricket culture
+  (p: string, o: string) => `${p} got the full Dinda treatment! ${o} smashed every ball out of the park! 🎓`,
+  (p: string, o: string) => `${o} played like Sachin in '03 World Cup — ${p} was just another bowler! 🏆`,
+  (p: string, o: string) => `${p} got treated like a net bowler at an IPL practice session by ${o}! 🏏`,
+  (p: string, o: string) => `${o} said 'aaj karke aaya' and absolutely bodied ${p}! Hindi commentary mode! 🎤`,
+  (p: string, o: string) => `${p} got reverse-swept, paddle-scooped, and embarrassed by ${o}! Gully cricket special! 😵`,
+  (p: string, o: string) => `${o} played like Bumrah, batted like ABD. ${p} was just... there! 🌟`,
+  (p: string, o: string) => `${p}'s bowling was so bad, ${o}'s grandma could've scored more! Nani would be proud! 👵`,
+  (p: string, o: string) => `${o} made ${p} look like they've never held a bat! Time for some nets! 🥅`,
+  // Universal savage
+  (p: string, o: string) => `${p} was basically a spectator in their own match! ${o} ran the show! 🎪`,
+  (p: string, o: string) => `If losing was an art form, ${p} just painted the Mona Lisa! ${o} is the museum! 🖼️`,
+  (p: string, o: string) => `${p}'s game plan was to lose speedily, apparently! ${o} helped! 💨`,
+  (p: string, o: string) => `${o} won and ${p} learned a valuable lesson: they're not that guy! 🙅`,
+  (p: string, o: string) => `${p} typed 'gg' but meant 'gg my dignity'! ${o} took everything! 💀`,
+  (p: string, o: string) => `Scoreboard says ${o} wins. Reality says ${p} never had a chance! 📊`,
+  (p: string, o: string) => `${p} was loading... buffering... and ${o} already won! 🔄`,
+  (p: string, o: string) => `${o} made it look like ${p}'s controller was unplugged! Total domination! 🎮`,
+  (p: string, o: string) => `${p} needs a support group after that performance! ${o} is the villain origin story! 😈`,
+  (p: string, o: string) => `Even autocorrect couldn't fix ${p}'s gameplay! ${o} is unstoppable! 📝`,
+  (p: string, o: string) => `${p} folded faster than a lawn chair! ${o} didn't even try! 🪑`,
+  (p: string, o: string) => `${o} won so convincingly, even ${p}'s fans switched sides! 🏳️`,
 ];
 
 export const PVP_RAGE_DRAW = [
@@ -1258,6 +1302,24 @@ export const PVP_RAGE_DRAW = [
   (_p: string, _o: string) => `A tie? Both of you should be embarrassed! Neither could close it out! 😭`,
   (p: string, o: string) => `${p} and ${o} played the most indecisive match of all time! DRAW! 🤦`,
   (_p: string, _o: string) => `The only thing worse than losing is not even being able to win or lose! DRAW! 😑`,
+  // Indian cricket culture
+  (p: string, o: string) => `${p} and ${o} played like India vs South Africa in every ICC event — HEARTBREAK for both! 💔`,
+  (_p: string, _o: string) => `This match had more drama than an IPL auction but less result! Tied! 📺`,
+  (p: string, o: string) => `${p} and ${o} both channeled Rahul Dravid — patient, disciplined, and absolutely TIED! 🧱`,
+  (_p: string, _o: string) => `Bhai, Super Over karo! This tie is unacceptable in gully cricket! 🏏`,
+  (p: string, o: string) => `Both ${p} and ${o} had the intent™ but zero execution! Classic tied match! 😤`,
+  (p: string, o: string) => `${p} and ${o} are like two auto-rickshaws racing — lots of noise, same destination: DRAW! 🛺`,
+  (p: string, o: string) => `DRS can't review this draw! Both ${p} and ${o} are equally guilty! 📺🔴`,
+  // Universal savage
+  (_p: string, _o: string) => `Imagine trying THIS hard and still ending up equal! Peak mediocrity! 🏔️`,
+  (p: string, o: string) => `${p} and ${o} are the living proof that effort doesn't always equal results! 📉`,
+  (p: string, o: string) => `Both ${p} and ${o} speedran a tie! Any% draw completion! 🎮`,
+  (_p: string, _o: string) => `The scoreboard had one job — pick a winner. It failed too! 📊`,
+  (p: string, o: string) => `${p} and ${o} both deserve participation trophies for this tie! 🥉🥉`,
+  (_p: string, _o: string) => `This draw was so boring, the WiFi thought about disconnecting! 📶`,
+  (p: string, o: string) => `${p} and ${o} tied? The algorithm is having a meltdown trying to rank this! 🤖`,
+  (_p: string, _o: string) => `A tie! Both players' highlight reels will be suspiciously empty! 🎬`,
+  (p: string, o: string) => `${p} and ${o} fought to a draw — proof that mediocrity loves company! 🤝`,
 ];
 
 export const PVP_CLOSING = [
@@ -1266,6 +1328,16 @@ export const PVP_CLOSING = [
   "Best of three? Best of five? Let's settle this! 🔥",
   "That was just the warm-up. Real game next? 😏",
   "REMATCH button is right there... if you're brave enough! 👀",
+  "One more? Or are you scared? 😤 Hit REMATCH!",
+  "The rivalry continues! Settle the score — play again! ⚔️",
+  "You really gonna leave it like that? REMATCH NOW! 🔄",
+  "Neither of you can walk away from this. Play again! 🏏",
+  "The crowd demands a rematch! Don't disappoint them! 🏟️",
+  "Unfinished business! That rematch button is calling your name! 📞",
+  "Your pride is on the line. One more game? 👑",
+  "Walk away now and this score defines you FOREVER! 😱 Rematch?",
+  "Bhai ek aur? Last wala pakka last! (Spoiler: it's never the last) 😂",
+  "The cricket gods demand more entertainment! REMATCH! ⚡",
 ];
 
 // ─── Stats analysis commentary ──────────────────────────────────
