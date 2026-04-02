@@ -101,6 +101,19 @@ export default function TopStatusBar() {
           </span>
         </div>
 
+        {/* Notifications */}
+        <button
+          onClick={() => navigate("/notifications")}
+          className="relative w-9 h-9 rounded-full glass-card flex items-center justify-center active:scale-90 transition-transform"
+        >
+          <span className="text-sm">🔔</span>
+          {unreadCount > 0 && (
+            <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-out-red flex items-center justify-center">
+              <span className="text-[7px] font-display font-bold text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>
+            </div>
+          )}
+        </button>
+
         {/* Settings */}
         <button
           onClick={() => navigate("/settings")}
