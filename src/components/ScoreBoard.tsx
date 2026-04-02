@@ -131,8 +131,93 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
     : null
     : null;
 
+  // Innings switch detection
+  const prevInningsRef = useRef(game.currentInnings);
+  const [showInningsSwitch, setShowInningsSwitch] = useState(false);
+  const [switchFlashPhase, setSwitchFlashPhase] = useState<"flash" | "text" | "fade">("flash");
+
+  useEffect(() => {
+    if (game.currentInnings !== prevInningsRef.current && game.currentInnings === 2) {
+      prevInningsRef.current = game.currentInnings;
+      setShowInningsSwitch(true);
+      setSwitchFlashPhase("flash");
+      // Flash → text → fade sequence
+      setTimeout(() => setSwitchFlashPhase("text"), 300);
+      setTimeout(() => setSwitchFlashPhase("fade"), 2200);
+      setTimeout(() => setShowInningsSwitch(false), 2800);
+    }
+    prevInningsRef.current = game.currentInnings;
+  }, [game.currentInnings]);
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 relative">
+      {/* INNINGS SWITCH overlay */}
+      <AnimatePresence>
+        {showInningsSwitch && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 z-50 flex items-center justify-center rounded-xl overflow-hidden"
+            style={{ pointerEvents: "none" }}
+          >
+            {/* Flash background */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: switchFlashPhase === "flash" ? [0, 1, 0.6] : switchFlashPhase === "text" ? 0.85 : 0 }}
+              transition={{ duration: switchFlashPhase === "flash" ? 0.3 : 0.5 }}
+              className="absolute inset-0 bg-gradient-to-br from-secondary/90 via-primary/80 to-secondary/90 backdrop-blur-md"
+            />
+            {/* Animated lines */}
+            {switchFlashPhase === "text" && (
+              <>
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="absolute top-[30%] left-0 right-0 h-px bg-white/30 origin-left"
+                />
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+                  className="absolute bottom-[30%] left-0 right-0 h-px bg-white/30 origin-right"
+                />
+              </>
+            )}
+            {/* Text content */}
+            <motion.div
+              initial={{ scale: 0, rotateZ: -5 }}
+              animate={{ scale: switchFlashPhase === "text" ? 1 : switchFlashPhase === "fade" ? 1.1 : 0, rotateZ: 0 }}
+              transition={{ type: "spring", damping: 12, stiffness: 200 }}
+              className="relative z-10 text-center"
+            >
+              <motion.span
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 0.6, repeat: 2 }}
+                className="text-3xl block mb-1"
+              >
+                🔄
+              </motion.span>
+              <p className="font-display text-xl font-black text-white tracking-[0.3em] drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
+                INNINGS
+              </p>
+              <p className="font-display text-2xl font-black text-white tracking-[0.4em] drop-shadow-[0_0_30px_rgba(255,255,255,0.7)]">
+                SWITCH
+              </p>
+              <motion.p
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="font-display text-[10px] font-bold text-white/80 tracking-wider mt-2"
+              >
+                {game.isBatting ? "🏏 YOU BAT NOW" : "🎯 YOU BOWL NOW"}
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Broadcast header */}
       <div className="glass-premium rounded-lg px-3 py-1 flex items-center justify-between">
         <div className="flex items-center gap-2">
