@@ -157,6 +157,14 @@ export default function MultiplayerScreen({ onHome }: Props) {
     winStreak?: number; loseStreak?: number;
   } | null>(null);
 
+  // Rematch invite state
+  const [rematchSent, setRematchSent] = useState(false);
+  const [incomingRematch, setIncomingRematch] = useState<{
+    inviteId: string;
+    gameId: string;
+    fromName: string;
+  } | null>(null);
+
   const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
 
@@ -377,6 +385,63 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
     return () => { supabase.removeChannel(channel); };
   }, [currentGame?.id]);
+
+  // Subscribe to rematch invites when game is finished
+  useEffect(() => {
+    if (!user || !currentGame || currentGame.status !== "finished") return;
+
+    // Poll for incoming rematch invites from opponent
+    const opponentId = user.id === currentGame.host_id ? currentGame.guest_id : currentGame.host_id;
+    if (!opponentId) return;
+
+    const checkRematch = async () => {
+      const { data } = await supabase
+        .from("match_invites")
+        .select("*")
+        .eq("to_user_id", user.id)
+        .eq("from_user_id", opponentId)
+        .eq("status", "pending")
+        .gte("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (data && !incomingRematch) {
+        setIncomingRematch({
+          inviteId: data.id,
+          gameId: data.game_id,
+          fromName: opponentName,
+        });
+      }
+    };
+
+    checkRematch();
+    const interval = setInterval(checkRematch, 3000);
+
+    // Also subscribe to realtime for faster response
+    const channel = supabase
+      .channel(`rematch-invites-${currentGame.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "match_invites", filter: `to_user_id=eq.${user.id}` },
+        (payload) => {
+          const invite = payload.new as any;
+          if (invite.from_user_id === opponentId && invite.status === "pending") {
+            setIncomingRematch({
+              inviteId: invite.id,
+              gameId: invite.game_id,
+              fromName: opponentName,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, currentGame?.id, currentGame?.status, opponentName]);
 
   // Timer management — idle detection + countdown
   const myMove = currentGame ? (user?.id === currentGame.host_id ? currentGame.host_move : currentGame.guest_move) : null;
@@ -1126,15 +1191,92 @@ export default function MultiplayerScreen({ onHome }: Props) {
                 </div>
               </div>
             </div>
+            {/* Incoming rematch notification */}
+            <AnimatePresence>
+              {incomingRematch && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                  className="w-full max-w-xs glass-premium rounded-2xl p-4 border border-secondary/40 shadow-[0_0_30px_hsl(45_93%_58%/0.2)]"
+                >
+                  <div className="text-center space-y-2">
+                    <span className="text-3xl block">🔥</span>
+                    <p className="font-display text-xs font-black text-foreground tracking-wider">
+                      {incomingRematch.fromName.toUpperCase()} WANTS A REMATCH!
+                    </p>
+                    <p className="text-[9px] text-muted-foreground font-display">Ready for another round?</p>
+                    <div className="flex gap-2 pt-1">
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={async () => {
+                          if (!user) return;
+                          const { data: joinedGameId, error } = await supabase.rpc("accept_match_invite", { p_invite_id: incomingRematch.inviteId });
+                          if (!error && joinedGameId) {
+                            setIncomingRematch(null);
+                            setRematchSent(false);
+                            const { data: gameData } = await supabase.from("multiplayer_games").select("*").eq("id", joinedGameId).maybeSingle();
+                            if (gameData) {
+                              const g = gameData as unknown as MultiplayerGame;
+                              setCurrentGame(g);
+                              setPhase(statusToPhase(g.status));
+                              setCountdownMs(COUNTDOWN_MS);
+                              setCooldown(false);
+                              setLastResult(null);
+                              setLastBallResult(null);
+                              setPvpBallHistory([]);
+                              pvpPostMatchShownRef.current = false;
+                              pvpPreMatchShownRef.current = false;
+                              setShowPvPPreMatch(false);
+                              loadOpponentName(g);
+                              navigate(`/game/multiplayer?game=${g.id}`, { replace: true });
+                            }
+                          }
+                        }}
+                        className="flex-1 py-3 bg-gradient-to-r from-neon-green to-neon-green/70 text-background font-display font-black text-sm rounded-xl tracking-wider"
+                      >
+                        HELL YES! 🔥
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={async () => {
+                          if (incomingRematch) {
+                            await supabase.from("match_invites").update({
+                              status: "declined",
+                              declined_at: new Date().toISOString(),
+                            }).eq("id", incomingRematch.inviteId);
+                          }
+                          setIncomingRematch(null);
+                        }}
+                        className="py-3 px-4 bg-muted/50 border border-border text-foreground font-display font-bold text-xs rounded-xl tracking-wider"
+                      >
+                        NAH
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="flex gap-3 w-full max-w-xs">
               <motion.button whileTap={{ scale: 0.95 }}
+                disabled={rematchSent}
                 onClick={async () => {
-                  if (!user || !currentGame) return;
+                  if (!user || !currentGame || rematchSent) return;
                   const opponentId = isHost ? currentGame.guest_id : currentGame.host_id;
                   if (!opponentId) return;
                   const gameType = (currentGame.game_type || "tap") as GameType;
                   const { data: newGame, error } = await createMultiplayerRoom(user.id, gameType, opponentId);
                   if (newGame && !error) {
+                    // Send a match invite to the opponent
+                    await supabase.from("match_invites").insert({
+                      game_id: (newGame as any).id,
+                      from_user_id: user.id,
+                      to_user_id: opponentId,
+                      game_type: gameType,
+                    });
+                    setRematchSent(true);
+                    // Navigate to the new game waiting room
                     setCurrentGame(newGame as unknown as MultiplayerGame);
                     setPhase("waiting");
                     setCountdownMs(COUNTDOWN_MS);
@@ -1146,11 +1288,15 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     pvpPreMatchShownRef.current = false;
                     setShowPvPPreMatch(false);
                     setRivalryStats(null);
-                    navigate(`/game/multiplayer?game=${newGame.id}`, { replace: true });
+                    navigate(`/game/multiplayer?game=${(newGame as any).id}`, { replace: true });
                   }
                 }}
-                className="flex-1 py-3.5 bg-gradient-to-r from-secondary to-secondary/70 text-secondary-foreground font-display font-bold rounded-2xl tracking-wider shadow-[0_0_20px_hsl(45_93%_58%/0.3)] border border-secondary/40">
-                🔄 REMATCH
+                className={`flex-1 py-3.5 font-display font-bold rounded-2xl tracking-wider border ${
+                  rematchSent
+                    ? "bg-muted/50 text-muted-foreground border-border"
+                    : "bg-gradient-to-r from-secondary to-secondary/70 text-secondary-foreground shadow-[0_0_20px_hsl(45_93%_58%/0.3)] border-secondary/40"
+                }`}>
+                {rematchSent ? "⏳ SENT" : "🔄 REMATCH"}
               </motion.button>
               <motion.button whileTap={{ scale: 0.95 }}
                 onClick={() => {
@@ -1161,6 +1307,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
                   pvpPostMatchShownRef.current = false;
                   pvpPreMatchShownRef.current = false;
                   setRivalryStats(null);
+                  setRematchSent(false);
+                  setIncomingRematch(null);
                   navigate("/game/multiplayer", { replace: true });
                 }}
                 className="flex-1 py-3.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl glow-primary tracking-wider">
