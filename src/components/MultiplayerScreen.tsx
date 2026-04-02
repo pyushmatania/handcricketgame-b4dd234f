@@ -1394,6 +1394,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                               setLastResult(null);
                               setLastBallResult(null);
                               setPvpBallHistory([]);
+                    setMyConsecutiveMisses(0);
                               pvpPostMatchShownRef.current = false;
                               pvpPreMatchShownRef.current = false;
                               setShowPvPPreMatch(false);
@@ -1469,6 +1470,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     setLastResult(null);
                     setLastBallResult(null);
                     setPvpBallHistory([]);
+                    setMyConsecutiveMisses(0);
                     pvpPostMatchShownRef.current = false;
                     pvpPreMatchShownRef.current = false;
                     setShowPvPPreMatch(false);
@@ -1504,6 +1506,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                   setCurrentGame(null);
                   setTurnCountdownMs(TURN_TIMER_MS);
                   setPvpBallHistory([]);
+                    setMyConsecutiveMisses(0);
                   pvpPostMatchShownRef.current = false;
                   pvpPreMatchShownRef.current = false;
                   setRivalryStats(null);
