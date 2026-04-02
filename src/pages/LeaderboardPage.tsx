@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import RivalryCard from "@/components/RivalryCard";
 import FriendStatsModal from "@/components/FriendStatsModal";
+import PlayerPreviewCard from "@/components/PlayerPreviewCard";
 import RankBadge from "@/components/RankBadge";
 import WeeklyChallengesCard from "@/components/WeeklyChallengesCard";
 import AchievementFeed from "@/components/AchievementFeed";
