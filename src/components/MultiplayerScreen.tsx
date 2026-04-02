@@ -102,7 +102,10 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [currentGame, setCurrentGame] = useState<MultiplayerGame | null>(null);
   const [ownHostedGame, setOwnHostedGame] = useState<LobbyGame | null>(null);
   const [opponentName, setOpponentName] = useState("Opponent");
+  const [opponentAvatarIndex, setOpponentAvatarIndex] = useState(1);
+  const [myAvatarIndex, setMyAvatarIndex] = useState(0);
   const [myName, setMyName] = useState("You");
+  const [showVSIntro, setShowVSIntro] = useState(false);
   const [cooldown, setCooldown] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [joinState, setJoinState] = useState<"idle" | "joining" | "failed" | "full" | "expired">("idle");
