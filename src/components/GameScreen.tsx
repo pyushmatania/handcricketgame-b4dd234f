@@ -15,6 +15,7 @@ import { useHandCricket } from "@/hooks/useHandCricket";
 import { useHandDetection } from "@/hooks/useHandDetection";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
 import { SFX, Haptics } from "@/lib/sounds";
+import { startAmbientStadium, stopAmbientStadium, setAmbientVolume } from "@/lib/ambientStadium";
 import { getInningsChangeCommentary } from "@/lib/commentary";
 import { playCrowdForResult, CrowdSFX, speakDuoCommentary, speakCommentary } from "@/lib/voiceCommentary";
 import { isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
@@ -48,7 +49,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const { game, startGame, playBall, resetGame } = useHandCricket();
   const { saveMatch } = useMatchSaver();
-  const { soundEnabled, hapticsEnabled, commentaryEnabled, voiceEnabled, crowdEnabled, voiceEngine, commentaryVoice, commentaryLanguage } = useSettings();
+  const { soundEnabled, hapticsEnabled, commentaryEnabled, voiceEnabled, crowdEnabled, voiceEngine, commentaryVoice, commentaryLanguage, musicEnabled, ambientVolume } = useSettings();
   const detection = useHandDetection(videoElementRef);
   const [tossChoice, setTossChoice] = useState<null | boolean>(null);
   const [matchConfig, setMatchConfig] = useState<import("@/hooks/useHandCricket").MatchConfig | null>(null);
@@ -63,6 +64,20 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const savedRef = useRef(false);
   const [matchCommentators] = useState<[Commentator, Commentator]>(() => pickConfiguredMatchCommentators(commentaryVoice));
   const prevPhaseRef = useRef(game.phase);
+
+  // Ambient stadium music for AR mode
+  useEffect(() => {
+    if (soundEnabled && musicEnabled && !game.result) {
+      startAmbientStadium(ambientVolume);
+    } else {
+      stopAmbientStadium();
+    }
+    return () => { stopAmbientStadium(); };
+  }, [soundEnabled, musicEnabled, game.result]);
+
+  useEffect(() => {
+    if (soundEnabled && musicEnabled) setAmbientVolume(ambientVolume);
+  }, [ambientVolume, soundEnabled, musicEnabled]);
 
   // Fireworks state
   const [fireworkType, setFireworkType] = useState<FireworkType | null>(null);
