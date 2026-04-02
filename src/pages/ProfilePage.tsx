@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import PlayerAvatar from "@/components/PlayerAvatar";
+import TrophyCase from "@/components/TrophyCase";
 
 interface BallRecord {
   userMove: string | number;
