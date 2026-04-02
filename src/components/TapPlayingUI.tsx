@@ -123,6 +123,14 @@ export default function TapPlayingUI({
       const remaining = target ? Math.max(0, target - score) : 0;
       const rrr = remainingBalls > 0 && target ? (remaining / (remainingBalls / 6)).toFixed(1) : "0.0";
 
+      const overBreakMerge = { overRuns, thisOverBalls, crr, rrr, oversCompleted, totalOvers: config.overs };
+
+      // If wicket fell on this ball, merge into wicket breakdown card instead
+      if (lastResult && lastResult.runs === "OUT") {
+        setWicketBreakdownData(prev => prev ? { ...prev, overBreakStats: overBreakMerge } : prev);
+        return; // Don't show separate over break
+      }
+
       const stats = {
         overRuns, score, wickets, opponentScore, opponentWickets,
         crr, rrr, target, remaining, remainingBalls,
