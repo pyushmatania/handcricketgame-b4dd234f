@@ -15,7 +15,7 @@ import { useHandCricket } from "@/hooks/useHandCricket";
 import { useHandDetection } from "@/hooks/useHandDetection";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
 import { SFX, Haptics } from "@/lib/sounds";
-import { startAmbientStadium, stopAmbientStadium, setAmbientVolume } from "@/lib/ambientStadium";
+import { startAmbientStadium, stopAmbientStadium, setAmbientVolume, crowdRoar } from "@/lib/ambientStadium";
 import { getInningsChangeCommentary } from "@/lib/commentary";
 import { playCrowdForResult, CrowdSFX, speakDuoCommentary, speakCommentary } from "@/lib/voiceCommentary";
 import { isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
