@@ -113,7 +113,7 @@ export function PostMatchCeremony({ playerName, opponentName, result, playerScor
       if (result === "win") SFX.victoryAnthem();
       else SFX.loss();
     }
-    if (voiceEnabled) speakCommentary(lines[0], true);
+    if (voiceEnabled) speakCommentary(lines[0], true, voiceEngine);
 
     const timers: ReturnType<typeof setTimeout>[] = [];
 
