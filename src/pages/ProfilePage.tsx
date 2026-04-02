@@ -8,6 +8,7 @@ import TopStatusBar from "@/components/TopStatusBar";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import TrophyCase from "@/components/TrophyCase";
 import FriendStatsModal from "@/components/FriendStatsModal";
+import { usePvpStats } from "@/hooks/usePvpStats";
 
 interface BallRecord {
   userMove: string | number;
