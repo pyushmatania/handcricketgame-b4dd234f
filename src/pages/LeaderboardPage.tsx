@@ -642,8 +642,8 @@ export default function LeaderboardPage() {
                 </div>
               ) : (
                 <>
-                  {/* Player of the Week */}
-                  <PlayerOfTheWeek player={playerOfWeek} loading={potwLoading} />
+                  {/* Player of the Week with confetti */}
+                  <PotwWithConfetti player={playerOfWeek} loading={potwLoading} />
 
                   {/* Top 3 podium */}
                   {top3.length >= 3 && (
