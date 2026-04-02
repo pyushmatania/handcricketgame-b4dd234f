@@ -348,6 +348,11 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
           if (nextPhase === "finished") {
             stopTimer();
+            // Trigger PvP post-match ceremony
+            if (!pvpPostMatchShownRef.current) {
+              pvpPostMatchShownRef.current = true;
+              setTimeout(() => setShowPvPPostMatch(true), 1000);
+            }
           }
         }
       )
