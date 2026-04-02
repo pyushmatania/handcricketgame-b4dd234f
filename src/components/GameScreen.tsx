@@ -6,6 +6,7 @@ import ScoreBoard from "./ScoreBoard";
 import GestureDisplay from "./GestureDisplay";
 import RulesSheet from "./RulesSheet";
 import OddEvenToss from "./OddEvenToss";
+import OverSelector from "./OverSelector";
 import CelebrationEffects from "./CelebrationEffects";
 import CanvasFireworks, { type FireworkType } from "./CanvasFireworks";
 import EnhancedPreMatch from "./EnhancedPreMatch";
@@ -51,6 +52,9 @@ export default function GameScreen({ onHome }: GameScreenProps) {
   const { commentaryVoice } = useSettings();
   const detection = useHandDetection(videoElementRef);
   const [tossChoice, setTossChoice] = useState<null | boolean>(null);
+  const [matchConfig, setMatchConfig] = useState<import("@/hooks/useHandCricket").MatchConfig | null>(null);
+  const [showOverSelector, setShowOverSelector] = useState(true);
+  const [playerXP, setPlayerXP] = useState(0);
   const [stadiumMode, setStadiumMode] = useState(true);
   const [immersive, setImmersive] = useState(false);
   const [filter, setFilter] = useState<CameraFilter>("broadcast");
@@ -80,11 +84,12 @@ export default function GameScreen({ onHome }: GameScreenProps) {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name")
+      .select("display_name, xp")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data?.display_name) setPlayerName(data.display_name);
+        if ((data as any)?.xp) setPlayerXP((data as any).xp);
       });
   }, [user]);
 
@@ -101,10 +106,15 @@ export default function GameScreen({ onHome }: GameScreenProps) {
 
   const handlePreMatchComplete = () => {
     setShowPreMatch(false);
-    if (pendingBatFirst !== null) {
+    if (pendingBatFirst !== null && matchConfig) {
       setTossChoice(pendingBatFirst);
-      startGame(pendingBatFirst);
+      startGame(pendingBatFirst, matchConfig);
     }
+  };
+
+  const handleOverSelect = (config: import("@/hooks/useHandCricket").MatchConfig) => {
+    setMatchConfig(config);
+    setShowOverSelector(false);
   };
 
   // Auto-save match when game finishes + trigger post-match ceremony
@@ -246,6 +256,8 @@ export default function GameScreen({ onHome }: GameScreenProps) {
     setShowPostMatch(false);
     savedRef.current = false;
     postMatchShownRef.current = false;
+    setMatchConfig(null);
+    setShowOverSelector(true);
   };
 
   const toggleImmersive = () => setImmersive(!immersive);
@@ -464,8 +476,13 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           )}
         </div>
 
-        {/* Odd/Even Toss */}
-        {game.phase === "not_started" && tossChoice === null && !showPreMatch && (
+        {/* Over Selector — shown first */}
+        {showOverSelector && game.phase === "not_started" && tossChoice === null && !showPreMatch && (
+          <OverSelector playerXP={playerXP} onSelect={handleOverSelect} />
+        )}
+
+        {/* Odd/Even Toss — after over selection */}
+        {!showOverSelector && matchConfig && game.phase === "not_started" && tossChoice === null && !showPreMatch && (
           <OddEvenToss
             onResult={handleTossResult}
             onTossComplete={handleTossComplete}
