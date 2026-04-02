@@ -91,6 +91,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setVoiceEngine = (engine: VoiceEngine) => setSettings((s) => ({ ...s, voiceEngine: engine }));
   const setCommentaryLanguage = (lang: CommentaryLanguage) => setSettings((s) => ({ ...s, commentaryLanguage: lang }));
   const toggleCeremonies = () => setSettings((s) => ({ ...s, ceremoniesEnabled: !s.ceremoniesEnabled }));
+  const setAmbientVolume = (v: number) => setSettings((s) => ({ ...s, ambientVolume: v }));
 
   return (
     <SettingsContext.Provider value={{ ...settings, toggleSound, toggleHaptics, toggleCommentary, toggleVoice, toggleCrowd, toggleMusic, toggleBatSound, toggleVictorySound, setCommentaryVoice, setVoiceEngine, setCommentaryLanguage, toggleCeremonies }}>
