@@ -80,12 +80,11 @@ interface FriendMatchStats {
   totalRuns: number;
   sixes: number;
   fours: number;
-  dots: number;
   avgScore: number;
   strikeRate: number;
 }
 
-type Tab = "overview" | "vsai" | "rivalry" | "records";
+type Tab = "overview" | "individual" | "vsai" | "rivalry" | "records";
 
 interface Props {
   friend: FriendProfile | null;
@@ -104,9 +103,9 @@ const RECORD_LABELS: Record<string, { emoji: string; label: string }> = {
   fastest_win: { emoji: "⚡", label: "Fastest Win" },
 };
 
-function parseBalls(inningsData: any): { sixes: number; fours: number; dots: number; totalRuns: number } {
-  let sixes = 0, fours = 0, dots = 0, totalRuns = 0;
-  if (!inningsData) return { sixes, fours, dots, totalRuns };
+function parseBalls(inningsData: any): { sixes: number; fours: number; totalRuns: number } {
+  let sixes = 0, fours = 0, totalRuns = 0;
+  if (!inningsData) return { sixes, fours, totalRuns };
   const innings = Array.isArray(inningsData) ? inningsData : [inningsData];
   for (const inn of innings) {
     const balls = inn?.balls || inn?.playerBalls || [];
@@ -114,11 +113,10 @@ function parseBalls(inningsData: any): { sixes: number; fours: number; dots: num
       const runs = typeof b === "number" ? b : (b?.runs ?? b?.playerMove ?? 0);
       if (runs === 6) sixes++;
       else if (runs === 4) fours++;
-      else if (runs === 0) dots++;
       totalRuns += typeof runs === "number" ? runs : 0;
     }
   }
-  return { sixes, fours, dots, totalRuns };
+  return { sixes, fours, totalRuns };
 }
 
 export default function FriendStatsModal({ friend, onClose, onChallenge }: Props) {
@@ -212,7 +210,7 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
   };
 
   const computeMatchStats = (matches: any[]): FriendMatchStats => {
-    let wins = 0, losses = 0, draws = 0, totalRuns = 0, sixes = 0, fours = 0, dots = 0;
+    let wins = 0, losses = 0, draws = 0, totalRuns = 0, sixes = 0, fours = 0;
     let highScore = 0;
     for (const m of matches) {
       if (m.result === "win") wins++;
@@ -222,13 +220,12 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
       const parsed = parseBalls(m.innings_data);
       sixes += parsed.sixes;
       fours += parsed.fours;
-      dots += parsed.dots;
       totalRuns += m.user_score;
     }
     const totalBalls = matches.reduce((s, m) => s + (m.balls_played || 0), 0);
     return {
       totalMatches: matches.length, wins, losses, draws, highScore, totalRuns,
-      sixes, fours, dots,
+      sixes, fours,
       avgScore: matches.length > 0 ? Math.round(totalRuns / matches.length) : 0,
       strikeRate: totalBalls > 0 ? Math.round((totalRuns / totalBalls) * 100) : 0,
     };
@@ -249,7 +246,8 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
 
   const tabs: { key: Tab; label: string; emoji: string }[] = [
     { key: "overview", label: "OVERVIEW", emoji: "👤" },
-    { key: "vsai", label: "VS AI", emoji: "📊" },
+    { key: "individual", label: "STATS", emoji: "📊" },
+    { key: "vsai", label: "VS AI", emoji: "🆚" },
     { key: "rivalry", label: "H2H", emoji: "⚔️" },
     { key: "records", label: "RECORDS", emoji: "🏅" },
   ];
@@ -376,6 +374,85 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
                   </motion.div>
                 )}
 
+                {/* INDIVIDUAL STATS TAB */}
+                {tab === "individual" && (
+                  <motion.div key="individual" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-1 h-4 rounded-full bg-secondary" />
+                      <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">{friend.display_name.toUpperCase()}'S FULL STATS</span>
+                    </div>
+
+                    {/* Overall record */}
+                    <div className="glass-card rounded-xl p-3">
+                      <span className="text-[6px] font-display text-muted-foreground tracking-widest block mb-2">OVERALL RECORD</span>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { label: "MATCHES", value: friend.total_matches, emoji: "🏏", color: "text-foreground" },
+                          { label: "WINS", value: friend.wins, emoji: "🏆", color: "text-neon-green" },
+                          { label: "LOSSES", value: friend.losses, emoji: "💔", color: "text-out-red" },
+                          { label: "WIN RATE", value: `${friendWinRate}%`, emoji: "📊", color: friendWinRate >= 50 ? "text-neon-green" : "text-out-red" },
+                        ].map((s) => (
+                          <div key={s.label} className="text-center">
+                            <span className="text-sm block">{s.emoji}</span>
+                            <span className={`font-display text-lg font-black ${s.color} block leading-none mt-0.5`}>{s.value}</span>
+                            <span className="text-[5px] font-display text-muted-foreground tracking-widest">{s.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Performance metrics */}
+                    {friendMatchStats && (
+                      <div className="glass-card rounded-xl p-3">
+                        <span className="text-[6px] font-display text-muted-foreground tracking-widest block mb-2">PERFORMANCE</span>
+                        <div className="space-y-1.5">
+                          {[
+                            { label: "HIGH SCORE", value: friend.high_score, emoji: "⭐", color: "text-score-gold" },
+                            { label: "BEST STREAK", value: friend.best_streak, emoji: "🔥", color: "text-secondary" },
+                            { label: "AVG SCORE", value: friendMatchStats.avgScore, emoji: "📈", color: "text-foreground" },
+                            { label: "STRIKE RATE", value: friendMatchStats.strikeRate, emoji: "⚡", color: "text-primary" },
+                            { label: "TOTAL RUNS", value: friendMatchStats.totalRuns, emoji: "🏃", color: "text-foreground" },
+                            { label: "TOTAL SIXES", value: friendMatchStats.sixes, emoji: "💥", color: "text-primary" },
+                            { label: "TOTAL FOURS", value: friendMatchStats.fours, emoji: "🎯", color: "text-neon-green" },
+                          ].map((row) => (
+                            <div key={row.label} className="flex items-center justify-between py-1 border-b border-muted/10 last:border-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{row.emoji}</span>
+                                <span className="text-[8px] text-muted-foreground font-display tracking-wider">{row.label}</span>
+                              </div>
+                              <span className={`font-display text-sm font-black ${row.color}`}>{row.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Win/Loss ratio visual */}
+                    {friend.total_matches > 0 && (
+                      <div className="glass-card rounded-xl p-3">
+                        <span className="text-[6px] font-display text-muted-foreground tracking-widest block mb-2">WIN/LOSS RATIO</span>
+                        <div className="h-3 rounded-full overflow-hidden flex bg-muted/30">
+                          <div className="bg-gradient-to-r from-neon-green to-neon-green/70 rounded-l-full" style={{ width: `${friendWinRate}%` }} />
+                          <div className="bg-gradient-to-l from-out-red to-out-red/70 rounded-r-full flex-1" />
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-[6px] font-display text-neon-green font-bold">{friendWinRate}% W</span>
+                          <span className="text-[6px] font-display text-out-red font-bold">{100 - friendWinRate}% L</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Abandons */}
+                    {(friend.abandons ?? 0) > 0 && (
+                      <div className="glass-card rounded-xl p-2 flex items-center gap-2">
+                        <span className="text-sm">🏳️</span>
+                        <span className="text-[8px] text-muted-foreground font-display tracking-wider">ABANDONS</span>
+                        <span className="font-display text-sm font-black text-out-red ml-auto">{friend.abandons}</span>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
                 {/* VS AI TAB */}
                 {tab === "vsai" && (
                   <motion.div key="vsai" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
@@ -395,7 +472,6 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
                           { label: "TOTAL RUNS", mine: myMatchStats.totalRuns, theirs: friendMatchStats.totalRuns, emoji: "🏃" },
                           { label: "SIXES", mine: myMatchStats.sixes, theirs: friendMatchStats.sixes, emoji: "💥" },
                           { label: "FOURS", mine: myMatchStats.fours, theirs: friendMatchStats.fours, emoji: "🎯" },
-                          { label: "DOTS", mine: myMatchStats.dots, theirs: friendMatchStats.dots, emoji: "⚪" },
                         ].map((row) => {
                           const mN = typeof row.mine === "number" ? row.mine : (row as any).mineNum ?? 0;
                           const tN = typeof row.theirs === "number" ? row.theirs : (row as any).theirsNum ?? 0;

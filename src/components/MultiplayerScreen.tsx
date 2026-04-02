@@ -27,8 +27,8 @@ const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
   { move: 6, emoji: "👍", label: "6", color: "border-primary/40 bg-primary/10" },
 ];
 
-const BALL_TIMER_MS = 3000;
-const RESERVE_TIMER_MS = 10000;
+const IDLE_THRESHOLD_MS = 15000; // 15s before countdown appears
+const COUNTDOWN_MS = 30000; // 30s countdown to auto-lose
 const GAME_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 const MOVE_SETS: Record<GameType, { move: Move; emoji: string; label: string; color: string }[]> = {
   ar: MOVES,
@@ -115,13 +115,28 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [createModePickerOpen, setCreateModePickerOpen] = useState(false);
   const [lobbyMessage, setLobbyMessage] = useState<string | null>(null);
 
-  const [ballTimer, setBallTimer] = useState(BALL_TIMER_MS);
-  const [reserveTime, setReserveTime] = useState(RESERVE_TIMER_MS);
-  const [usingReserve, setUsingReserve] = useState(false);
+  // Timer state — idle detection + countdown
+  const [idleMs, setIdleMs] = useState(0);
+  const [countdownMs, setCountdownMs] = useState(COUNTDOWN_MS);
+  const [showCountdown, setShowCountdown] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const ballTimerStartRef = useRef<number | null>(null);
-  const reserveUsedRef = useRef(0);
-  // hydratedGameIdRef removed — hydration now uses currentGame.id check
+  const turnStartRef = useRef<number>(Date.now());
+  
+  // Tease messages
+  const TEASE_MESSAGES = [
+    { text: "Bro sleeping or playing? 😴💤", unlocked: true },
+    { text: "My grandma plays faster than you 👵🏏", unlocked: true },
+    { text: "Even the pitch is getting bored 🥱", unlocked: true },
+    { text: "Scared to lose? Just quit already 🏳️😂", unlocked: false, cost: 50 },
+    { text: "Your batting is as useful as a chocolate bat 🍫", unlocked: false, cost: 75 },
+    { text: "I've seen better shots from a broken TV 📺", unlocked: false, cost: 100 },
+    { text: "Are you playing cricket or sleeping cricket? 💤🏏", unlocked: false, cost: 150 },
+    { text: "Even Dinda would beat you today 😭", unlocked: false, cost: 200 },
+  ];
+  const [sentTease, setSentTease] = useState<string | null>(null);
+  const [receivedTease, setReceivedTease] = useState<string | null>(null);
+  const [showTeasePanel, setShowTeasePanel] = useState(false);
+
   const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
 
@@ -241,8 +256,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
       setCurrentGame(game);
       setPhase(statusToPhase(game.status));
-      const isHostGame = game.host_id === user.id;
-      setReserveTime(isHostGame ? game.host_reserve_ms : game.guest_reserve_ms);
+      // Timer resets happen in useEffect
       if (game.guest_id) {
         loadOpponentName(game);
       }
@@ -319,6 +333,13 @@ export default function MultiplayerScreen({ onHome }: Props) {
             resolveTurn(updated);
           }
 
+          // Check for incoming tease
+          const payload_data = (updated as any).round_result_payload;
+          if (payload_data?.tease && payload_data?.from !== user?.id) {
+            setReceivedTease(payload_data.tease);
+            setTimeout(() => setReceivedTease(null), 4000);
+          }
+
           if (nextPhase === "finished") {
             stopTimer();
           }
@@ -329,23 +350,32 @@ export default function MultiplayerScreen({ onHome }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [currentGame?.id]);
 
-  // Timer management
+  // Timer management — idle detection + countdown
   const myMove = currentGame ? (user?.id === currentGame.host_id ? currentGame.host_move : currentGame.guest_move) : null;
   const waitingForOpponent = myMove !== null;
 
   useEffect(() => {
     if (phase !== "playing" || !currentGame) return;
-    if (waitingForOpponent) { stopTimer(); return; }
-    startBallTimer();
+    if (waitingForOpponent) { stopTimer(); setShowCountdown(false); setIdleMs(0); return; }
+    // Reset and start idle tracking
+    turnStartRef.current = Date.now();
+    setIdleMs(0);
+    setShowCountdown(false);
+    setCountdownMs(COUNTDOWN_MS);
+    
+    timerRef.current = setInterval(() => {
+      const elapsed = Date.now() - turnStartRef.current;
+      setIdleMs(elapsed);
+      if (elapsed >= IDLE_THRESHOLD_MS) {
+        setShowCountdown(true);
+        const countdownElapsed = elapsed - IDLE_THRESHOLD_MS;
+        const remaining = Math.max(0, COUNTDOWN_MS - countdownElapsed);
+        setCountdownMs(remaining);
+        if (remaining <= 0) handleAbandon();
+      }
+    }, 100);
     return () => stopTimer();
   }, [currentGame?.current_turn, waitingForOpponent, phase]);
-
-  useEffect(() => {
-    if (!currentGame || !user) return;
-    const isHost = user.id === currentGame.host_id;
-    const myReserve = isHost ? currentGame.host_reserve_ms : currentGame.guest_reserve_ms;
-    setReserveTime(myReserve);
-  }, [currentGame?.id]);
 
   useEffect(() => {
     if (!currentGame || !user) return;
@@ -353,10 +383,11 @@ export default function MultiplayerScreen({ onHome }: Props) {
     if (currentGame.phase === "pre_round_countdown" && currentGame.phase_started_at) {
       const ms = Date.now() - new Date(currentGame.phase_started_at).getTime();
       if (ms >= 3000) {
+        const totalTimeout = IDLE_THRESHOLD_MS + COUNTDOWN_MS;
         (supabase.from("multiplayer_games") as any).update({
           phase: "action_window",
           phase_started_at: new Date().toISOString(),
-          turn_deadline_at: new Date(Date.now() + RESERVE_TIMER_MS).toISOString(),
+          turn_deadline_at: new Date(Date.now() + totalTimeout).toISOString(),
           status: "playing",
         }).eq("id", currentGame.id).eq("phase", "pre_round_countdown");
       }
@@ -373,31 +404,6 @@ export default function MultiplayerScreen({ onHome }: Props) {
       }
     }
   }, [currentGame?.id, currentGame?.phase, currentGame?.phase_started_at, currentGame?.turn_deadline_at, currentGame?.host_move, currentGame?.guest_move, user?.id]);
-
-  const startBallTimer = () => {
-    stopTimer();
-    setBallTimer(BALL_TIMER_MS);
-    setUsingReserve(false);
-    reserveUsedRef.current = 0;
-    ballTimerStartRef.current = Date.now();
-
-    timerRef.current = setInterval(() => {
-      const elapsed = Date.now() - (ballTimerStartRef.current || Date.now());
-      const remaining = BALL_TIMER_MS - elapsed;
-      if (remaining > 0) {
-        setBallTimer(remaining);
-        setUsingReserve(false);
-      } else {
-        setUsingReserve(true);
-        setBallTimer(0);
-        const reserveElapsed = elapsed - BALL_TIMER_MS;
-        reserveUsedRef.current = reserveElapsed;
-        const newReserve = Math.max(0, reserveTime - reserveElapsed);
-        setReserveTime(newReserve);
-        if (newReserve <= 0) handleAbandon();
-      }
-    }, 50);
-  };
 
   const stopTimer = () => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -496,7 +502,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
       const g = data as unknown as MultiplayerGame;
       setCurrentGame(g);
       setPhase(statusToPhase(g.status));
-      setReserveTime(RESERVE_TIMER_MS);
+      // Timer resets happen automatically via useEffect
       navigate(`/game/multiplayer?game=${g.id}`, { replace: true });
       setLobbyMessage("Room created. Waiting for opponent...");
     } else {
@@ -521,7 +527,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
       const g = game as MultiplayerGame;
       setCurrentGame(g);
       setPhase(statusToPhase(g.status));
-      setReserveTime(g.guest_reserve_ms);
+      // Timer resets happen automatically
       loadOpponentName(g);
       navigate(`/game/multiplayer?game=${g.id}`, { replace: true });
     }
@@ -588,14 +594,13 @@ export default function MultiplayerScreen({ onHome }: Props) {
     if (!currentGame || !user || cooldown) return;
     setCooldown(true);
     stopTimer();
+    setShowCountdown(false);
+    setIdleMs(0);
     const moveStr = String(move);
     const isHost = user.id === currentGame.host_id;
-    const reserveUsed = reserveUsedRef.current;
-    const newReserve = Math.max(0, reserveTime - reserveUsed);
-    setReserveTime(newReserve);
     const updateData: any = isHost
-      ? { host_move: moveStr, host_reserve_ms: newReserve, host_move_submitted_at: new Date().toISOString() }
-      : { guest_move: moveStr, guest_reserve_ms: newReserve, guest_move_submitted_at: new Date().toISOString() };
+      ? { host_move: moveStr, host_move_submitted_at: new Date().toISOString() }
+      : { guest_move: moveStr, guest_move_submitted_at: new Date().toISOString() };
     await supabase.from("multiplayer_games").update(updateData).eq("id", currentGame.id);
     setTimeout(() => setCooldown(false), 1500);
   };
@@ -661,10 +666,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const isBatting = currentGame ? (isHost ? currentGame.host_batting : !currentGame.host_batting) : false;
   const myScore = currentGame ? (isHost ? currentGame.host_score : currentGame.guest_score) : 0;
   const oppScore = currentGame ? (isHost ? currentGame.guest_score : currentGame.host_score) : 0;
-  const ballTimerSec = (ballTimer / 1000).toFixed(1);
-  const reserveSec = (reserveTime / 1000).toFixed(1);
-  const ballTimerPct = (ballTimer / BALL_TIMER_MS) * 100;
-  const reservePct = (reserveTime / RESERVE_TIMER_MS) * 100;
+  const countdownSec = Math.ceil(countdownMs / 1000);
+  const countdownPct = (countdownMs / COUNTDOWN_MS) * 100;
   const isAbandoned = currentGame?.status === "abandoned";
   const abandonedByMe = currentGame?.abandoned_by === user?.id;
   const modeLabel = currentGame ? gameTypeLabel(currentGame.game_type) : "DUEL";
@@ -720,12 +723,12 @@ export default function MultiplayerScreen({ onHome }: Props) {
                 <div className="glass-premium rounded-xl p-3 space-y-1.5">
                   <span className="font-display text-[9px] font-bold text-muted-foreground tracking-widest">⏱️ TIMER RULES</span>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-md bg-secondary/20 flex items-center justify-center"><span className="text-[8px]">⏳</span></div>
-                    <span className="text-[9px] text-muted-foreground"><span className="text-secondary font-bold">3s</span> per ball</span>
+                    <div className="w-5 h-5 rounded-md bg-secondary/20 flex items-center justify-center"><span className="text-[8px]">😴</span></div>
+                    <span className="text-[9px] text-muted-foreground"><span className="text-secondary font-bold">15s</span> idle grace period</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-md bg-out-red/20 flex items-center justify-center"><span className="text-[8px]">🔋</span></div>
-                    <span className="text-[9px] text-muted-foreground"><span className="text-out-red font-bold">10s</span> reserve per match</span>
+                    <div className="w-5 h-5 rounded-md bg-out-red/20 flex items-center justify-center"><span className="text-[8px]">⚠️</span></div>
+                    <span className="text-[9px] text-muted-foreground"><span className="text-out-red font-bold">30s</span> countdown or auto-forfeit</span>
                   </div>
                 </div>
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCreateModePickerOpen(true)}
@@ -894,49 +897,95 @@ export default function MultiplayerScreen({ onHome }: Props) {
               </div>
             </div>
 
-            {/* Timer HUD */}
-            {!waitingForOpponent && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass-premium rounded-xl p-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm">⏳</span>
-                    <span className="font-display text-[8px] font-bold text-muted-foreground tracking-widest">SHOT CLOCK</span>
+            {/* Countdown Timer — only shows after 15s idle */}
+            <AnimatePresence>
+              {!waitingForOpponent && showCountdown && (
+                <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
+                  className="glass-premium rounded-xl p-3 border border-out-red/30">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.5, repeat: Infinity }} className="text-sm">⚠️</motion.span>
+                      <span className="font-display text-[8px] font-bold text-out-red tracking-widest">MAKE YOUR MOVE!</span>
+                    </div>
+                    <span className={`font-display text-lg font-black ${countdownSec > 15 ? "text-secondary" : countdownSec > 5 ? "text-out-red" : "text-out-red animate-pulse"}`}>
+                      {countdownSec}s
+                    </span>
                   </div>
-                  <span className={`font-display text-lg font-black ${ballTimer > 1000 ? "text-neon-green" : ballTimer > 0 ? "text-secondary" : "text-out-red"}`}>
-                    {ballTimer > 0 ? ballTimerSec : "0.0"}s
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-muted/30 rounded-full overflow-hidden mb-2">
-                  <motion.div
-                    className={`h-full rounded-full transition-colors ${
-                      ballTimer > 1000 ? "bg-gradient-to-r from-neon-green to-neon-green/60" :
-                      ballTimer > 0 ? "bg-gradient-to-r from-secondary to-secondary/60" : "bg-out-red"
-                    }`}
-                    style={{ width: `${ballTimerPct}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm">🔋</span>
-                    <span className="font-display text-[8px] font-bold text-muted-foreground tracking-widest">RESERVE</span>
-                    {usingReserve && (
-                      <motion.span animate={{ opacity: [1, 0.3] }} transition={{ duration: 0.5, repeat: Infinity }}
-                        className="text-[7px] font-display font-bold text-out-red tracking-wider">DRAINING!</motion.span>
-                    )}
+                  <div className="w-full h-2.5 bg-muted/30 rounded-full overflow-hidden">
+                    <motion.div
+                      className={`h-full rounded-full ${countdownSec > 15 ? "bg-gradient-to-r from-secondary to-secondary/60" : "bg-gradient-to-r from-out-red to-out-red/60"}`}
+                      style={{ width: `${countdownPct}%` }}
+                    />
                   </div>
-                  <span className={`font-display text-sm font-black ${reserveTime > 5000 ? "text-foreground" : reserveTime > 2000 ? "text-secondary" : "text-out-red"}`}>
-                    {reserveSec}s
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${
-                    reserveTime > 5000 ? "bg-gradient-to-r from-accent to-accent/60" :
-                    reserveTime > 2000 ? "bg-gradient-to-r from-secondary to-secondary/60" :
-                    "bg-gradient-to-r from-out-red to-out-red/60"
-                  }`} style={{ width: `${reservePct}%` }} />
-                </div>
-              </motion.div>
+                  <p className="text-[7px] text-out-red/60 font-display tracking-wider mt-1 text-center">
+                    Auto-forfeit if you don't play!
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Tease button & received tease */}
+            <AnimatePresence>
+              {receivedTease && (
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+                  className="glass-card rounded-xl p-2.5 border border-out-red/20">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">😈</span>
+                    <div className="flex-1">
+                      <span className="text-[7px] text-out-red font-display tracking-widest block">OPPONENT SAYS:</span>
+                      <span className="text-[10px] text-foreground font-display font-bold">{receivedTease}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {waitingForOpponent && (
+              <div className="flex justify-center">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowTeasePanel(!showTeasePanel)}
+                  className="px-4 py-2 rounded-xl glass-card border border-secondary/20 text-[9px] font-display font-bold text-secondary tracking-wider">
+                  😈 SEND TEASE
+                </motion.button>
+              </div>
             )}
+
+            <AnimatePresence>
+              {showTeasePanel && waitingForOpponent && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                  className="glass-premium rounded-xl p-3 space-y-1.5 overflow-hidden">
+                  <span className="text-[7px] font-display text-muted-foreground tracking-widest">TEASE MESSAGES</span>
+                  {TEASE_MESSAGES.map((t, i) => (
+                    <motion.button key={i} whileTap={t.unlocked ? { scale: 0.95 } : undefined}
+                      onClick={() => {
+                        if (!t.unlocked || !currentGame) return;
+                        setSentTease(t.text);
+                        setShowTeasePanel(false);
+                        // Store tease in round_result_payload for opponent to see
+                        supabase.from("multiplayer_games").update({
+                          round_result_payload: { tease: t.text, from: user?.id, turn: currentGame.current_turn },
+                        }).eq("id", currentGame.id);
+                        setTimeout(() => setSentTease(null), 3000);
+                      }}
+                      className={`w-full text-left p-2 rounded-lg transition-all ${
+                        t.unlocked
+                          ? "glass-card border border-secondary/15 active:bg-secondary/10"
+                          : "bg-muted/20 border border-muted/10 relative overflow-hidden"
+                      }`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-display ${t.unlocked ? "text-foreground" : "text-muted-foreground/30 blur-[3px] select-none"}`}>
+                          {t.text}
+                        </span>
+                        {!t.unlocked && (
+                          <span className="text-[7px] font-display text-secondary/60 tracking-wider whitespace-nowrap ml-auto">
+                            🔒 {t.cost} 🪙
+                          </span>
+                        )}
+                      </div>
+                    </motion.button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Result flash */}
             <AnimatePresence>
@@ -1022,7 +1071,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                   if (newGame && !error) {
                     setCurrentGame(newGame as unknown as MultiplayerGame);
                     setPhase("waiting");
-                    setReserveTime(RESERVE_TIMER_MS);
+                    setCountdownMs(COUNTDOWN_MS);
                     setCooldown(false);
                     setLastResult(null);
                     navigate(`/game/multiplayer?game=${newGame.id}`, { replace: true });
@@ -1035,7 +1084,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                 onClick={() => {
                   setPhase("lobby");
                   setCurrentGame(null);
-                  setReserveTime(RESERVE_TIMER_MS);
+                  setCountdownMs(COUNTDOWN_MS);
                   navigate("/game/multiplayer", { replace: true });
                 }}
                 className="flex-1 py-3.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl glow-primary tracking-wider">
