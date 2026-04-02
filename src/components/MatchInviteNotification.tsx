@@ -148,49 +148,12 @@ export default function MatchInviteNotification() {
   const acceptInvite = async (invite: Invite) => {
     if (!user) return;
     setJoiningInviteId(invite.id);
+    console.log("[InviteNotif] acceptInvite start", { invite_id: invite.id, game_id: invite.game_id });
 
     try {
-      const { data: existingGame } = await supabase
-        .from("multiplayer_games")
-        .select("id, host_id, guest_id, status")
-        .eq("id", invite.game_id)
-        .maybeSingle();
-
-      const currentGame = existingGame as any;
-
-      if (!currentGame || ["finished", "abandoned", "cancelled"].includes(currentGame.status)) {
-        const { error: expireError } = await supabase
-          .from("match_invites")
-          .update({ status: "expired", cancelled_at: new Date().toISOString() } as any)
-          .eq("id", invite.id)
-          .eq("status", "pending");
-
-        if (expireError) {
-          logPostgrestError("acceptInvite expire stale invite failed", expireError, { invite_id: invite.id, game_id: invite.game_id });
-        }
-
-        setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-        toast({ title: "Invite expired", description: "This battle room is no longer available." });
-        return;
-      }
-
-      if (currentGame.guest_id && currentGame.guest_id !== user.id && currentGame.host_id !== user.id) {
-        const { error: staleError } = await supabase
-          .from("match_invites")
-          .update({ status: "declined", declined_at: new Date().toISOString() } as any)
-          .eq("id", invite.id)
-          .eq("status", "pending");
-
-        if (staleError) {
-          logPostgrestError("acceptInvite mark full invite failed", staleError, { invite_id: invite.id, game_id: invite.game_id });
-        }
-
-        setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-        toast({ title: "Room already taken", description: "Another player already joined this match." });
-        return;
-      }
-
       const { data: acceptedGameId, error: acceptError } = await acceptMatchInvite(invite.id);
+
+      console.log("[InviteNotif] acceptMatchInvite result", { acceptedGameId, acceptError });
 
       if (acceptError || !acceptedGameId) {
         if (acceptError) {
@@ -201,18 +164,32 @@ export default function MatchInviteNotification() {
           });
         }
 
-        toast({
-          title: "Unable to join match",
-          description: acceptError
-            ? `${mapAcceptInviteError(acceptError)} — ${formatPostgrestError(acceptError)}`
-            : "No game was returned after accepting the invite.",
-        });
+        const errorMsg = acceptError?.message?.toLowerCase() ?? "";
+
+        if (errorMsg.includes("expired") || errorMsg.includes("not found")) {
+          toast({ title: "Invite expired", description: "This battle room is no longer available." });
+        } else if (errorMsg.includes("already full") || errorMsg.includes("another player")) {
+          toast({ title: "Room already taken", description: "Another player already joined this match." });
+        } else if (errorMsg.includes("already handled")) {
+          toast({ title: "Invite already used", description: "This invite was already accepted or declined." });
+        } else {
+          toast({
+            title: "Unable to join match",
+            description: acceptError
+              ? `${mapAcceptInviteError(acceptError)} — ${formatPostgrestError(acceptError)}`
+              : "No game was returned after accepting the invite.",
+          });
+        }
+
+        setInvites((prev) => prev.filter((i) => i.id !== invite.id));
         await loadPendingInvites();
         return;
       }
 
       setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-      navigate(`/game/multiplayer?game=${acceptedGameId}`, { replace: true });
+      const targetUrl = `/game/multiplayer?game=${acceptedGameId}`;
+      console.log("[InviteNotif] navigating to", targetUrl);
+      navigate(targetUrl, { replace: true });
     } finally {
       setJoiningInviteId(null);
     }
