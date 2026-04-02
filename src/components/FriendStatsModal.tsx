@@ -116,14 +116,30 @@ const RECORD_LABELS: Record<string, { emoji: string; label: string }> = {
 function parseBalls(inningsData: any): { sixes: number; fours: number; totalRuns: number } {
   let sixes = 0, fours = 0, totalRuns = 0;
   if (!inningsData) return { sixes, fours, totalRuns };
-  const innings = Array.isArray(inningsData) ? inningsData : [inningsData];
-  for (const inn of innings) {
-    const balls = inn?.balls || inn?.playerBalls || [];
-    for (const b of balls) {
-      const runs = typeof b === "number" ? b : (b?.runs ?? b?.playerMove ?? 0);
-      if (runs === 6) sixes++;
-      else if (runs === 4) fours++;
-      totalRuns += typeof runs === "number" ? runs : 0;
+  const items = Array.isArray(inningsData) ? inningsData : [inningsData];
+
+  // Handle both flat BallResult[] format and nested innings format
+  for (const item of items) {
+    // If item has 'runs' and 'userMove'/'aiMove', it's a direct BallResult
+    if (item && (item.userMove !== undefined || item.aiMove !== undefined || item.runs !== undefined)) {
+      const runs = item.runs;
+      // Only count positive runs (user scoring), skip "OUT" and negative (AI scoring)
+      if (typeof runs === "number" && runs > 0) {
+        if (runs === 6) sixes++;
+        else if (runs === 4) fours++;
+        totalRuns += runs;
+      }
+    } else {
+      // Nested innings format: { balls: [...] } or { playerBalls: [...] }
+      const balls = item?.balls || item?.playerBalls || [];
+      for (const b of balls) {
+        const runs = typeof b === "number" ? b : (b?.runs ?? b?.playerMove ?? 0);
+        if (typeof runs === "number" && runs > 0) {
+          if (runs === 6) sixes++;
+          else if (runs === 4) fours++;
+          totalRuns += runs;
+        }
+      }
     }
   }
   return { sixes, fours, totalRuns };

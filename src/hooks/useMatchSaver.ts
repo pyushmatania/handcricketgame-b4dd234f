@@ -59,6 +59,16 @@ export function useMatchSaver() {
           best_streak: profile.best_streak,
         });
 
+        // Count sixes and fours from this match's ball history
+        let matchSixes = 0, matchFours = 0, matchRuns = 0;
+        for (const ball of game.ballHistory) {
+          if (typeof ball.runs === "number" && ball.runs > 0) {
+            if (ball.runs === 6) matchSixes++;
+            else if (ball.runs === 4) matchFours++;
+            matchRuns += ball.runs;
+          }
+        }
+
         const updatedStats = {
           total_matches: profile.total_matches + 1,
           wins: profile.wins + (game.result === "win" ? 1 : 0),
@@ -69,6 +79,9 @@ export function useMatchSaver() {
           best_streak: Math.max(profile.best_streak, newStreak),
           xp: ((profile as any).xp || 0) + xpEarned,
           coins: ((profile as any).coins || 0) + coinsEarned,
+          total_sixes: ((profile as any).total_sixes || 0) + matchSixes,
+          total_fours: ((profile as any).total_fours || 0) + matchFours,
+          total_runs: ((profile as any).total_runs || 0) + matchRuns,
         };
 
         // Check for rank change
