@@ -139,7 +139,7 @@ export function PostMatchCeremony({ playerName, opponentName, result, playerScor
       if (i === 0) return;
       timers.push(setTimeout(() => {
         setLineIndex(i);
-        if (voiceEnabled) speakCommentary(line, true);
+        if (voiceEnabled) speakCommentary(line, true, voiceEngine);
       }, t + i * (2000 * tm)));
     });
 
