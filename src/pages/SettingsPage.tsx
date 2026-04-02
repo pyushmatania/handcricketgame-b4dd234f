@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
+import type { CommentaryLanguage } from "@/contexts/SettingsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
+import { SYSTEM_VOICE_PERSONAS, speakWithSystemPersona } from "@/lib/systemVoices";
+import { speakElevenLabs, isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
 
 const COMMENTARY_VOICES = [
   { id: "nPczCjzI2devNBz1zQrb", name: "Brian", desc: "Deep authoritative broadcaster", emoji: "🎙️" },
@@ -19,6 +22,28 @@ const VOICE_ENGINES = [
   { id: "auto" as const, name: "AUTO", desc: "ElevenLabs first, system fallback", emoji: "🔄" },
   { id: "elevenlabs" as const, name: "ELEVENLABS", desc: "Premium AI voices only", emoji: "✨" },
   { id: "system" as const, name: "SYSTEM", desc: "10 unique system voices, free", emoji: "🗣️" },
+];
+
+const LANGUAGE_OPTIONS: { id: CommentaryLanguage; name: string; desc: string; emoji: string }[] = [
+  { id: "english", name: "ENGLISH", desc: "Classic cricket commentary", emoji: "🇬🇧" },
+  { id: "hindi", name: "HINDI", desc: "Full Hinglish & Bollywood vibes", emoji: "🇮🇳" },
+  { id: "both", name: "MIXED", desc: "Best of both — random mix", emoji: "🌍" },
+];
+
+const PREVIEW_LINES_EN = [
+  "What a shot! That's gone straight into the stands!",
+  "Brilliant bowling! The batsman has no answer!",
+  "And the crowd goes absolutely wild! Six runs!",
+  "Dot ball! Building pressure here!",
+  "That's a classic cover drive — textbook!",
+];
+
+const PREVIEW_LINES_HI = [
+  "Kya shot hai! Ball toh parking lot mein gayi!",
+  "Arre baap re! Bowler ki halat kharab ho gayi!",
+  "Chhakkaa! Stadium mein earthquake aa gaya!",
+  "Dot ball! Batter statue ban gaya!",
+  "Sachin wali cover drive! Master class!",
 ];
 
 interface SettingGroup {
