@@ -53,6 +53,19 @@ export default function TournamentScreen({ onHome }: Props) {
   const [showExplosion, setShowExplosion] = useState<{ emoji: string; key: number } | null>(null);
   const savedRef = useRef(false);
   const prevPhaseRef = useRef(game.phase);
+  const postMatchShownRef = useRef(false);
+
+  // Ceremony states
+  const [showPreMatch, setShowPreMatch] = useState(false);
+  const [showPostMatch, setShowPostMatch] = useState(false);
+  const [playerName, setPlayerName] = useState("You");
+
+  useEffect(() => {
+    const { user } = useAuth();
+    if (!user) return;
+    supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => { if (data?.display_name) setPlayerName(data.display_name); });
+  }, []);
 
   const startTournament = () => {
     const r: Round[] = AI_OPPONENTS.map((opp, i) => ({ round: i + 1, opponent: opp.name, result: "pending" }));
@@ -65,8 +78,15 @@ export default function TournamentScreen({ onHome }: Props) {
   useEffect(() => { startTournament(); }, []);
 
   const startRound = () => {
+    // Show pre-match ceremony first
+    setShowPreMatch(true);
+  };
+
+  const handlePreMatchComplete = () => {
+    setShowPreMatch(false);
     resetGame();
     savedRef.current = false;
+    postMatchShownRef.current = false;
     if (soundEnabled) SFX.gameStart();
     if (hapticsEnabled) Haptics.medium();
     startGame(true);
