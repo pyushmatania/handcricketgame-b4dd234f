@@ -476,8 +476,13 @@ export default function GameScreen({ onHome }: GameScreenProps) {
           )}
         </div>
 
-        {/* Odd/Even Toss */}
-        {game.phase === "not_started" && tossChoice === null && !showPreMatch && (
+        {/* Over Selector — shown first */}
+        {showOverSelector && game.phase === "not_started" && tossChoice === null && !showPreMatch && (
+          <OverSelector playerXP={playerXP} onSelect={handleOverSelect} />
+        )}
+
+        {/* Odd/Even Toss — after over selection */}
+        {!showOverSelector && matchConfig && game.phase === "not_started" && tossChoice === null && !showPreMatch && (
           <OddEvenToss
             onResult={handleTossResult}
             onTossComplete={handleTossComplete}
