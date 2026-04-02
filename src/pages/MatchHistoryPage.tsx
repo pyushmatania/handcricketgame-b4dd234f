@@ -256,9 +256,10 @@ export default function MatchHistoryPage() {
           </div>
         ) : (
           <div style={{ height: "calc(100vh - 340px)", minHeight: 300 }}>
-            {filtered.map((m, i) => {
-              const modeMeta = MODE_META[m.mode] || MODE_META.tap;
-              const resultColor = m.result === "win" ? "text-neon-green" : m.result === "loss" ? "text-out-red" : "text-secondary";
+            <Virtuoso
+              data={filtered}
+              overscan={200}
+              itemContent={(i, m) => {
               const resultBg = m.result === "win" ? "from-neon-green/8" : m.result === "loss" ? "from-out-red/8" : "from-secondary/8";
               const isExpanded = expandedMatch === m.id;
               const isReplaying = replayingMatch === m.id;
