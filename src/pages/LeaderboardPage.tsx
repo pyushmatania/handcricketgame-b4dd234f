@@ -728,6 +728,9 @@ export default function LeaderboardPage() {
                               {(player.xp ?? 0) > 0 && <span className="text-[6px] text-primary/60 font-display">✨{player.xp}</span>}
                             </div>
                           </div>
+                          {sparklines[player.user_id]?.length > 0 && (
+                            <FormSparkline results={sparklines[player.user_id]} />
+                          )}
                           <div className="text-right">
                             <span className="font-display text-lg font-black text-secondary block leading-none">{getScore(player)}</span>
                             <span className="text-[6px] text-muted-foreground font-display tracking-widest">{SORT_OPTIONS[sortBy].label}</span>
