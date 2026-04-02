@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { logPostgrestError } from "@/lib/multiplayerRoom";
 
 const INVITE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -75,7 +76,16 @@ export default function MatchInviteNotification() {
         // Auto-decline expired ones
         const expired = prev.filter((inv) => getTimeLeftFromInvite(inv) <= 0);
         expired.forEach((inv) => {
-          supabase.from("match_invites").update({ status: "expired", cancelled_at: new Date().toISOString() } as any).eq("id", inv.id).eq("status", "pending");
+          supabase
+            .from("match_invites")
+            .update({ status: "expired", cancelled_at: new Date().toISOString() } as any)
+            .eq("id", inv.id)
+            .eq("status", "pending")
+            .then(({ error }) => {
+              if (error) {
+                logPostgrestError("match invite auto-expire failed", error, { invite_id: inv.id });
+              }
+            });
         });
         return alive;
       });
@@ -85,7 +95,7 @@ export default function MatchInviteNotification() {
 
   const loadPendingInvites = async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("match_invites")
       .select("*")
       .eq("to_user_id", user.id)
@@ -94,6 +104,12 @@ export default function MatchInviteNotification() {
       .order("created_at", { ascending: false })
       .limit(5);
 
+    if (error) {
+      logPostgrestError("loadPendingInvites failed", error, { user_id: user.id });
+      setInvites([]);
+      return;
+    }
+
     if (!data || !data.length) { setInvites([]); return; }
 
     // Filter out expired invites
@@ -101,10 +117,14 @@ export default function MatchInviteNotification() {
     if (validInvites.length === 0) { setInvites([]); return; }
 
     const fromIds = [...new Set(validInvites.map((d) => d.from_user_id))];
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("user_id, display_name")
       .in("user_id", fromIds);
+
+    if (profilesError) {
+      logPostgrestError("loadPendingInvites profile lookup failed", profilesError, { from_user_ids: fromIds });
+    }
 
     const nameMap: Record<string, string> = {};
     if (profiles) profiles.forEach((p: any) => { nameMap[p.user_id] = p.display_name; });
@@ -124,7 +144,10 @@ export default function MatchInviteNotification() {
         .maybeSingle();
 
       if (!existingGame) {
-        await supabase.from("match_invites").update({ status: "expired" } as any).eq("id", invite.id);
+        const { error: inviteExpiredError } = await supabase.from("match_invites").update({ status: "expired" } as any).eq("id", invite.id);
+        if (inviteExpiredError) {
+          logPostgrestError("acceptInvite mark expired failed", inviteExpiredError, { invite_id: invite.id });
+        }
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
         return;
       }
@@ -133,13 +156,19 @@ export default function MatchInviteNotification() {
       let finalGameId: string | null = null;
 
       if (g.status === "finished" || g.status === "abandoned") {
-        await supabase.from("match_invites").update({ status: "expired" } as any).eq("id", invite.id);
+        const { error: inviteExpiredError } = await supabase.from("match_invites").update({ status: "expired" } as any).eq("id", invite.id);
+        if (inviteExpiredError) {
+          logPostgrestError("acceptInvite finished game expiry failed", inviteExpiredError, { invite_id: invite.id, game_id: invite.game_id });
+        }
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
         return;
       }
 
       if (g.guest_id && g.guest_id !== user.id && g.host_id !== user.id) {
-        await supabase.from("match_invites").update({ status: "declined" } as any).eq("id", invite.id);
+        const { error: inviteDeclineError } = await supabase.from("match_invites").update({ status: "declined" } as any).eq("id", invite.id);
+        if (inviteDeclineError) {
+          logPostgrestError("acceptInvite mark declined failed", inviteDeclineError, { invite_id: invite.id, game_id: invite.game_id });
+        }
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
         return;
       }
@@ -151,6 +180,10 @@ export default function MatchInviteNotification() {
           .eq("id", invite.game_id)
           .eq("status", "waiting")
           .is("guest_id", null);
+
+        if (joinError) {
+          logPostgrestError("acceptInvite join room failed", joinError, { invite_id: invite.id, game_id: invite.game_id, user_id: user.id });
+        }
 
         if (!joinError) {
           finalGameId = invite.game_id;
@@ -176,7 +209,16 @@ export default function MatchInviteNotification() {
 
       if (!finalGameId) return;
 
-      await supabase.from("match_invites").update({ status: "accepted", accepted_at: new Date().toISOString() } as any).eq("id", invite.id).eq("status", "pending");
+      const { error: acceptError } = await supabase
+        .from("match_invites")
+        .update({ status: "accepted", accepted_at: new Date().toISOString() } as any)
+        .eq("id", invite.id)
+        .eq("status", "pending");
+
+      if (acceptError) {
+        logPostgrestError("acceptInvite mark accepted failed", acceptError, { invite_id: invite.id, game_id: invite.game_id });
+      }
+
       setInvites((prev) => prev.filter((i) => i.id !== invite.id));
       navigate(`/game/multiplayer?game=${finalGameId}`, { replace: true });
     } finally {
@@ -185,7 +227,16 @@ export default function MatchInviteNotification() {
   };
 
   const declineInvite = async (invite: Invite) => {
-    await supabase.from("match_invites").update({ status: "declined", declined_at: new Date().toISOString() } as any).eq("id", invite.id).eq("status", "pending");
+    const { error } = await supabase
+      .from("match_invites")
+      .update({ status: "declined", declined_at: new Date().toISOString() } as any)
+      .eq("id", invite.id)
+      .eq("status", "pending");
+
+    if (error) {
+      logPostgrestError("declineInvite failed", error, { invite_id: invite.id, game_id: invite.game_id });
+    }
+
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
   };
 

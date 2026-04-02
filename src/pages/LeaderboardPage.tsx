@@ -6,7 +6,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import RivalryCard from "@/components/RivalryCard";
-import { createMultiplayerRoom } from "@/lib/multiplayerRoom";
+import { toast } from "@/components/ui/use-toast";
+import {
+  createMultiplayerRoom,
+  formatPostgrestError,
+  logPostgrestError,
+  mapCreateRoomError,
+  mapInviteInsertError,
+} from "@/lib/multiplayerRoom";
 
 interface LeaderEntry {
   display_name: string;
@@ -157,19 +164,59 @@ export default function LeaderboardPage() {
   const challengeFriend = async (friendId: string, gameType: GameType) => {
     if (!user) return;
     const { data: game, error: gameError } = await createMultiplayerRoom(user.id, gameType, friendId);
-    if (gameError || !game) return;
-    const { error: inviteError } = await supabase.from("match_invites").insert({
-        game_id: (game as any).id,
-        from_user_id: user.id,
-        to_user_id: friendId,
-        game_type: gameType,
-        expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      } as any);
-    if (inviteError) {
-      console.error("leaderboard challenge invite insert failed", inviteError);
-      await supabase.from("multiplayer_games").update({ status: "cancelled" as any, phase: "abandoned" as any }).eq("id", (game as any).id);
+    if (gameError || !game) {
+      if (gameError) {
+        logPostgrestError("leaderboard challenge create room failed", gameError, {
+          host_id: user.id,
+          to_user_id: friendId,
+          game_type: gameType,
+        });
+      }
+
+      toast({
+        title: "Battle room failed",
+        description: gameError
+          ? `${mapCreateRoomError(gameError)} — ${formatPostgrestError(gameError)}`
+          : "Battle room creation returned no room data.",
+      });
       return;
     }
+
+    const invitePayload = {
+      game_id: (game as any).id,
+      from_user_id: user.id,
+      to_user_id: friendId,
+      game_type: gameType,
+      expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    } as any;
+    const { error: inviteError } = await supabase.from("match_invites").insert(invitePayload);
+    if (inviteError) {
+      logPostgrestError("leaderboard challenge invite insert failed", inviteError, {
+        payload: invitePayload,
+      });
+
+      const { error: cancelError } = await supabase
+        .from("multiplayer_games")
+        .update({ status: "cancelled" as any, phase: "abandoned" as any })
+        .eq("id", (game as any).id);
+
+      if (cancelError) {
+        logPostgrestError("leaderboard challenge cleanup room cancel failed", cancelError, {
+          game_id: (game as any).id,
+        });
+      }
+
+      toast({
+        title: "Battle invite failed",
+        description: `${mapInviteInsertError(inviteError)} — ${formatPostgrestError(inviteError)}`,
+      });
+      return;
+    }
+
+    toast({
+      title: "Battle invite sent",
+      description: "Waiting room opened. Waiting for opponent...",
+    });
     navigate(`/game/multiplayer?game=${(game as any).id}`);
   };
 
