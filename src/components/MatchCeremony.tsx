@@ -69,7 +69,7 @@ const POST_DRAW = POST_DRAW_EXPANDED;
 export function PostMatchCeremony({ playerName, opponentName, result, playerScore, opponentScore, ballHistory, onComplete, isPvP = false }: PostMatchProps) {
   const [stage, setStage] = useState<Stage>("result");
   const [lineIndex, setLineIndex] = useState(0);
-  const { voiceEnabled, soundEnabled } = useSettings();
+  const { voiceEnabled, soundEnabled, voiceEngine } = useSettings();
 
   const stats = useMemo(() => computeStats(ballHistory, true), [ballHistory]);
 
