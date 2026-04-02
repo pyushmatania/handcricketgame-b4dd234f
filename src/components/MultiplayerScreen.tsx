@@ -141,8 +141,17 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [receivedTease, setReceivedTease] = useState<string | null>(null);
   const [showTeasePanel, setShowTeasePanel] = useState(false);
   const [showPvPPostMatch, setShowPvPPostMatch] = useState(false);
+  const [showPvPPreMatch, setShowPvPPreMatch] = useState(false);
   const [pvpBallHistory, setPvpBallHistory] = useState<BallResult[]>([]);
   const pvpPostMatchShownRef = useRef(false);
+  const pvpPreMatchShownRef = useRef(false);
+  const [rivalryStats, setRivalryStats] = useState<{
+    myWins: number; theirWins: number; totalGames: number;
+    myHighScore: number; theirHighScore: number;
+    myAvgScore?: number; theirAvgScore?: number;
+    lastResult?: "win" | "loss" | "draw";
+    winStreak?: number; loseStreak?: number;
+  } | null>(null);
 
   const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
