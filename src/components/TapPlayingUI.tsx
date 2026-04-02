@@ -294,6 +294,11 @@ export default function TapPlayingUI({
     setOverBreakData(null);
   }, []);
 
+  const handleWicketBreakdownContinue = useCallback(() => {
+    setShowWicketBreakdown(false);
+    setWicketBreakdownData(null);
+  }, []);
+
   return (
     <>
       <CelebrationEffects lastResult={lastResult} gameResult={result} phase={phase} />
