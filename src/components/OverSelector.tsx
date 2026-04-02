@@ -60,7 +60,7 @@ export default function OverSelector({ playerXP, onSelect }: OverSelectorProps) 
       const overUnlocks: number[] = [];
       const wicketUnlocks: number[] = [];
       for (const item of items) {
-        const meta = item.metadata as PassUnlock | null;
+        const meta = item.metadata as unknown as PassUnlock | null;
         if (!meta) continue;
         if (meta.pass_type === "overs") overUnlocks.push(meta.unlock_value);
         if (meta.pass_type === "wickets") wicketUnlocks.push(meta.unlock_value);
