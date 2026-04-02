@@ -88,6 +88,7 @@ export default function TournamentScreen({ onHome }: Props) {
 
   const handleTossResult = (batFirst: boolean) => {
     setPendingBatFirst(batFirst);
+    setMatchCommentators(pickMatchCommentators()); // Fresh commentators per round
     setTimeout(() => setShowPreMatch(true), 500);
   };
 
