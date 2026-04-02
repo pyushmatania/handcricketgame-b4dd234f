@@ -18,6 +18,7 @@ import SettingsPage from "./pages/SettingsPage";
 import FriendsPage from "./pages/FriendsPage";
 import MatchHistoryPage from "./pages/MatchHistoryPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import ShopPage from "./pages/ShopPage";
 import MatchInviteNotification from "@/components/MatchInviteNotification";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +37,7 @@ function AnimatedRoutes() {
       <Route path="/friends" element={<PageTransition><FriendsPage /></PageTransition>} />
       <Route path="/history" element={<PageTransition><MatchHistoryPage /></PageTransition>} />
       <Route path="/notifications" element={<PageTransition><NotificationsPage /></PageTransition>} />
+      <Route path="/shop" element={<PageTransition><ShopPage /></PageTransition>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

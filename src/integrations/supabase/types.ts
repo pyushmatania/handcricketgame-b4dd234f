@@ -356,6 +356,9 @@ export type Database = {
           current_streak: number
           display_name: string
           draws: number
+          equipped_avatar_frame: string | null
+          equipped_bat_skin: string | null
+          equipped_vs_effect: string | null
           high_score: number
           id: string
           invite_code: string
@@ -377,6 +380,9 @@ export type Database = {
           current_streak?: number
           display_name?: string
           draws?: number
+          equipped_avatar_frame?: string | null
+          equipped_bat_skin?: string | null
+          equipped_vs_effect?: string | null
           high_score?: number
           id?: string
           invite_code?: string
@@ -398,6 +404,9 @@ export type Database = {
           current_streak?: number
           display_name?: string
           draws?: number
+          equipped_avatar_frame?: string | null
+          equipped_bat_skin?: string | null
+          equipped_vs_effect?: string | null
           high_score?: number
           id?: string
           invite_code?: string
@@ -521,6 +530,77 @@ export type Database = {
           wins?: number
         }
         Relationships: []
+      }
+      shop_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          name: string
+          preview_emoji: string
+          price: number
+          rarity: string
+          sort_order: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          name: string
+          preview_emoji?: string
+          price?: number
+          rarity?: string
+          sort_order?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          name?: string
+          preview_emoji?: string
+          price?: number
+          rarity?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      user_purchases: {
+        Row: {
+          equipped: boolean
+          id: string
+          item_id: string
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          equipped?: boolean
+          id?: string
+          item_id: string
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          equipped?: boolean
+          id?: string
+          item_id?: string
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_purchases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weekly_challenges: {
         Row: {

@@ -93,13 +93,16 @@ export default function TopStatusBar() {
           </motion.div>
         )}
 
-        {/* Coins */}
-        <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full glass-card">
-          <span className="text-xs">💰</span>
+        {/* Coins - tap to open shop */}
+        <button
+          onClick={() => navigate("/shop")}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-full glass-card active:scale-90 transition-transform"
+        >
+          <span className="text-xs">🪙</span>
           <span className="font-display text-[10px] font-bold text-secondary tracking-wider">
             {coins >= 1000 ? `${(coins / 1000).toFixed(1)}K` : coins}
           </span>
-        </div>
+        </button>
 
         {/* Notifications */}
         <button
