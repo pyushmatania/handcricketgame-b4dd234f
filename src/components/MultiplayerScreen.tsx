@@ -1168,29 +1168,44 @@ export default function MultiplayerScreen({ onHome }: Props) {
             modeLabel={modeLabel}
             extraContent={
               <>
-                {/* Countdown Timer — only shows after 15s idle */}
+                {/* 5s Synced Countdown Timer — always visible during action */}
                 <AnimatePresence>
-                  {!waitingForOpponent && showCountdown && (
+                  {!waitingForOpponent && phase === "playing" && (
                     <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
-                      className="glass-premium rounded-xl p-3 border border-out-red/30">
+                      className={`glass-premium rounded-xl p-3 border ${countdownSec <= 2 ? "border-out-red/50 shadow-[0_0_20px_hsl(var(--out-red)/0.3)]" : "border-secondary/30"}`}>
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
-                          <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.5, repeat: Infinity }} className="text-sm">⚠️</motion.span>
-                          <span className="font-display text-[8px] font-bold text-out-red tracking-widest">MAKE YOUR MOVE!</span>
+                          <motion.span animate={countdownSec <= 2 ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.4, repeat: Infinity }} className="text-sm">
+                            {countdownSec <= 2 ? "🔥" : "⏱️"}
+                          </motion.span>
+                          <span className={`font-display text-[8px] font-bold tracking-widest ${countdownSec <= 2 ? "text-out-red" : "text-secondary"}`}>
+                            {countdownSec <= 2 ? "HURRY!" : "PICK YOUR MOVE"}
+                          </span>
                         </div>
-                        <span className={`font-display text-lg font-black ${countdownSec > 15 ? "text-secondary" : countdownSec > 5 ? "text-out-red" : "text-out-red animate-pulse"}`}>
-                          {countdownSec}s
-                        </span>
+                        <motion.span 
+                          key={countdownSec}
+                          initial={{ scale: 1.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className={`font-display text-xl font-black tabular-nums ${
+                            countdownSec <= 1 ? "text-out-red animate-pulse" : countdownSec <= 2 ? "text-out-red" : countdownSec <= 3 ? "text-secondary" : "text-neon-green"
+                          }`}
+                        >
+                          {countdownSec}
+                        </motion.span>
                       </div>
                       <div className="w-full h-2.5 bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
-                          className={`h-full rounded-full ${countdownSec > 15 ? "bg-gradient-to-r from-secondary to-secondary/60" : "bg-gradient-to-r from-out-red to-out-red/60"}`}
+                          className={`h-full rounded-full transition-colors ${
+                            countdownSec <= 2 ? "bg-gradient-to-r from-out-red to-out-red/60" : countdownSec <= 3 ? "bg-gradient-to-r from-secondary to-secondary/60" : "bg-gradient-to-r from-neon-green to-neon-green/60"
+                          }`}
                           style={{ width: `${countdownPct}%` }}
                         />
                       </div>
-                      <p className="text-[7px] text-out-red/60 font-display tracking-wider mt-1 text-center">
-                        Auto-forfeit if you don't play!
-                      </p>
+                      {myConsecutiveMisses > 0 && (
+                        <p className="text-[7px] text-out-red/80 font-display tracking-wider mt-1 text-center">
+                          ⚠️ {myConsecutiveMisses}/{MAX_CONSECUTIVE_MISSES} missed — {MAX_CONSECUTIVE_MISSES - myConsecutiveMisses} more = FORFEIT
+                        </p>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
