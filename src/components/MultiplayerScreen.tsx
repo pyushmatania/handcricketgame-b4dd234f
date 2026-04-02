@@ -1061,6 +1061,23 @@ export default function MultiplayerScreen({ onHome }: Props) {
           </div>
         </div>
       )}
+
+      {/* VS Intro Overlay */}
+      {showVSIntro && (
+        <VSIntroScreen
+          playerName={myName}
+          opponentName={opponentName}
+          playerAvatarIndex={myAvatarIndex}
+          opponentAvatarIndex={opponentAvatarIndex}
+          gameType={currentGame?.game_type}
+          onComplete={() => {
+            setShowVSIntro(false);
+            if (currentGame) {
+              setPhase(statusToPhase(currentGame.status));
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
