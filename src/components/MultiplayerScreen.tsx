@@ -1077,7 +1077,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                 onClick={() => {
                   setPhase("lobby");
                   setCurrentGame(null);
-                  setReserveTime(RESERVE_TIMER_MS);
+                  setCountdownMs(COUNTDOWN_MS);
                   navigate("/game/multiplayer", { replace: true });
                 }}
                 className="flex-1 py-3.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold rounded-2xl glow-primary tracking-wider">
