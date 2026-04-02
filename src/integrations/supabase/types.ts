@@ -293,6 +293,39 @@ export type Database = {
         }
         Relationships: []
       }
+      record_breaks: {
+        Row: {
+          broken_at: string
+          broken_by: string
+          created_at: string
+          id: string
+          new_value: number
+          old_value: number
+          record_holder: string
+          record_type: string
+        }
+        Insert: {
+          broken_at?: string
+          broken_by: string
+          created_at?: string
+          id?: string
+          new_value: number
+          old_value: number
+          record_holder: string
+          record_type: string
+        }
+        Update: {
+          broken_at?: string
+          broken_by?: string
+          created_at?: string
+          id?: string
+          new_value?: number
+          old_value?: number
+          record_holder?: string
+          record_type?: string
+        }
+        Relationships: []
+      }
       season_snapshots: {
         Row: {
           abandons: number
