@@ -96,7 +96,7 @@ export default function CelebrationEffects({ lastResult, gameResult, phase }: Ce
       const t2 = setTimeout(() => {
         setParticles(prev => [...prev, ...generateParticles(FIREWORK_EMOJIS, 15, 360)]);
       }, 1600);
-      const t3 = setTimeout(() => { setParticles([]); setEffectType("none"); }, 4000);
+      const t3 = setTimeout(() => { setParticles([]); setEffectType("none"); setCrowdWave(w => ({ ...w, active: false })); }, 4000);
       return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }
   }, [phase, gameResult]);
