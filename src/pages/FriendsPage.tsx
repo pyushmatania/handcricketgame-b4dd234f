@@ -6,7 +6,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import PlayerAvatar from "@/components/PlayerAvatar";
-import { createMultiplayerRoom, mapCreateRoomError } from "@/lib/multiplayerRoom";
+import {
+  createMultiplayerRoom,
+  formatPostgrestError,
+  logPostgrestError,
+  mapCreateRoomError,
+  mapInviteInsertError,
+} from "@/lib/multiplayerRoom";
 
 interface FriendProfile {
   user_id: string;
@@ -190,21 +196,46 @@ export default function FriendsPage() {
     if (!user) return;
     const { data: game, error: gameError } = await createMultiplayerRoom(user.id, gameType, friendId);
     if (gameError || !game) {
-      console.error("challengeFriend create room failed", gameError);
-      setFeedback(mapCreateRoomError(gameError));
+      if (gameError) {
+        logPostgrestError("challengeFriend create room failed", gameError, {
+          host_id: user.id,
+          to_user_id: friendId,
+          game_type: gameType,
+        });
+      }
+
+      setFeedback(
+        gameError
+          ? `${mapCreateRoomError(gameError)} — ${formatPostgrestError(gameError)}`
+          : "Battle room creation returned no room data."
+      );
       return;
     }
-    const { error: inviteError } = await supabase.from("match_invites").insert({
-        game_id: (game as any).id,
-        from_user_id: user.id,
-        to_user_id: friendId,
-        game_type: gameType,
-        expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      } as any);
+    const invitePayload = {
+      game_id: (game as any).id,
+      from_user_id: user.id,
+      to_user_id: friendId,
+      game_type: gameType,
+      expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    } as any;
+    const { error: inviteError } = await supabase.from("match_invites").insert(invitePayload);
     if (inviteError) {
-      console.error("challengeFriend invite insert failed", inviteError);
-      await supabase.from("multiplayer_games").update({ status: "cancelled" as any, phase: "abandoned" as any }).eq("id", (game as any).id);
-      setFeedback("Room created, but invite delivery failed.");
+      logPostgrestError("challengeFriend invite insert failed", inviteError, {
+        payload: invitePayload,
+      });
+
+      const { error: cancelError } = await supabase
+        .from("multiplayer_games")
+        .update({ status: "cancelled" as any, phase: "abandoned" as any })
+        .eq("id", (game as any).id);
+
+      if (cancelError) {
+        logPostgrestError("challengeFriend cleanup room cancel failed", cancelError, {
+          game_id: (game as any).id,
+        });
+      }
+
+      setFeedback(`${mapInviteInsertError(inviteError)} — ${formatPostgrestError(inviteError)}`);
       return;
     }
     setFeedback("Battle invite sent! Waiting for opponent...");
