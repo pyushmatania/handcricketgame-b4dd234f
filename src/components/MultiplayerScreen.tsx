@@ -128,8 +128,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
   useEffect(() => {
     if (!user) navigate("/auth");
     if (user) {
-      supabase.from("profiles").select("display_name").eq("user_id", user.id).single()
-        .then(({ data }) => { if (data) setMyName(data.display_name); });
+      supabase.from("profiles").select("display_name, avatar_index").eq("user_id", user.id).single()
+        .then(({ data }) => { if (data) { setMyName(data.display_name); setMyAvatarIndex((data as any).avatar_index ?? 0); } });
     }
   }, [user, navigate]);
 
