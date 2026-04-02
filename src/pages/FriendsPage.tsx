@@ -55,6 +55,7 @@ export default function FriendsPage() {
   const [feedback, setFeedback] = useState("");
   const [challengeTargetId, setChallengeTargetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<FriendProfile | null>(null);
 
   useEffect(() => {
     if (!user) return;
