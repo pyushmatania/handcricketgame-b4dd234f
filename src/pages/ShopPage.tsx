@@ -36,6 +36,7 @@ const CATEGORIES = [
   { key: "bat_skin", label: "BATS", icon: "🏏" },
   { key: "vs_effect", label: "VS FX", icon: "⚔️" },
   { key: "avatar_frame", label: "FRAMES", icon: "🖼️" },
+  { key: "game_pass", label: "PASSES", icon: "🎫" },
 ];
 
 export default function ShopPage() {
@@ -90,6 +91,13 @@ export default function ShopPage() {
 
   const handleEquip = async (item: ShopItem) => {
     if (!user) return;
+
+    // Game passes are auto-active once purchased, no equip needed
+    if (item.category === "game_pass") {
+      toast.info("Game passes are always active once purchased! 🎫");
+      setSelectedItem(null);
+      return;
+    }
 
     // Unequip all in same category, equip this one
     const categoryItems = items.filter(i => i.category === item.category);
@@ -248,7 +256,7 @@ export default function ShopPage() {
                       <h3 className="font-display text-lg font-black text-foreground tracking-wider">{item.name}</h3>
                       <p className="text-[10px] text-muted-foreground mt-1">{item.description}</p>
                       <span className="text-[8px] text-muted-foreground/50 font-display tracking-wider mt-1 block">
-                        {item.category === "bat_skin" ? "🏏 Bat Skin" : item.category === "vs_effect" ? "⚔️ VS Effect" : "🖼️ Avatar Frame"}
+                        {item.category === "bat_skin" ? "🏏 Bat Skin" : item.category === "vs_effect" ? "⚔️ VS Effect" : item.category === "game_pass" ? "🎫 Game Pass" : "🖼️ Avatar Frame"}
                       </span>
                     </div>
 

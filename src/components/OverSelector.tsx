@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import type { MatchConfig } from "@/hooks/useHandCricket";
 
 interface OverSelectorProps {
@@ -7,25 +9,81 @@ interface OverSelectorProps {
   onSelect: (config: MatchConfig) => void;
 }
 
+interface PassUnlock {
+  pass_type: "overs" | "wickets";
+  unlock_value: number;
+}
+
 const OVER_OPTIONS = [
-  { overs: null, label: "∞", desc: "UNLIMITED", unlockXP: 0 },
-  { overs: 1, label: "1", desc: "1 OVER", unlockXP: 0 },
-  { overs: 3, label: "3", desc: "3 OVERS", unlockXP: 0 },
-  { overs: 5, label: "5", desc: "5 OVERS", unlockXP: 0 },
-  { overs: 10, label: "10", desc: "10 OVERS", unlockXP: 100 },
-  { overs: 20, label: "20", desc: "20 OVERS", unlockXP: 300 },
+  { overs: null, label: "∞", desc: "UNLIMITED", unlockXP: 0, passValue: null },
+  { overs: 1, label: "1", desc: "1 OVER", unlockXP: 0, passValue: null },
+  { overs: 3, label: "3", desc: "3 OVERS", unlockXP: 0, passValue: null },
+  { overs: 5, label: "5", desc: "5 OVERS", unlockXP: 0, passValue: null },
+  { overs: 10, label: "10", desc: "10 OVERS", unlockXP: 100, passValue: 10 },
+  { overs: 20, label: "20", desc: "20 OVERS", unlockXP: 300, passValue: 20 },
 ];
 
 const WICKET_OPTIONS = [
-  { wickets: 1, label: "1W", desc: "1 WICKET", unlockXP: 0 },
-  { wickets: 3, label: "3W", desc: "3 WICKETS", unlockXP: 0 },
-  { wickets: 5, label: "5W", desc: "5 WICKETS", unlockXP: 200 },
-  { wickets: 10, label: "10W", desc: "10 WICKETS", unlockXP: 500 },
+  { wickets: 1, label: "1W", desc: "1 WICKET", unlockXP: 0, passValue: null },
+  { wickets: 3, label: "3W", desc: "3 WICKETS", unlockXP: 0, passValue: null },
+  { wickets: 5, label: "5W", desc: "5 WICKETS", unlockXP: 200, passValue: 5 },
+  { wickets: 10, label: "10W", desc: "10 WICKETS", unlockXP: 500, passValue: 10 },
 ];
 
 export default function OverSelector({ playerXP, onSelect }: OverSelectorProps) {
+  const { user } = useAuth();
   const [selectedOvers, setSelectedOvers] = useState<number | null>(null);
   const [selectedWickets, setSelectedWickets] = useState(3);
+  const [unlockedOvers, setUnlockedOvers] = useState<number[]>([]);
+  const [unlockedWickets, setUnlockedWickets] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    // Fetch purchased game passes
+    const fetchPasses = async () => {
+      const { data: purchases } = await supabase
+        .from("user_purchases")
+        .select("item_id")
+        .eq("user_id", user.id);
+
+      if (!purchases?.length) return;
+
+      const itemIds = purchases.map((p: any) => p.item_id);
+      const { data: items } = await supabase
+        .from("shop_items")
+        .select("metadata")
+        .eq("category", "game_pass")
+        .in("id", itemIds);
+
+      if (!items) return;
+
+      const overUnlocks: number[] = [];
+      const wicketUnlocks: number[] = [];
+      for (const item of items) {
+        const meta = item.metadata as unknown as PassUnlock | null;
+        if (!meta) continue;
+        if (meta.pass_type === "overs") overUnlocks.push(meta.unlock_value);
+        if (meta.pass_type === "wickets") wicketUnlocks.push(meta.unlock_value);
+      }
+      setUnlockedOvers(overUnlocks);
+      setUnlockedWickets(wicketUnlocks);
+    };
+    fetchPasses();
+  }, [user]);
+
+  const isOverLocked = (opt: typeof OVER_OPTIONS[0]) => {
+    if (opt.unlockXP === 0) return false;
+    if (playerXP >= opt.unlockXP) return false;
+    if (opt.passValue && unlockedOvers.includes(opt.passValue)) return false;
+    return true;
+  };
+
+  const isWicketLocked = (opt: typeof WICKET_OPTIONS[0]) => {
+    if (opt.unlockXP === 0) return false;
+    if (playerXP >= opt.unlockXP) return false;
+    if (opt.passValue && unlockedWickets.includes(opt.passValue)) return false;
+    return true;
+  };
 
   const handleConfirm = () => {
     onSelect({ overs: selectedOvers, wickets: selectedOvers === null ? 1 : selectedWickets });
@@ -45,8 +103,9 @@ export default function OverSelector({ playerXP, onSelect }: OverSelectorProps) 
         </div>
         <div className="grid grid-cols-3 gap-1.5">
           {OVER_OPTIONS.map((opt) => {
-            const locked = playerXP < opt.unlockXP;
+            const locked = isOverLocked(opt);
             const active = selectedOvers === opt.overs;
+            const hasPass = opt.passValue && unlockedOvers.includes(opt.passValue);
             return (
               <motion.button
                 key={opt.label}
@@ -63,6 +122,11 @@ export default function OverSelector({ playerXP, onSelect }: OverSelectorProps) 
               >
                 <span className="text-lg font-black">{opt.label}</span>
                 <span className="text-[7px] tracking-wider text-muted-foreground">{opt.desc}</span>
+                {hasPass && !locked && (
+                  <span className="absolute top-1 right-1 text-[6px] px-1 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent font-bold">
+                    🎫
+                  </span>
+                )}
                 {locked && (
                   <span className="absolute top-1 right-1 text-[6px] px-1 py-0.5 rounded bg-secondary/10 border border-secondary/20 text-secondary font-bold">
                     🔒 {opt.unlockXP} XP
@@ -83,8 +147,9 @@ export default function OverSelector({ playerXP, onSelect }: OverSelectorProps) 
           </div>
           <div className="grid grid-cols-4 gap-1.5">
             {WICKET_OPTIONS.map((opt) => {
-              const locked = playerXP < opt.unlockXP;
+              const locked = isWicketLocked(opt);
               const active = selectedWickets === opt.wickets;
+              const hasPass = opt.passValue && unlockedWickets.includes(opt.passValue);
               return (
                 <motion.button
                   key={opt.label}
@@ -101,6 +166,11 @@ export default function OverSelector({ playerXP, onSelect }: OverSelectorProps) 
                 >
                   <span className="text-sm font-black">{opt.label}</span>
                   <span className="text-[6px] tracking-wider text-muted-foreground">{opt.desc}</span>
+                  {hasPass && !locked && (
+                    <span className="absolute top-0.5 right-0.5 text-[5px] px-1 py-0.5 rounded bg-accent/10 border border-accent/20 text-accent font-bold">
+                      🎫
+                    </span>
+                  )}
                   {locked && (
                     <span className="absolute top-0.5 right-0.5 text-[5px] px-1 py-0.5 rounded bg-secondary/10 border border-secondary/20 text-secondary font-bold">
                       🔒{opt.unlockXP}
@@ -111,6 +181,15 @@ export default function OverSelector({ playerXP, onSelect }: OverSelectorProps) 
             })}
           </div>
         </motion.div>
+      )}
+
+      {/* Shop hint for locked items */}
+      {(OVER_OPTIONS.some(o => isOverLocked(o)) || WICKET_OPTIONS.some(w => isWicketLocked(w))) && (
+        <div className="text-center">
+          <span className="text-[7px] text-muted-foreground/70 font-display tracking-wider">
+            🎫 Buy Game Passes in the <span className="text-primary">Shop</span> to unlock more options!
+          </span>
+        </div>
       )}
 
       {/* Confirm */}
