@@ -150,7 +150,7 @@ export function PostMatchCeremony({ playerName, opponentName, result, playerScor
       pvpLines.forEach((line, i) => {
         timers.push(setTimeout(() => {
           setLineIndex(100 + i); // Use 100+ offset for pvp lines
-          if (voiceEnabled) speakCommentary(line, true);
+          if (voiceEnabled) speakCommentary(line, true, voiceEngine);
         }, t + i * 4000));
       });
       t += pvpLines.length * 4000;
