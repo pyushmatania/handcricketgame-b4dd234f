@@ -37,6 +37,7 @@ const defaults: Settings = {
   batSoundEnabled: true, victorySoundEnabled: true,
   commentaryVoice: "nPczCjzI2devNBz1zQrb", // Brian (default)
   voiceEngine: "auto" as VoiceEngine,
+  commentaryLanguage: "both" as CommentaryLanguage,
 };
 
 const SettingsContext = createContext<SettingsContextType>({
