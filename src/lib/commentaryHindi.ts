@@ -296,7 +296,7 @@ export const HINDI_OVER_BREAK_BOWLING: DuoGen[] = [
   ],
 ];
 
-// ─── Hindi Post-Match Lines ───────────────────────────────────────
+// ─── Hindi Post-Match WIN — Bollywood-style celebrations ─────────
 
 export const HINDI_POST_MATCH_WIN: DuoGen[] = [
   (c1, c2, p) => [
@@ -307,7 +307,61 @@ export const HINDI_POST_MATCH_WIN: DuoGen[] = [
     { commentatorId: c2, text: `${p} CHAMPION! 'Apna time aayega' aur aa gaya! Gully Boy energy! 🎤`, isKeyMoment: true },
     { commentatorId: c1, text: `Ranveer Singh nachega is jeet pe! Ye toh 'Ram Leela' ka climax tha!`, isKeyMoment: true },
   ],
+  (c1, c2, p, o) => [
+    { commentatorId: c1, text: `${p} ne 'Pushpa' style mein bola — "Main jhukega nahi saala!" AUR NAHI JHUKA! 🔥`, isKeyMoment: true },
+    { commentatorId: c2, text: `${o} ko 'Baahubali' ki tarah finish kiya! "Kattappa ne ${o} ko kyun maara!" 😂`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `DJ BAJAO! 🎶 ${p} ne 'Chak De India' kar diya! Gold medal performance!`, isKeyMoment: true },
+    { commentatorId: c1, text: `SRK bhi khada hoke taali bajayega! "70 minutes hai mere paas" — aur isme toh jeet liya!`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c1, text: `${p} 'DON' hai! "Don ko pakadna mushkil hi nahi, namumkin hai!" 🕶️`, isKeyMoment: true },
+    { commentatorId: c2, text: `${o} soch raha hoga "Ye sab kaise hua!" — ${p} magician hai boss!`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `"Kitne aadmi the?" "SIRF EK — ${p}!" Sholay ka Gabbar haar gaya aaj! 💀`, isKeyMoment: true },
+    { commentatorId: c1, text: `Amitabh Bachchan bole toh — "${p} ne aaj sabko dikhaa diya!" Standing ovation!`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `THALA FOR A REASON! 🦁 ${p} ne Dhoni jaisa finish kiya — last ball tak suspense!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Helicopter shot nahi maara but helicopter jeet! IPL mein toh 15 crore pakka! 💰`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c2, text: `${p} ne 'KGF' style mein bola — "Violence! Violence! Violence!" aur opponent ka game tod diya! 🔨`, isKeyMoment: true },
+    { commentatorId: c1, text: `Rocky Bhai proud hoga! ${o} ko toh "history mein chod diya!" 📜`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `"Mogambo khush hua!" 😈 ${p} ne aaj sabki band baja di!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Mr. India ban ke aaya — opponent ko dikhaa hi nahi ki kab jeet liya! 👻`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `'Dangal' ho gaya! ${p} ki "mhaari chhoriyaan chhoron se kam hai ke!" jeet! 🤼`, isKeyMoment: true },
+    { commentatorId: c1, text: `Phogat family wali fighting spirit! Gold medal performance, ${p}! 🥇`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `${p} ne 'Munna Bhai MBBS' ki tarah sabko 'jaadu ki jhappi' de di — aur jeet bhi li! 🤗`, isKeyMoment: true },
+    { commentatorId: c2, text: `"All izz well" bolke jeet gaya! Ye banda toh 3 Idiots ka Rancho hai! 🎓`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c2, text: `${p} — "Rishte mein toh hum tumhare baap lagte hain!" 🔥 ${o} baap ko salaam karo!`, isKeyMoment: true },
+    { commentatorId: c1, text: `${c2}! Itna savage? But sach mein ${p} ne daddy innings kheli aaj! 👨`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `"Picture abhi baaki hai mere dost!" — aur ${p} ne picture ka happy ending kar diya! 🎬`, isKeyMoment: true },
+    { commentatorId: c2, text: `Bollywood mein biopic pakki! Title: "${p}: The Untold Story of a Legend!" 🌟`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c2, text: `${p} ne Maxwell jaisa khelaa — "The Big Show" ban gaya aaj! 💪`, isKeyMoment: true },
+    { commentatorId: c1, text: `AB de Villiers, Brian Lara, aur ab ${p}! Hall of Fame mein jagah pakki! 🏛️`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `"Ye dil maange more!" 🏆 ${p} jeetne ke baad bhi aur chahta hai! Greedy champion!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Pepsi ka ad nahi, ye real champion hai! Next match mein bhi yehi josh chahiye!`, isKeyMoment: true },
+  ],
 ];
+
+// ─── Hindi Post-Match LOSS — Savage Bollywood roasts & gaslighting ─────
 
 export const HINDI_POST_MATCH_LOSS: DuoGen[] = [
   (c1, c2, p) => [
@@ -318,12 +372,86 @@ export const HINDI_POST_MATCH_LOSS: DuoGen[] = [
     { commentatorId: c2, text: `L liya! ${p} bhai aaj toh 'Devdas' ban gaya! Sharab pee aur so ja! 😂`, isKeyMoment: true },
     { commentatorId: c1, text: `Savage ${c2}! But comeback king ban ke aana next time! 💪`, isKeyMoment: true },
   ],
+  (c1, c2, p, o) => [
+    { commentatorId: c1, text: `${p} ka aaj 'Bombay Velvet' ho gaya — biggest flop of the season! 💀`, isKeyMoment: true },
+    { commentatorId: c2, text: `Anurag Kashyap bhi director ban ke nahi bacha sakta ye performance! Tatti! 🎬`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `"Tumse na ho payega!" 🤦 ${p} ke liye 'Gangs of Wasseypur' ka dialogue!`, isKeyMoment: true },
+    { commentatorId: c1, text: `Bhai retirement pe seriously soch! Ye toh 'Race 3' ki story jaisa — samajh nahi aata kya hua! 😂`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c1, text: `${p} ne aaj 'Tubelight' wali batting ki — switch on hi nahi hua! 💡❌`, isKeyMoment: true },
+    { commentatorId: c2, text: `Salman bhai bhi isko nahi bacha sakte! "Being Human" se "Being Loser" ho gaya! 😭`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `${p} ka batting dekh ke mujhe 'Himmatwala' (2013) yaad aa gayi — dono equally painful! 🤮`, isKeyMoment: true },
+    { commentatorId: c1, text: `${c2} itna toh mat maro yaar! But honestly... haan, sahi bola! 😂`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c1, text: `"Baburao, ye toh tatti hai!" ${p} ki batting aaj 'Hera Pheri' ki scheme jaisi — full loss! 📉`, isKeyMoment: true },
+    { commentatorId: c2, text: `"25 din mein paisa double" nahi hua, 25 balls mein score half ho gaya! Ponzi scheme batting! 💸`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `${p} bhai, Dinda Academy se degree liya kya? Ye batting toh coaching manual ka ulta hai! 🎓`, isKeyMoment: true },
+    { commentatorId: c1, text: `Dinda bhai offend ho jayenge! Unki bowling isse better thi at least! 😂`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c1, text: `${p} aaj "bas kar pagle, rulaayega kya" wali performance di — aur haan, sabko rula diya! 😭`, isKeyMoment: true },
+    { commentatorId: c2, text: `Ye haare nahi, ye toh "strategically retreat" kiya! Excuse level: expert! 🏃‍♂️💨`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `"Aata majhi satakli!" — lekin ${p} ki batting dekh ke meri satakli! Kya tha ye?! 🤯`, isKeyMoment: true },
+    { commentatorId: c1, text: `Singham bhi iski help nahi kar sakta! Case file: "Missing Runs" — FIR darz karo! 🚨`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c1, text: `${p} ka batting aaj 'Drona' (2008) jaisa — kisi ko yaad nahi rahega! Forgotten flop! 💀`, isKeyMoment: true },
+    { commentatorId: c2, text: `IMDb pe 1.9 rating milegi isko! Worst performance of the year award! 🏆🗑️`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `${p} ne aaj apni izzat ka 'Titanic' chala diya — doob gayi bhai! 🚢💀`, isKeyMoment: true },
+    { commentatorId: c1, text: `"I'm the king of the world!" nahi, "I'm the king of the LOSS!" bol ab! 😂`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `"Ek baar jo maine commitment kar di toh..." — commitment karke bhi haar gaya! Salman bhai crying! 😢`, isKeyMoment: true },
+    { commentatorId: c2, text: `"Dabangg" nahi, "Thakaan" honi chahiye teri movie! Kitna thaka diya sabko! 🥱`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c2, text: `${o} ne bola "Mere paas maa hai!" — ${p} ke paas kuch nahi hai! No runs, no hope! 😂`, isKeyMoment: true },
+    { commentatorId: c1, text: `${p} — bhai uninstall kar game, tera talent kahi aur hai! Shayad cooking? 🍳`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `${p} ka performance 'Thugs of Hindostan' jaisa — hype zyada, result zero! 📉`, isKeyMoment: true },
+    { commentatorId: c2, text: `Aamir Khan ne toh apology di thi, ${p} bhi bol — "Sorry guys, main chutiya hoon!" 🙏😂`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `"Kuch toh log kahenge, logon ka kaam hai kehna!" — aur log bol rahe "ye kya tha?!" 🤷`, isKeyMoment: true },
+    { commentatorId: c1, text: `Public review: ⭐ 1 out of 5! "Paisa barbaad!" — jaise interval mein nikal gaye! 🚶`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c1, text: `${p} bhai WiFi password hai kya tera batting? "Not Connected!" 📶❌`, isKeyMoment: true },
+    { commentatorId: c2, text: `Airplane mode pe khel raha tha! Signal hi nahi mila kabhi! Buffering... buffering... OUT! 🔄💀`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `${p} ne aaj RCB ki tarah perform kiya — "Ee sala cup namde" aur phir... 😂🏆❌`, isKeyMoment: true },
+    { commentatorId: c1, text: `16 saal se cup nahi jeeta RCB ne, ${p} bhi usi raaste pe! Loyal fan! 😭`, isKeyMoment: true },
+  ],
 ];
+
+// ─── Hindi Post-Match DRAW ───────────────────────────────────────
 
 export const HINDI_POST_MATCH_DRAW: DuoGen[] = [
   (c1, c2) => [
     { commentatorId: c1, text: `TIE! Ye toh 'Sholay' ka ending hai — dono barabar! Koi nahi haara!`, isKeyMoment: true },
     { commentatorId: c2, text: `Jai aur Veeru dono jeet gaye! Ab rematch karo!`, isKeyMoment: true },
+  ],
+  (c1, c2, p, o) => [
+    { commentatorId: c2, text: `"Kabhi haan kabhi naa" — aaj dono ko half-half! Na jeet na haar! 🤝`, isKeyMoment: true },
+    { commentatorId: c1, text: `Ye toh 'Andaz Apna Apna' hai — dono hero hain! Aamir aur Salman barabar! 😂`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `TIE! "Ye toh ambani vs adani hai — dono ameer, koi nahi haarta!" 💰💰`, isKeyMoment: true },
+    { commentatorId: c2, text: `Parliament session jaisa — bahut shor, koi result nahi! REMATCH DO! 🏛️`, isKeyMoment: true },
   ],
 ];
 
