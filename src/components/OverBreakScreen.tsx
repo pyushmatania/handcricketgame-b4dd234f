@@ -101,7 +101,7 @@ export default function OverBreakScreen({ stats, commentaryLines, commentators, 
       </div>
 
       {/* Score Summary Card */}
-      <div className="px-4 mb-4">
+      <div className="relative z-10 px-4 mb-4">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
