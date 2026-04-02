@@ -822,16 +822,25 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const handleTossResult = async (batFirst: boolean) => {
     if (!currentGame || !user) return;
     const isHost = user.id === currentGame.host_id;
-    // Host batting = batFirst if host did toss, or !batFirst if guest did toss
-    // For simplicity: host always does the toss, so host_batting = batFirst
     const hostBatting = isHost ? batFirst : !batFirst;
+    const localBatting = batFirst;
+    
+    // Show role card after toss
+    setRoleCardData({ isBatting: localBatting, playerName: myName, opponentName });
+    setShowRoleCard(true);
+    
     await supabase.from("multiplayer_games").update({
       status: "playing" as any, host_batting: hostBatting,
       phase: "pre_round_countdown" as any,
       phase_started_at: new Date().toISOString(),
       turn_deadline_at: null,
     }).eq("id", currentGame.id);
-    setPhase("playing");
+    
+    // Auto-dismiss role card after 3s and transition
+    setTimeout(() => {
+      setShowRoleCard(false);
+      setPhase("playing");
+    }, 3000);
   };
 
   const submitMove = async (move: Move) => {
