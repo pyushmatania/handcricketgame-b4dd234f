@@ -1003,7 +1003,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                   <span className="font-display text-[9px] font-bold text-muted-foreground tracking-widest">⏱️ TIMER RULES</span>
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-neon-green/20 flex items-center justify-center"><span className="text-[8px]">⚡</span></div>
-                    <span className="text-[9px] text-muted-foreground"><span className="text-neon-green font-bold">5s</span> per turn — pick fast!</span>
+                    <span className="text-[9px] text-muted-foreground"><span className="text-neon-green font-bold">10s</span> per turn — pick fast!</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-secondary/20 flex items-center justify-center"><span className="text-[8px]">🎲</span></div>
