@@ -6,6 +6,7 @@ import ScoreBoard from "./ScoreBoard";
 import GestureDisplay from "./GestureDisplay";
 import RulesSheet from "./RulesSheet";
 import OddEvenToss from "./OddEvenToss";
+import OverSelector from "./OverSelector";
 import CelebrationEffects from "./CelebrationEffects";
 import CanvasFireworks, { type FireworkType } from "./CanvasFireworks";
 import EnhancedPreMatch from "./EnhancedPreMatch";
