@@ -353,6 +353,8 @@ export type Database = {
         Args: { request_id: string }
         Returns: undefined
       }
+      accept_match_invite: { Args: { p_invite_id: string }; Returns: string }
+      claim_multiplayer_game: { Args: { p_game_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
