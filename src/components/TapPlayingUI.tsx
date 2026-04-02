@@ -1,12 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Move, BallResult, GameResult, InningsPhase, MatchConfig } from "@/hooks/useHandCricket";
 import { SFX, Haptics } from "@/lib/sounds";
 import { getCommentary, getInningsChangeCommentary } from "@/lib/commentary";
 import { speakCommentary, playCrowdForResult, CrowdSFX } from "@/lib/voiceCommentary";
+import { speakDuoLines, isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
 import { useSettings } from "@/contexts/SettingsContext";
+import { pickMatchCommentators, getDuoCommentary, getOverBreakCommentary, type Commentator, type CommentaryLine } from "@/lib/commentaryDuo";
 import ScoreBoard from "./ScoreBoard";
 import CelebrationEffects from "./CelebrationEffects";
+import OverBreakScreen from "./OverBreakScreen";
+import cricketGround from "@/assets/cricket-ground.jpg";
 
 const MOVES_CONFIG: { move: Move; emoji: string; label: string; color: string; glow: string }[] = [
   { move: "DEF", emoji: "✊", label: "DEF", color: "from-accent/20 to-accent/5 border-accent/25", glow: "shadow-[0_0_15px_hsl(168_80%_50%/0.15)]" },
@@ -56,30 +60,85 @@ export default function TapPlayingUI({
   const [lastPlayed, setLastPlayed] = useState<Move | null>(null);
   const [cooldown, setCooldown] = useState(false);
   const [showExplosion, setShowExplosion] = useState<{ emoji: string; key: number } | null>(null);
-  const [commentary, setCommentary] = useState<string | null>(null);
+  const [commentary, setCommentary] = useState<CommentaryLine[] | null>(null);
+  const [showOverBreak, setShowOverBreak] = useState(false);
+  const [overBreakData, setOverBreakData] = useState<any>(null);
   const prevPhaseRef = useRef(phase);
+  const prevBallCountRef = useRef(0);
+
+  // Pick 2 commentators for this match session
+  const [matchCommentators] = useState<[Commentator, Commentator]>(() => pickMatchCommentators());
 
   const effectiveCooldown = cooldownOverride !== undefined ? cooldownOverride : cooldown;
+
+  const config = matchConfig || { overs: null, wickets: 1 };
+  const currentBalls = currentInnings === 1 ? (innings1Balls ?? ballHistory.length) : 
+    ballHistory.length - (innings1Balls ?? 0);
 
   const gameStateForScoreboard = {
     phase, userScore, aiScore, userWickets, aiWickets,
     target, currentInnings, isBatting, lastResult, result, ballHistory,
-    config: matchConfig || { overs: null, wickets: 1 },
-    innings1Balls: innings1Balls || (currentInnings === 1 ? ballHistory.length : Math.max(0, ballHistory.length - (ballHistory.filter((_, i) => {
-      // Estimate innings1 balls from history
-      let balls = 0;
-      for (let j = 0; j <= i; j++) {
-        balls++;
-        if (ballHistory[j].runs === "OUT" && j < ballHistory.length - 1) {
-          // Check if this was the innings break
-          const remaining = ballHistory.slice(j + 1);
-          if (remaining.length > 0) return j + 1 === balls;
-        }
-      }
-      return false;
-    }).length || ballHistory.length))),
+    config,
+    innings1Balls: innings1Balls || ballHistory.length,
     innings2Balls: 0,
   };
+
+  // Check for over completion (every 6 balls) — only for limited overs
+  useEffect(() => {
+    if (!config.overs || phase === "not_started" || phase === "finished") return;
+    const totalBalls = currentBalls;
+    const prevBalls = prevBallCountRef.current;
+    prevBallCountRef.current = totalBalls;
+
+    if (totalBalls > 0 && totalBalls % 6 === 0 && totalBalls !== prevBalls && totalBalls > prevBalls) {
+      const oversCompleted = Math.floor(totalBalls / 6);
+      // Don't show break on last over (game ends)
+      if (config.overs && oversCompleted >= config.overs) return;
+
+      // Calculate over stats
+      const recentBalls = ballHistory.slice(-6);
+      let overRuns = 0;
+      const thisOverBalls: { runs: number | "OUT" }[] = [];
+      for (const b of recentBalls) {
+        thisOverBalls.push({ runs: b.runs });
+        if (typeof b.runs === "number" && b.runs > 0) overRuns += b.runs;
+      }
+
+      const score = isBatting ? userScore : aiScore;
+      const wickets = isBatting ? userWickets : aiWickets;
+      const opponentScore = isBatting ? aiScore : userScore;
+      const opponentWickets = isBatting ? aiWickets : userWickets;
+      const crr = totalBalls > 0 ? (score / (totalBalls / 6)).toFixed(1) : "0.0";
+      const remainingBalls = config.overs ? (config.overs * 6 - totalBalls) : 999;
+      const remaining = target ? Math.max(0, target - score) : 0;
+      const rrr = remainingBalls > 0 && target ? (remaining / (remainingBalls / 6)).toFixed(1) : "0.0";
+
+      const stats = {
+        overRuns, score, wickets, opponentScore, opponentWickets,
+        crr, rrr, target, remaining, remainingBalls,
+        oversCompleted, totalOvers: config.overs,
+        isBatting, playerName, opponentName,
+        thisOverBalls,
+      };
+
+      const lines = getOverBreakCommentary(
+        matchCommentators[0].name, matchCommentators[1].name,
+        isBatting, playerName, opponentName, stats
+      );
+
+      setOverBreakData({ stats, lines });
+      setShowOverBreak(true);
+
+      // Speak key moment lines
+      if (voiceEnabled && commentaryEnabled) {
+        const keyLines = lines.filter(l => l.isKeyMoment).map(l => ({
+          text: l.text,
+          voiceId: (matchCommentators.find(c => c.name === l.commentatorId || c.id === l.commentatorId) || matchCommentators[0]).voiceId,
+        }));
+        speakDuoLines(keyLines);
+      }
+    }
+  }, [ballHistory.length]);
 
   // Innings change commentary
   useEffect(() => {
@@ -88,7 +147,10 @@ export default function TapPlayingUI({
     if (prev !== phase && phase !== "not_started" && phase !== "finished") {
       if (commentaryEnabled) {
         const text = getInningsChangeCommentary(gameStateForScoreboard as any);
-        setCommentary(text);
+        const lines: CommentaryLine[] = [
+          { commentatorId: matchCommentators[0].name, text, isKeyMoment: true },
+        ];
+        setCommentary(lines);
         if (voiceEnabled) speakCommentary(text, true);
         setTimeout(() => setCommentary(null), 3000);
       }
@@ -97,7 +159,7 @@ export default function TapPlayingUI({
     }
   }, [phase]);
 
-  // Ball result effects
+  // Ball result effects with duo commentary
   useEffect(() => {
     if (!lastResult) return;
     const r = lastResult;
@@ -112,11 +174,25 @@ export default function TapPlayingUI({
       else { if (soundEnabled) SFX.runs(absRuns); if (hapticsEnabled) Haptics.light(); }
     }
     if (crowdEnabled) playCrowdForResult(r.runs, isBatting, false);
+
     if (commentaryEnabled) {
-      const text = getCommentary({ game: gameStateForScoreboard as any, result: r });
-      setCommentary(text);
-      if (voiceEnabled) speakCommentary(text, true);
-      setTimeout(() => setCommentary(null), 2500);
+      const duoLines = getDuoCommentary(
+        matchCommentators[0].name, matchCommentators[1].name,
+        r.runs, isBatting, playerName, opponentName
+      );
+      setCommentary(duoLines);
+
+      // Only speak key moments via TTS (sixes, fours, wickets)
+      const keyLines = duoLines.filter(l => l.isKeyMoment);
+      if (voiceEnabled && keyLines.length > 0) {
+        const ttsLines = keyLines.map(l => ({
+          text: l.text,
+          voiceId: (matchCommentators.find(c => c.name === l.commentatorId || c.id === l.commentatorId) || matchCommentators[0]).voiceId,
+        }));
+        speakDuoLines(ttsLines);
+      }
+
+      setTimeout(() => setCommentary(null), 3500);
     }
   }, [lastResult]);
 
@@ -138,9 +214,50 @@ export default function TapPlayingUI({
     }
   };
 
+  const handleOverBreakContinue = useCallback(() => {
+    setShowOverBreak(false);
+    setOverBreakData(null);
+  }, []);
+
   return (
     <>
       <CelebrationEffects lastResult={lastResult} gameResult={result} phase={phase} />
+
+      {/* Cricket ground background */}
+      {phase !== "not_started" && (
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <img src={cricketGround} alt="" className="w-full h-full object-cover opacity-15" />
+          <div className="absolute inset-0 stadium-ground-overlay" />
+          <div className="absolute inset-0 floodlight-glow" />
+          <div className="absolute inset-0 boundary-glow" />
+        </div>
+      )}
+
+      {/* Over break screen */}
+      <AnimatePresence>
+        {showOverBreak && overBreakData && (
+          <OverBreakScreen
+            stats={overBreakData.stats}
+            commentaryLines={overBreakData.lines}
+            commentators={matchCommentators}
+            onContinue={handleOverBreakContinue}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Commentator badges */}
+      {phase !== "not_started" && phase !== "finished" && (
+        <div className="flex items-center justify-center gap-2 mb-1">
+          {matchCommentators.map((c, i) => (
+            <div key={c.id} className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[7px] font-display font-bold tracking-wider ${
+              i === 0 ? "bg-primary/10 text-primary border border-primary/15" : "bg-accent/10 text-accent border border-accent/15"
+            }`}>
+              <span className="text-[9px]">{c.avatar}</span>
+              {c.name}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Scoreboard */}
       {phase !== "not_started" && (
@@ -153,19 +270,31 @@ export default function TapPlayingUI({
         />
       )}
 
-      {/* Commentary bar */}
+      {/* Duo Commentary bar */}
       <AnimatePresence>
-        {commentary && (
+        {commentary && commentary.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="glass-card rounded-lg px-3 py-1 text-center flex items-center justify-center gap-1.5"
+            className="glass-card rounded-lg px-2 py-1.5 space-y-1"
           >
-            <span className="text-[9px]">📢</span>
-            <p className="font-display text-[8px] font-bold text-foreground tracking-wider line-clamp-1">
-              {commentary}
-            </p>
+            {commentary.map((line, i) => {
+              const comm = matchCommentators.find(c => c.name === line.commentatorId || c.id === line.commentatorId) || matchCommentators[0];
+              return (
+                <div key={i} className="flex items-start gap-1.5">
+                  <span className="text-[8px] flex-shrink-0">{comm.avatar}</span>
+                  <div>
+                    <span className={`text-[6px] font-display font-bold tracking-wider ${
+                      comm.id === matchCommentators[0].id ? "text-primary" : "text-accent"
+                    }`}>{comm.name}</span>
+                    <p className="font-display text-[8px] font-bold text-foreground tracking-wider line-clamp-2">
+                      {line.text}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </motion.div>
         )}
       </AnimatePresence>
