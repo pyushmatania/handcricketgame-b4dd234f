@@ -212,6 +212,84 @@ export default function LeaderboardPage() {
     if (data) setRivalFriends(data as unknown as FriendProfile[]);
   };
 
+  const loadSparklines = async (userIds: string[]) => {
+    if (!userIds.length) return;
+    const { data } = await supabase
+      .from("matches")
+      .select("user_id, result, created_at")
+      .in("user_id", userIds)
+      .order("created_at", { ascending: false })
+      .limit(userIds.length * 10);
+    if (!data) return;
+    const map: Record<string, ("W" | "L" | "D")[]> = {};
+    for (const m of data) {
+      if (!map[m.user_id]) map[m.user_id] = [];
+      if (map[m.user_id].length < 10) {
+        map[m.user_id].push(m.result === "win" ? "W" : m.result === "loss" ? "L" : "D");
+      }
+    }
+    for (const uid of Object.keys(map)) {
+      map[uid] = map[uid].reverse();
+    }
+    setSparklines(map);
+  };
+
+  const loadPlayerOfWeek = async () => {
+    setPotwLoading(true);
+    try {
+      const { start: thisStart, end: thisEnd } = getWeekRange(0);
+      const { start: lastStart, end: lastEnd } = getWeekRange(1);
+      const [thisWeekRes, lastWeekRes] = await Promise.all([
+        supabase.from("matches").select("user_id, result, user_score").gte("created_at", thisStart.toISOString()).lte("created_at", thisEnd.toISOString()),
+        supabase.from("matches").select("user_id, result, user_score").gte("created_at", lastStart.toISOString()).lte("created_at", lastEnd.toISOString()),
+      ]);
+      const thisWeek = thisWeekRes.data || [];
+      const lastWeek = lastWeekRes.data || [];
+      const twStats: Record<string, { wins: number; matches: number; highScore: number }> = {};
+      for (const m of thisWeek) {
+        if (!twStats[m.user_id]) twStats[m.user_id] = { wins: 0, matches: 0, highScore: 0 };
+        twStats[m.user_id].matches++;
+        if (m.result === "win") twStats[m.user_id].wins++;
+        twStats[m.user_id].highScore = Math.max(twStats[m.user_id].highScore, m.user_score);
+      }
+      const lwStats: Record<string, { wins: number; matches: number }> = {};
+      for (const m of lastWeek) {
+        if (!lwStats[m.user_id]) lwStats[m.user_id] = { wins: 0, matches: 0 };
+        lwStats[m.user_id].matches++;
+        if (m.result === "win") lwStats[m.user_id].wins++;
+      }
+      let bestPlayer: string | null = null;
+      let bestImprovement = -Infinity;
+      let bestData: any = null;
+      for (const [uid, tw] of Object.entries(twStats)) {
+        if (tw.matches < 3) continue;
+        const twWinRate = Math.round((tw.wins / tw.matches) * 100);
+        const lw = lwStats[uid];
+        const lwWinRate = lw && lw.matches >= 3 ? Math.round((lw.wins / lw.matches) * 100) : 0;
+        const improvement = twWinRate - lwWinRate;
+        if (improvement > bestImprovement || (improvement === bestImprovement && tw.wins > (bestData?.weekWins ?? 0))) {
+          bestImprovement = improvement;
+          bestPlayer = uid;
+          bestData = { weekWins: tw.wins, weekMatches: tw.matches, weekHighScore: tw.highScore, weekWinRate: twWinRate, improvement: Math.max(0, improvement) };
+        }
+      }
+      if (bestPlayer && bestData) {
+        const { data: profile } = await supabase.from("profiles")
+          .select("display_name, avatar_url, avatar_index")
+          .eq("user_id", bestPlayer).single();
+        if (profile) {
+          setPlayerOfWeek({ ...bestData, user_id: bestPlayer, display_name: (profile as any).display_name, avatar_url: (profile as any).avatar_url, avatar_index: (profile as any).avatar_index });
+        }
+      } else {
+        setPlayerOfWeek(null);
+      }
+    } catch {
+      setPlayerOfWeek(null);
+    } finally {
+      setPotwLoading(false);
+    }
+  };
+
   const challengeFriend = async (friendId: string, gameType: GameType) => {
     if (!user) return;
     const { data: game, error: gameError } = await createMultiplayerRoom(user.id, gameType, friendId);
