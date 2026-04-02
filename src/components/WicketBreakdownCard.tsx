@@ -358,7 +358,9 @@ export default function WicketBreakdownCard({ data, onContinue }: WicketBreakdow
             className="absolute inset-0 bg-white/10 origin-left"
           />
           <span className="relative z-10">
-            {data.isInningsChange ? "⚡ START 2ND INNINGS" : "⚡ CONTINUE"} • {autoTimer}s
+            {data.isInningsChange
+              ? `⚡ ${data.bowlerName.toUpperCase()} BATS NOW • ${autoTimer}s`
+              : `⚡ CONTINUE • ${autoTimer}s`}
           </span>
         </motion.button>
       </div>

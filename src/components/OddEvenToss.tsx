@@ -99,8 +99,10 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
   const handleInningsChoice = (batFirst: boolean) => {
     if (soundEnabled) SFX.tossSelect();
     const battingFirstName = batFirst ? playerName : opponentName;
+    const bowlingFirstName = batFirst ? opponentName : playerName;
     onTossComplete?.(playerName, battingFirstName);
-    onResult(batFirst);
+    // Brief display before calling onResult
+    setTimeout(() => onResult(batFirst), 800);
   };
 
   const winnerName = tossWon ? playerName : opponentName;
