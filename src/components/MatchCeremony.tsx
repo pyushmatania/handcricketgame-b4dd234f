@@ -437,7 +437,7 @@ export function PreMatchCeremony({ playerName, opponentName, tossWinner, batting
         timers.push(setTimeout(() => {
           stageIdx++;
           setStage(stages[Math.min(stageIdx, stages.length - 1)]);
-          if (voiceEnabled) speakCommentary(line.text, true);
+          if (voiceEnabled) speakCommentary(line.text, true, voiceEngine);
         }, line.delay));
       }
     });
