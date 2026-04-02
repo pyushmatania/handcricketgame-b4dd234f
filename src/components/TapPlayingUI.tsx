@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Move, BallResult, GameResult, InningsPhase, MatchConfig } from "@/hooks/useHandCricket";
 import { SFX, Haptics } from "@/lib/sounds";
+import { startAmbientStadium, stopAmbientStadium, setAmbientVolume } from "@/lib/ambientStadium";
 import { getCommentary, getInningsChangeCommentary } from "@/lib/commentary";
 import { speakCommentary, playCrowdForResult, CrowdSFX, speakDuoCommentary } from "@/lib/voiceCommentary";
 import { isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
