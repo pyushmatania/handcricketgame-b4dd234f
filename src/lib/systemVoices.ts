@@ -170,16 +170,18 @@ function doSpeak(text: string, persona: SystemVoicePersona, cancelPrevious: bool
 export async function speakSystemDuoLines(
   lines: { text: string; personaId: string }[]
 ): Promise<void> {
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const clean = line.text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").trim();
     if (!clean) continue;
 
     const persona = SYSTEM_VOICE_PERSONAS.find(p => p.id === line.personaId || p.name === line.personaId)
       || SYSTEM_VOICE_PERSONAS[0];
 
-    await speakWithSystemPersona(clean, persona);
+    // Only cancel on first line; subsequent lines should queue
+    await speakWithSystemPersona(clean, persona, i === 0);
     // Small pause between speakers
-    await new Promise(r => setTimeout(r, 250));
+    await new Promise(r => setTimeout(r, 300));
   }
 }
 
