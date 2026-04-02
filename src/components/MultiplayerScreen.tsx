@@ -950,15 +950,37 @@ export default function MultiplayerScreen({ onHome }: Props) {
     setPvpBallHistory(prev => [...prev, ballResult]);
 
     setLastResult(result);
-    setTimeout(() => { setLastResult(null); setLastBallResult(null); }, 2000);
+    setTimeout(() => { setLastResult(null); setLastBallResult(null); }, 2500);
+
+    // Determine next phase
+    const nextPhaseValue = newStatus === "finished" 
+      ? "match_finished" 
+      : isInningsChange 
+        ? "innings_break" 
+        : "pre_round_countdown";
 
     await supabase.from("multiplayer_games").update({
       host_score: newHostScore, guest_score: newGuestScore, host_move: null, guest_move: null,
       current_turn: game.current_turn + 1, turn_number: (game.turn_number ?? game.current_turn) + 1, innings: newInnings, innings_number: newInnings, host_batting: newHostBatting,
-      status: newStatus as any, winner_id: newWinner, phase: newStatus === "finished" ? "match_finished" : "pre_round_countdown",
+      status: newStatus as any, winner_id: newWinner, phase: nextPhaseValue,
       phase_started_at: new Date().toISOString(), turn_deadline_at: null,
-      round_result_payload: { text: result, turn: game.current_turn },
+      round_result_payload: { text: result, turn: game.current_turn, isInningsChange, hostMove, guestMove },
     }).eq("id", game.id).eq("current_turn", game.current_turn).eq("host_move", hostMove).eq("guest_move", guestMove);
+
+    // Show innings break overlay locally
+    if (isInningsChange) {
+      const localBatting = user.id === game.host_id ? battingIsHost : !battingIsHost;
+      setInningsBreakStats({
+        batter: localBatting ? myName : opponentName,
+        bowler: localBatting ? opponentName : myName,
+        score: localBatting ? (user.id === game.host_id ? newHostScore : newGuestScore) : (user.id === game.host_id ? newGuestScore : newHostScore),
+        lastMove: String(hostMove),
+        opponentLastMove: String(guestMove),
+      });
+      setShowInningsBreak(true);
+      setInningsBreakReady(false);
+      stopTimer();
+    }
   };
 
   const isHost = currentGame && user?.id === currentGame.host_id;
