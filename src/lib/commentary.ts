@@ -1379,7 +1379,24 @@ function pick(arr: string[]): string {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export function getCommentary({ game, result }: CommentaryContext): string {
+// ─── Language-aware commentary helper ─────────────────────────────
+import type { CommentaryLanguage } from "@/contexts/SettingsContext";
+import {
+  HINDI_BATTING_RUNS,
+  HINDI_BOWLING_RUNS,
+  HINDI_WICKET_BATTING,
+  HINDI_WICKET_BOWLING,
+  HINDI_MILESTONES,
+} from "@/lib/commentaryHindi";
+
+function pickWithLang(enPool: string[], hiPool: string[], lang: CommentaryLanguage): string {
+  if (lang === "hindi") return pick(hiPool);
+  if (lang === "english") return pick(enPool);
+  // "both" — 50/50 random
+  return Math.random() > 0.5 ? pick(hiPool) : pick(enPool);
+}
+
+export function getCommentary({ game, result }: CommentaryContext, lang: CommentaryLanguage = "english"): string {
   if (game.phase === "finished") {
     if (game.result === "win") return pick(WIN_COMMENTS);
     if (game.result === "loss") return pick(LOSS_COMMENTS);
@@ -1387,25 +1404,35 @@ export function getCommentary({ game, result }: CommentaryContext): string {
   }
 
   if (result.runs === "OUT") {
-    return game.isBatting ? pick(OUT_BATTING) : pick(OUT_BOWLING);
+    if (game.isBatting) return pickWithLang(OUT_BATTING, HINDI_WICKET_BATTING, lang);
+    return pickWithLang(OUT_BOWLING, HINDI_WICKET_BOWLING, lang);
   }
 
   const runs = typeof result.runs === "number" ? result.runs : 0;
   const runsKey = String(Math.abs(runs));
 
   if (game.isBatting) {
-    const base = pick(BATTING_RUNS[runsKey] || BATTING_RUNS["0"]);
+    const enPool = BATTING_RUNS[runsKey] || BATTING_RUNS["0"];
+    const hiPool = HINDI_BATTING_RUNS[runsKey] || HINDI_BATTING_RUNS["0"];
+    const base = pickWithLang(enPool, hiPool, lang);
     if (game.target && game.userScore < game.target) {
       const need = game.target - game.userScore;
       if (need <= 10) return `${base} Need ${need} more to win!`;
       if (Math.random() > 0.6) return `${base} ${pick(CHASE_COMMENTS)}`;
     }
+    if (game.userScore > 0 && game.userScore % 100 === 0) {
+      const milestone = lang !== "english" ? pickWithLang(["CENTURY! 💯 What an innings!"], HINDI_MILESTONES.hundred, lang) : "CENTURY! 💯 What an innings!";
+      return `${base} ${milestone}`;
+    }
     if (game.userScore > 0 && game.userScore % 50 === 0) {
-      return `${base} FIFTY UP! 🎉 ${game.userScore} runs!`;
+      const milestone = lang !== "english" ? pickWithLang(["FIFTY UP! 🎉"], HINDI_MILESTONES.fifty, lang) : `FIFTY UP! 🎉 ${game.userScore} runs!`;
+      return `${base} ${milestone}`;
     }
     return base;
   } else {
-    const base = pick(BOWLING_RUNS[runsKey] || BOWLING_RUNS["0"]);
+    const enPool = BOWLING_RUNS[runsKey] || BOWLING_RUNS["0"];
+    const hiPool = HINDI_BOWLING_RUNS[runsKey] || HINDI_BOWLING_RUNS["0"];
+    const base = pickWithLang(enPool, hiPool, lang);
     if (game.target && game.aiScore < game.target) {
       const need = game.target - game.aiScore;
       if (need <= 5) return `${base} AI needs just ${need} more!`;
