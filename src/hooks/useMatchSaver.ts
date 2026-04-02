@@ -219,6 +219,66 @@ export function useMatchSaver() {
             }
           }
         } catch (e) { console.error("[Challenges] update failed", e); }
+
+        // Rivalry notifications after multiplayer matches
+        if (mode === "multiplayer" || mode === "tap") {
+          try {
+            // Find if this opponent is a frequent rival
+            const { data: gamesWithOp } = await supabase
+              .from("multiplayer_games")
+              .select("winner_id, host_id, guest_id")
+              .or(`host_id.eq.${user.id},guest_id.eq.${user.id}`)
+              .in("status", ["finished"])
+              .limit(200);
+
+            if (gamesWithOp) {
+              const opCount: Record<string, { wins: number; losses: number }> = {};
+              gamesWithOp.forEach((g: any) => {
+                const opId = g.host_id === user.id ? g.guest_id : g.host_id;
+                if (!opId) return;
+                if (!opCount[opId]) opCount[opId] = { wins: 0, losses: 0 };
+                if (g.winner_id === user.id) opCount[opId].wins++;
+                else if (g.winner_id === opId) opCount[opId].losses++;
+              });
+
+              // Find rivals with 3+ games
+              const topRivals = Object.entries(opCount)
+                .filter(([, s]) => (s.wins + s.losses) >= 3)
+                .sort((a, b) => (b[1].wins + b[1].losses) - (a[1].wins + a[1].losses))
+                .slice(0, 2);
+
+              for (const [rivalId, stats] of topRivals) {
+                const totalH2H = stats.wins + stats.losses;
+                // Only nudge every 3 games or on milestone
+                if (totalH2H % 3 !== 0) continue;
+
+                const { data: rivalProfile } = await supabase
+                  .from("profiles")
+                  .select("display_name")
+                  .eq("user_id", rivalId)
+                  .single();
+                const rivalName = (rivalProfile as any)?.display_name || "Rival";
+
+                let nudgeMsg = "";
+                if (stats.losses > stats.wins) {
+                  nudgeMsg = `😤 You're losing ${stats.wins}-${stats.losses} to ${rivalName}… time to respond!`;
+                } else if (stats.wins > stats.losses) {
+                  nudgeMsg = `👑 You lead ${stats.wins}-${stats.losses} vs ${rivalName} — keep it up!`;
+                } else {
+                  nudgeMsg = `⚔️ Tied ${stats.wins}-${stats.losses} with ${rivalName} — who breaks it?`;
+                }
+
+                await supabase.from("notifications").insert({
+                  user_id: user.id,
+                  type: "rivalry_nudge",
+                  title: `🔥 Rivalry Update`,
+                  message: nudgeMsg,
+                  data: { rival_id: rivalId },
+                } as any);
+              }
+            }
+          } catch (e) { console.error("[Rivalry] notification failed", e); }
+        }
       }
     },
     [user]
