@@ -1293,7 +1293,35 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     <p className="font-display text-xs font-black text-foreground tracking-wider">
                       {incomingRematch.fromName.toUpperCase()} WANTS A REMATCH!
                     </p>
-                    <p className="text-[9px] text-muted-foreground font-display">Ready for another round?</p>
+                    {incomingRematchCountdown !== null && (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-full max-w-[160px] h-1.5 bg-muted/40 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{
+                              background: incomingRematchCountdown <= 10
+                                ? "hsl(var(--out-red))"
+                                : incomingRematchCountdown <= 20
+                                  ? "hsl(var(--secondary))"
+                                  : "hsl(var(--neon-green))",
+                            }}
+                            initial={{ width: "100%" }}
+                            animate={{ width: `${(incomingRematchCountdown / 45) * 100}%` }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </div>
+                        <span className={`font-display text-[10px] font-black tabular-nums ${
+                          incomingRematchCountdown <= 10 ? "text-out-red" : "text-muted-foreground"
+                        }`}>
+                          {incomingRematchCountdown}s
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-[9px] text-muted-foreground font-display">
+                      {incomingRematchCountdown !== null && incomingRematchCountdown <= 10
+                        ? "⚡ Hurry up! Invite expiring soon!"
+                        : "Ready for another round?"}
+                    </p>
                     <div className="flex gap-2 pt-1">
                       <motion.button
                         whileTap={{ scale: 0.95 }}
@@ -1302,6 +1330,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                           const { data: joinedGameId, error } = await supabase.rpc("accept_match_invite", { p_invite_id: incomingRematch.inviteId });
                           if (!error && joinedGameId) {
                             setIncomingRematch(null);
+                            setIncomingRematchCountdown(null);
                             setRematchSent(false);
                             const { data: gameData } = await supabase.from("multiplayer_games").select("*").eq("id", joinedGameId).maybeSingle();
                             if (gameData) {
@@ -1335,6 +1364,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                             }).eq("id", incomingRematch.inviteId);
                           }
                           setIncomingRematch(null);
+                          setIncomingRematchCountdown(null);
                         }}
                         className="py-3 px-4 bg-muted/50 border border-border text-foreground font-display font-bold text-xs rounded-xl tracking-wider"
                       >
@@ -1342,6 +1372,22 @@ export default function MultiplayerScreen({ onHome }: Props) {
                       </motion.button>
                     </div>
                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Rematch expired gaslighting message */}
+            <AnimatePresence>
+              {rematchExpiredMsg && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="w-full max-w-xs glass-premium rounded-xl p-3 border border-out-red/20"
+                >
+                  <p className="text-[10px] text-center font-display text-muted-foreground leading-relaxed">
+                    {rematchExpiredMsg}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1356,7 +1402,6 @@ export default function MultiplayerScreen({ onHome }: Props) {
                   const gameType = (currentGame.game_type || "tap") as GameType;
                   const { data: newGame, error } = await createMultiplayerRoom(user.id, gameType, opponentId);
                   if (newGame && !error) {
-                    // Send a match invite to the opponent
                     await supabase.from("match_invites").insert({
                       game_id: (newGame as any).id,
                       from_user_id: user.id,
@@ -1364,7 +1409,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                       game_type: gameType,
                     });
                     setRematchSent(true);
-                    // Navigate to the new game waiting room
+                    setRematchExpiredMsg(null);
                     setCurrentGame(newGame as unknown as MultiplayerGame);
                     setPhase("waiting");
                     setCountdownMs(COUNTDOWN_MS);
@@ -1379,12 +1424,27 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     navigate(`/game/multiplayer?game=${(newGame as any).id}`, { replace: true });
                   }
                 }}
-                className={`flex-1 py-3.5 font-display font-bold rounded-2xl tracking-wider border ${
+                className={`flex-1 py-3.5 font-display font-bold rounded-2xl tracking-wider border relative overflow-hidden ${
                   rematchSent
                     ? "bg-muted/50 text-muted-foreground border-border"
                     : "bg-gradient-to-r from-secondary to-secondary/70 text-secondary-foreground shadow-[0_0_20px_hsl(45_93%_58%/0.3)] border-secondary/40"
                 }`}>
-                {rematchSent ? "⏳ SENT" : "🔄 REMATCH"}
+                {rematchSent ? (
+                  <span className="flex items-center justify-center gap-2">
+                    ⏳ WAITING
+                    {rematchCountdown !== null && (
+                      <span className="text-[10px] font-mono tabular-nums">{rematchCountdown}s</span>
+                    )}
+                  </span>
+                ) : "🔄 REMATCH"}
+                {rematchSent && rematchCountdown !== null && (
+                  <motion.div
+                    className="absolute bottom-0 left-0 h-0.5 bg-secondary/50"
+                    initial={{ width: "100%" }}
+                    animate={{ width: `${(rematchCountdown / 45) * 100}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                )}
               </motion.button>
               <motion.button whileTap={{ scale: 0.95 }}
                 onClick={() => {
