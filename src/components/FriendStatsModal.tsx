@@ -246,7 +246,8 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
 
   const tabs: { key: Tab; label: string; emoji: string }[] = [
     { key: "overview", label: "OVERVIEW", emoji: "👤" },
-    { key: "vsai", label: "VS AI", emoji: "📊" },
+    { key: "individual", label: "STATS", emoji: "📊" },
+    { key: "vsai", label: "VS AI", emoji: "🆚" },
     { key: "rivalry", label: "H2H", emoji: "⚔️" },
     { key: "records", label: "RECORDS", emoji: "🏅" },
   ];
