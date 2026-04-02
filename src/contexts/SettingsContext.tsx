@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
+export type VoiceEngine = "auto" | "elevenlabs" | "system";
+
 interface Settings {
   soundEnabled: boolean;
   hapticsEnabled: boolean;
@@ -10,6 +12,7 @@ interface Settings {
   batSoundEnabled: boolean;
   victorySoundEnabled: boolean;
   commentaryVoice: string;
+  voiceEngine: VoiceEngine;
 }
 
 interface SettingsContextType extends Settings {
