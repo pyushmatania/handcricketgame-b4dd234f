@@ -209,12 +209,13 @@ export function stopMusic() {
 
 // ─── Pre-cache common lines ──────────────────────────────────────
 
-export async function preCacheCommentary(lines: string[]) {
+export async function preCacheCommentary(lines: string[], voiceId?: string) {
   if (!elevenLabsAvailable) return;
+  const vid = voiceId || BRIAN_VOICE_ID;
   // Pre-cache up to 10 lines silently in background
   const batch = lines.slice(0, 10);
   for (const line of batch) {
-    const key = getCacheKey(line);
+    const key = getCacheKey(line, vid);
     if (audioCache.has(key)) continue;
     try {
       const response = await fetch(
@@ -226,7 +227,7 @@ export async function preCacheCommentary(lines: string[]) {
             apikey: SUPABASE_KEY,
             Authorization: `Bearer ${SUPABASE_KEY}`,
           },
-          body: JSON.stringify({ text: line, voiceId: BRIAN_VOICE_ID }),
+          body: JSON.stringify({ text: line, voiceId: vid }),
         }
       );
       if (response.ok) {
