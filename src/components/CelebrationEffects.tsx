@@ -1,18 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { BallResult, GameResult } from "@/hooks/useHandCricket";
-import CrowdWave from "./CrowdWave";
-
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  emoji: string;
-  angle: number;
-  speed: number;
-  size: number;
-  delay: number;
-}
 
 interface CelebrationEffectsProps {
   lastResult: BallResult | null;
@@ -20,60 +8,26 @@ interface CelebrationEffectsProps {
   phase: string;
 }
 
-const FIREWORK_EMOJIS = ["🎆", "🎇", "✨", "🌟", "⭐", "💫", "🎉", "🎊"];
-const WICKET_EMOJIS = ["🔥", "💥", "⚡", "🏏", "❌", "💀"];
-const FOUR_EMOJIS = ["4️⃣", "🏏", "💨", "🔵"];
-const SIX_EMOJIS = ["6️⃣", "🚀", "🌙", "💥", "⭐", "🔥"];
-
-function generateParticles(emojis: string[], count: number, spread: number = 360): Particle[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: Date.now() + i,
-    x: 50 + (Math.random() - 0.5) * 30,
-    y: 50 + (Math.random() - 0.5) * 20,
-    emoji: emojis[Math.floor(Math.random() * emojis.length)],
-    angle: (spread / count) * i + Math.random() * 30,
-    speed: 80 + Math.random() * 120,
-    size: 16 + Math.random() * 20,
-    delay: Math.random() * 0.3,
-  }));
-}
+type EffectType = "none" | "four" | "six" | "wicket" | "win";
 
 export default function CelebrationEffects({ lastResult, gameResult, phase }: CelebrationEffectsProps) {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [effectType, setEffectType] = useState<"none" | "four" | "six" | "wicket" | "win">("none");
-  const [showFlash, setShowFlash] = useState(false);
-  const [flashColor, setFlashColor] = useState("primary");
-  const [crowdWave, setCrowdWave] = useState<{ active: boolean; intensity: "normal" | "big" | "massive" }>({ active: false, intensity: "normal" });
+  const [effectType, setEffectType] = useState<EffectType>("none");
 
   // Handle ball results
   useEffect(() => {
     if (!lastResult) return;
-    
+
     if (lastResult.runs === "OUT") {
       setEffectType("wicket");
-      setParticles(generateParticles(WICKET_EMOJIS, 12));
-      setFlashColor("out-red");
-      setShowFlash(true);
-      setTimeout(() => setShowFlash(false), 400);
-      setTimeout(() => { setParticles([]); setEffectType("none"); }, 2000);
+      setTimeout(() => setEffectType("none"), 1800);
     } else if (typeof lastResult.runs === "number") {
       const absRuns = Math.abs(lastResult.runs);
       if (absRuns === 6) {
         setEffectType("six");
-        setParticles(generateParticles(SIX_EMOJIS, 20, 360));
-        setFlashColor("primary");
-        setShowFlash(true);
-        setCrowdWave({ active: true, intensity: "big" });
-        setTimeout(() => setShowFlash(false), 500);
-        setTimeout(() => { setParticles([]); setEffectType("none"); setCrowdWave(w => ({ ...w, active: false })); }, 2500);
+        setTimeout(() => setEffectType("none"), 2000);
       } else if (absRuns === 4) {
         setEffectType("four");
-        setParticles(generateParticles(FOUR_EMOJIS, 10, 180));
-        setFlashColor("secondary");
-        setShowFlash(true);
-        setCrowdWave({ active: true, intensity: "normal" });
-        setTimeout(() => setShowFlash(false), 350);
-        setTimeout(() => { setParticles([]); setEffectType("none"); setCrowdWave(w => ({ ...w, active: false })); }, 1800);
+        setTimeout(() => setEffectType("none"), 1500);
       }
     }
   }, [lastResult]);
@@ -82,184 +36,125 @@ export default function CelebrationEffects({ lastResult, gameResult, phase }: Ce
   useEffect(() => {
     if (phase === "finished" && gameResult === "win") {
       setEffectType("win");
-      const fireworks = generateParticles(FIREWORK_EMOJIS, 30, 360);
-      setParticles(fireworks);
-      setFlashColor("primary");
-      setShowFlash(true);
-      setCrowdWave({ active: true, intensity: "massive" });
-      setTimeout(() => setShowFlash(false), 600);
-      
-      // Multiple waves
-      const t1 = setTimeout(() => {
-        setParticles(prev => [...prev, ...generateParticles(FIREWORK_EMOJIS, 20, 360)]);
-      }, 800);
-      const t2 = setTimeout(() => {
-        setParticles(prev => [...prev, ...generateParticles(FIREWORK_EMOJIS, 15, 360)]);
-      }, 1600);
-      const t3 = setTimeout(() => { setParticles([]); setEffectType("none"); setCrowdWave(w => ({ ...w, active: false })); }, 4000);
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+      setTimeout(() => setEffectType("none"), 3500);
     }
   }, [phase, gameResult]);
 
   return (
     <>
-      {/* Full-screen flash */}
+      {/* Clean color flash overlay */}
       <AnimatePresence>
-        {showFlash && (
+        {effectType !== "none" && (
           <motion.div
-            initial={{ opacity: 0.6 }}
-            animate={{ opacity: 0 }}
+            key={effectType}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.3 }}
             className="fixed inset-0 z-50 pointer-events-none"
             style={{
-              background: flashColor === "out-red"
-                ? "radial-gradient(circle at center, hsl(0 72% 51% / 0.3), transparent 70%)"
-                : flashColor === "secondary"
-                ? "radial-gradient(circle at center, hsl(45 93% 58% / 0.25), transparent 70%)"
-                : "radial-gradient(circle at center, hsl(217 91% 60% / 0.3), transparent 70%)"
+              background:
+                effectType === "wicket"
+                  ? "radial-gradient(circle at center, hsl(0 72% 51% / 0.25), transparent 70%)"
+                  : effectType === "six"
+                  ? "radial-gradient(circle at center, hsl(217 91% 60% / 0.2), transparent 70%)"
+                  : effectType === "four"
+                  ? "radial-gradient(circle at center, hsl(45 93% 58% / 0.2), transparent 70%)"
+                  : "radial-gradient(circle at center, hsl(45 93% 58% / 0.15), transparent 70%)"
             }}
           />
         )}
       </AnimatePresence>
 
-      {/* Boundary text flash */}
+      {/* Big clean text overlay */}
       <AnimatePresence>
         {effectType === "six" && (
           <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: [0, 1.5, 1.2], opacity: [0, 1, 0] }}
-            transition={{ duration: 1.5 }}
+            initial={{ scale: 0.3, opacity: 0 }}
+            animate={{ scale: [0.3, 1.2, 1], opacity: [0, 1, 0] }}
+            transition={{ duration: 1.6, times: [0, 0.3, 1] }}
             className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
           >
-            <span
-              className="font-display text-7xl font-black text-primary"
-              style={{ textShadow: "0 0 60px hsl(217 91% 60% / 0.8), 0 0 120px hsl(217 91% 60% / 0.4)" }}
-            >
-              SIX!
-            </span>
+            <div className="text-center">
+              <span
+                className="font-display text-8xl font-black text-primary block"
+                style={{ textShadow: "0 0 60px hsl(217 91% 60% / 0.6)" }}
+              >
+                6
+              </span>
+              <span className="font-display text-lg font-bold tracking-[0.4em] text-primary/70">
+                MAXIMUM
+              </span>
+            </div>
           </motion.div>
         )}
+
         {effectType === "four" && (
           <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: [0, 1.3, 1.1], opacity: [0, 1, 0] }}
-            transition={{ duration: 1.2 }}
+            initial={{ scale: 0.3, opacity: 0 }}
+            animate={{ scale: [0.3, 1.1, 1], opacity: [0, 1, 0] }}
+            transition={{ duration: 1.3, times: [0, 0.3, 1] }}
             className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
           >
-            <span
-              className="font-display text-6xl font-black text-secondary"
-              style={{ textShadow: "0 0 50px hsl(45 93% 58% / 0.8), 0 0 100px hsl(45 93% 58% / 0.4)" }}
-            >
-              FOUR!
-            </span>
+            <div className="text-center">
+              <span
+                className="font-display text-7xl font-black text-secondary block"
+                style={{ textShadow: "0 0 50px hsl(45 93% 58% / 0.6)" }}
+              >
+                4
+              </span>
+              <span className="font-display text-sm font-bold tracking-[0.4em] text-secondary/70">
+                BOUNDARY
+              </span>
+            </div>
           </motion.div>
         )}
+
         {effectType === "wicket" && (
           <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: [0, 1.4, 1.1], opacity: [0, 1, 0] }}
-            transition={{ duration: 1.3 }}
+            initial={{ scale: 0.3, opacity: 0 }}
+            animate={{ scale: [0.3, 1.2, 1], opacity: [0, 1, 0] }}
+            transition={{ duration: 1.5, times: [0, 0.25, 1] }}
             className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
           >
-            <span
-              className="font-display text-6xl font-black text-out-red"
-              style={{ textShadow: "0 0 50px hsl(0 72% 51% / 0.8), 0 0 100px hsl(0 72% 51% / 0.4)" }}
-            >
-              OUT!
-            </span>
+            <div className="text-center">
+              <span
+                className="font-display text-7xl font-black text-out-red block"
+                style={{ textShadow: "0 0 50px hsl(0 72% 51% / 0.6)" }}
+              >
+                OUT
+              </span>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="h-0.5 bg-out-red/40 rounded-full mt-2 mx-auto"
+                style={{ width: 120 }}
+              />
+            </div>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* Particles */}
-      <div className="fixed inset-0 z-[51] pointer-events-none overflow-hidden">
-        {particles.map((p) => {
-          const rad = (p.angle * Math.PI) / 180;
-          const endX = Math.cos(rad) * p.speed;
-          const endY = Math.sin(rad) * p.speed - 50; // Gravity bias upward
-
-          return (
-            <motion.div
-              key={p.id}
-              initial={{
-                left: `${p.x}%`,
-                top: `${p.y}%`,
-                scale: 0,
-                opacity: 1,
-              }}
-              animate={{
-                x: [0, endX * 0.5, endX],
-                y: [0, endY, endY + 40],
-                scale: [0, 1.2, 0.6],
-                opacity: [0, 1, 0],
-                rotate: [0, Math.random() * 360],
-              }}
-              transition={{
-                duration: 1.2 + Math.random() * 0.8,
-                delay: p.delay,
-                ease: "easeOut",
-              }}
-              className="absolute"
-              style={{ fontSize: p.size }}
-            >
-              {p.emoji}
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Stadium light sweep for six */}
-      <AnimatePresence>
-        {effectType === "six" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.3, 0] }}
-            transition={{ duration: 1.5, times: [0, 0.3, 1] }}
-            className="fixed inset-0 z-[49] pointer-events-none"
-          >
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 2, ease: "linear" }}
-              className="absolute inset-0"
-              style={{
-                background: "conic-gradient(from 0deg, transparent, hsl(217 91% 60% / 0.15), transparent, hsl(45 93% 58% / 0.1), transparent)",
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Win fireworks — continuous sparkle ring */}
-      <AnimatePresence>
         {effectType === "win" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[48] pointer-events-none"
+            className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
           >
-            {[...Array(3)].map((_, ring) => (
+            {/* Subtle expanding rings */}
+            {[0, 1, 2].map(ring => (
               <motion.div
                 key={ring}
-                animate={{
-                  scale: [0.5, 2.5],
-                  opacity: [0.6, 0],
-                }}
-                transition={{
-                  duration: 2,
-                  delay: ring * 0.6,
-                  repeat: 2,
-                  ease: "easeOut",
-                }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border-2 border-primary/40"
+                initial={{ scale: 0.5, opacity: 0.5 }}
+                animate={{ scale: 3, opacity: 0 }}
+                transition={{ duration: 2, delay: ring * 0.5, repeat: 1, ease: "easeOut" }}
+                className="absolute w-24 h-24 rounded-full border border-secondary/30"
               />
             ))}
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Crowd Mexican Wave */}
-      <CrowdWave active={crowdWave.active} intensity={crowdWave.intensity} />
     </>
   );
 }
