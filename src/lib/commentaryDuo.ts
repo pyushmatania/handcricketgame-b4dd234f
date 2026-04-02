@@ -116,6 +116,31 @@ const SIX_CONVERSATIONS: DuoGen[] = [
     { commentatorId: c2, text: `SIX! ${p} channeling prime Gayle right now!`, isKeyMoment: true },
     { commentatorId: c1, text: `Universe Boss vibes! Even the hotdog seller stopped to watch that one!`, isKeyMoment: true },
   ],
+  // International mix
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `BANG! That's gone all the way! ${p} with a Pollard-style heave!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Caribbean power! That ball won't be coming back anytime soon!`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `SIX! Absolute carnage! ${p} just switched to Maxwell mode!`, isKeyMoment: true },
+    { commentatorId: c1, text: `The Big Show energy! That went over square leg like a tracer bullet!`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `HUGE! ${p} channels AB de Villiers! 360-degree hitting!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Mr. 360 would tip his hat! Unorthodox but devastating!`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `SIX! That's Gilchrist-esque! ${p} has murderous intent!`, isKeyMoment: true },
+    { commentatorId: c1, text: `G'day mate, that ball just landed in the car park! What a wallop!`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `MAXIMUM! ${p} does a Dhoni helicopter! Vintage finish!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Arey wah! Mahi maar raha hai! Pure MSD school of batting!`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `That's deposited into the fifth row! ${p} is absolutely fearless!`, isKeyMoment: true },
+    { commentatorId: c1, text: `Reminds me of Flintoff at Edgbaston! Pure English steel and power!`, isKeyMoment: true },
+  ],
 ];
 
 const FOUR_CONVERSATIONS: DuoGen[] = [
@@ -130,6 +155,27 @@ const FOUR_CONVERSATIONS: DuoGen[] = [
   (c1, c2, p) => [
     { commentatorId: c1, text: `FOUR! ${p} is timing the ball sweetly today!`, isKeyMoment: true },
     { commentatorId: c2, text: `Class is permanent, form is temporary. And ${p} has both right now!`, isKeyMoment: false },
+  ],
+  // International additions
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `FOUR! That cover drive! Kohli-esque! ${p} makes it look so easy!`, isKeyMoment: true },
+    { commentatorId: c1, text: `Wrist position, balance, follow-through — perfection!`, isKeyMoment: false },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `BOUNDARY! ${p} channels Lara! Flamboyant and devastating!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Prince of Port of Spain energy! That's Caribbean cricket at its finest!`, isKeyMoment: true },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `FOUR! Through point like a hot knife through butter!`, isKeyMoment: true },
+    { commentatorId: c1, text: `That's Ponting at his peak! Back foot, bang, boundary!`, isKeyMoment: false },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c1, text: `Swept for FOUR! ${p} is reading the bowler like a book!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Babar Azam would be proud of that placement! Elegant!`, isKeyMoment: false },
+  ],
+  (c1, c2, p) => [
+    { commentatorId: c2, text: `FOUR! Driven straight! That's textbook VVS Laxman!`, isKeyMoment: true },
+    { commentatorId: c1, text: `Very Very Special indeed! ${p} caresses it to the fence!`, isKeyMoment: false },
   ],
 ];
 
@@ -146,6 +192,23 @@ const WICKET_CONVERSATIONS: DuoGen[] = [
     { commentatorId: c1, text: `OUT! Same move, same timing — that's the end!`, isKeyMoment: true },
     { commentatorId: c2, text: `Arrey! Kya hua? Both played the same thing! Drama!`, isKeyMoment: true },
   ],
+  // International additions
+  (c1, c2) => [
+    { commentatorId: c2, text: `GONE! Timber! Middle stump knocked back! McGrath-like precision!`, isKeyMoment: true },
+    { commentatorId: c1, text: `Line and length perfection! That's international-quality bowling!`, isKeyMoment: true },
+  ],
+  (c1, c2) => [
+    { commentatorId: c1, text: `WICKET! The death rattle! Stumps shattered!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Waqar Younis reverse swing energy! Toe-crushing delivery!`, isKeyMoment: true },
+  ],
+  (c1, c2) => [
+    { commentatorId: c2, text: `OUT! Caught behind! The finger goes up immediately!`, isKeyMoment: true },
+    { commentatorId: c1, text: `Shane Warne smiling from above! Leg-side trap perfectly executed!`, isKeyMoment: true },
+  ],
+  (c1, c2) => [
+    { commentatorId: c1, text: `BOWLED HIM! That's Wasim Akram level devastation!`, isKeyMoment: true },
+    { commentatorId: c2, text: `Sultan of Swing! The batter had no clue! Ab kya karoge?`, isKeyMoment: true },
+  ],
 ];
 
 const DOT_BALL_CONVERSATIONS: DuoGen[] = [
@@ -159,6 +222,18 @@ const DOT_BALL_CONVERSATIONS: DuoGen[] = [
   (_c1, c2) => [
     { commentatorId: c2, text: `Dot ball. The pressure is mounting.`, isKeyMoment: false },
   ],
+  (c1) => [
+    { commentatorId: c1, text: `Good length, no room to free the arms. Test match stuff!`, isKeyMoment: false },
+  ],
+  (_c1, c2) => [
+    { commentatorId: c2, text: `Strangled for space! That's Jimmy Anderson territory!`, isKeyMoment: false },
+  ],
+  (c1) => [
+    { commentatorId: c1, text: `Probing line outside off. The batter leaves well.`, isKeyMoment: false },
+  ],
+  (_c1, c2) => [
+    { commentatorId: c2, text: `Ek aur dot! The scoreboard hasn't moved. Tension building!`, isKeyMoment: false },
+  ],
 ];
 
 const SINGLE_CONVERSATIONS: DuoGen[] = [
@@ -171,6 +246,15 @@ const SINGLE_CONVERSATIONS: DuoGen[] = [
   (c1) => [
     { commentatorId: c1, text: `Nurdles it away for one. Ticking along.`, isKeyMoment: false },
   ],
+  (_c1, c2) => [
+    { commentatorId: c2, text: `Strike rotation — the Rahul Dravid school of batting.`, isKeyMoment: false },
+  ],
+  (c1) => [
+    { commentatorId: c1, text: `Easy single. Keeping the scoreboard moving. Smart.`, isKeyMoment: false },
+  ],
+  (_c1, c2) => [
+    { commentatorId: c2, text: `Dabbed to third man for one. Classical batting.`, isKeyMoment: false },
+  ],
 ];
 
 const MULTI_RUN_CONVERSATIONS: DuoGen[] = [
@@ -179,6 +263,12 @@ const MULTI_RUN_CONVERSATIONS: DuoGen[] = [
   ],
   (_c1, c2, _p, _o, runs) => [
     { commentatorId: c2, text: `They take ${runs}! Athletic running there.`, isKeyMoment: false },
+  ],
+  (c1, _c2, _p, _o, runs) => [
+    { commentatorId: c1, text: `${runs} more! The outfield is quick today. Good conversion!`, isKeyMoment: false },
+  ],
+  (_c1, c2, _p, _o, runs) => [
+    { commentatorId: c2, text: `Sharp between the wickets! ${runs} taken! Fitness matters!`, isKeyMoment: false },
   ],
 ];
 
