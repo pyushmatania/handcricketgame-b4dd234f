@@ -87,7 +87,7 @@ export default function OverBreakScreen({ stats, commentaryLines, commentators, 
         ))}
       </div>
       {/* Header */}
-      <div className="pt-12 pb-4 px-4 text-center">
+      <div className="relative z-10 pt-12 pb-4 px-4 text-center">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
