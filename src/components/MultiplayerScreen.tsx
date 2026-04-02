@@ -1460,7 +1460,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     setRematchExpiredMsg(null);
                     setCurrentGame(newGame as unknown as MultiplayerGame);
                     setPhase("waiting");
-                    setCountdownMs(COUNTDOWN_MS);
+                    setTurnCountdownMs(TURN_TIMER_MS);
                     setCooldown(false);
                     setLastResult(null);
                     setLastBallResult(null);
