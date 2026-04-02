@@ -436,6 +436,7 @@ export default function LeaderboardPage() {
     { key: "seasons", label: "SEASON", icon: "📅" },
     { key: "rivalry", label: "RIVALRY", icon: "⚔️" },
     { key: "rage", label: "RAGE", icon: "😤" },
+    { key: "network", label: "NETWORK", icon: "🕸️" },
   ];
 
   return (
