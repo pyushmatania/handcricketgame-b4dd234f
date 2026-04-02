@@ -35,6 +35,22 @@ function getRunRate(score: number, balls: number): string {
   return ((score / balls) * 6).toFixed(2);
 }
 
+function getStrikeRate(score: number, balls: number): string {
+  if (balls === 0) return "0.0";
+  return ((score / balls) * 100).toFixed(1);
+}
+
+function getPartnershipRuns(balls: BallResult[], isBatting: boolean): number {
+  let partnership = 0;
+  for (let i = balls.length - 1; i >= 0; i--) {
+    if (balls[i].runs === "OUT") break;
+    const r = typeof balls[i].runs === "number" ? (balls[i].runs as number) : 0;
+    if (isBatting ? r > 0 : r < 0) partnership += Math.abs(r);
+    else if (r === 0) continue;
+  }
+  return partnership;
+}
+
 function getRequiredRate(needed: number, ballsBowled: number): string | null {
   // Assume unlimited overs in hand cricket, so RRR isn't super meaningful
   // but show it for fun
@@ -67,6 +83,8 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
   const battingName = game.isBatting ? playerName : aiName;
   const bowlingName = game.isBatting ? aiName : playerName;
   const runRate = getRunRate(battingScore, inningsBallCount);
+  const strikeRate = getStrikeRate(battingScore, inningsBallCount);
+  const partnership = getPartnershipRuns(currentInningsBalls, game.isBatting);
 
   const needRuns = game.target && game.isBatting && game.phase !== "finished"
     ? Math.max(0, game.target - game.userScore)
@@ -144,6 +162,9 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
               </span>
             </div>
             <div className="flex items-center gap-1">
+              <span className="text-[7px] text-muted-foreground/60 font-display">SR</span>
+              <span className="text-[8px] font-display font-bold text-primary tracking-wider">{strikeRate}</span>
+              <span className="text-[5px] text-muted-foreground/30">|</span>
               <span className="text-[7px] text-muted-foreground/60 font-display">RR</span>
               <span className="text-[8px] font-display font-bold text-accent tracking-wider">{runRate}</span>
             </div>
@@ -198,6 +219,14 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
               BOWL
             </span>
           </div>
+
+          {/* Partnership */}
+          {partnership > 0 && (
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="text-[7px] text-muted-foreground/50 font-display tracking-wider">🤝 P'SHIP</span>
+              <span className="text-[9px] font-display font-bold text-neon-green">{partnership}</span>
+            </div>
+          )}
 
           {/* 1st innings score if in 2nd innings */}
           {game.currentInnings === 2 && (

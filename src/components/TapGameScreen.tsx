@@ -9,7 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import RulesSheet from "./RulesSheet";
 import OddEvenToss from "./OddEvenToss";
-import { PreMatchCeremony, PostMatchCeremony } from "./MatchCeremony";
+import EnhancedPreMatch from "./EnhancedPreMatch";
+import EnhancedPostMatch from "./EnhancedPostMatch";
 import TapPlayingUI from "./TapPlayingUI";
 
 const AI_NAME = "Rohit AI";
@@ -97,7 +98,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
 
       {/* Pre-match ceremony */}
       {showPreMatch && tossInfo && (
-        <PreMatchCeremony
+        <EnhancedPreMatch
           playerName={playerName}
           opponentName={AI_NAME}
           tossWinner={tossInfo.winner}
@@ -108,12 +109,14 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
 
       {/* Post-match ceremony */}
       {showPostMatch && game.result && (
-        <PostMatchCeremony
+        <EnhancedPostMatch
           playerName={playerName}
           opponentName={AI_NAME}
           result={game.result}
           playerScore={game.userScore}
           opponentScore={game.aiScore}
+          playerWickets={game.userWickets}
+          opponentWickets={game.aiWickets}
           ballHistory={game.ballHistory}
           onComplete={() => setShowPostMatch(false)}
         />
