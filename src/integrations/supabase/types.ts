@@ -367,7 +367,10 @@ export type Database = {
           login_streak: number
           losses: number
           rank_tier: string
+          total_fours: number
           total_matches: number
+          total_runs: number
+          total_sixes: number
           updated_at: string
           user_id: string
           wins: number
@@ -394,7 +397,10 @@ export type Database = {
           login_streak?: number
           losses?: number
           rank_tier?: string
+          total_fours?: number
           total_matches?: number
+          total_runs?: number
+          total_sixes?: number
           updated_at?: string
           user_id: string
           wins?: number
@@ -421,7 +427,10 @@ export type Database = {
           login_streak?: number
           losses?: number
           rank_tier?: string
+          total_fours?: number
           total_matches?: number
+          total_runs?: number
+          total_sixes?: number
           updated_at?: string
           user_id?: string
           wins?: number
