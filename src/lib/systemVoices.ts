@@ -123,24 +123,45 @@ function findVoice(persona: SystemVoicePersona): SpeechSynthesisVoice | null {
 /**
  * Speak text with a specific system voice persona. Returns a promise that resolves when done.
  */
-export function speakWithSystemPersona(text: string, persona: SystemVoicePersona): Promise<void> {
+export function speakWithSystemPersona(text: string, persona: SystemVoicePersona, cancelPrevious = true): Promise<void> {
   return new Promise((resolve) => {
     if (!("speechSynthesis" in window)) { resolve(); return; }
 
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.pitch = persona.pitch;
-    utterance.rate = persona.rate;
-    utterance.volume = persona.volume;
-
-    const voice = findVoice(persona);
-    if (voice) utterance.voice = voice;
-
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
-    window.speechSynthesis.speak(utterance);
+    // Ensure voices are loaded
+    let voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) {
+      // Some browsers need a moment to load voices
+      setTimeout(() => {
+        voices = window.speechSynthesis.getVoices();
+        doSpeak(text, persona, cancelPrevious, resolve);
+      }, 200);
+      return;
+    }
+    doSpeak(text, persona, cancelPrevious, resolve);
   });
+}
+
+function doSpeak(text: string, persona: SystemVoicePersona, cancelPrevious: boolean, resolve: () => void) {
+  if (cancelPrevious) window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.pitch = persona.pitch;
+  utterance.rate = persona.rate;
+  utterance.volume = persona.volume;
+
+  const voice = findVoice(persona);
+  if (voice) utterance.voice = voice;
+
+  // Chrome bug: long utterances get stuck. Set a safety timeout.
+  const maxDuration = Math.max(text.length * 80, 5000); // rough estimate
+  const timeout = setTimeout(() => {
+    window.speechSynthesis.cancel();
+    resolve();
+  }, maxDuration);
+
+  utterance.onend = () => { clearTimeout(timeout); resolve(); };
+  utterance.onerror = () => { clearTimeout(timeout); resolve(); };
+  window.speechSynthesis.speak(utterance);
 }
 
 /**
