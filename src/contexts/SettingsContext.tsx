@@ -52,6 +52,7 @@ const SettingsContext = createContext<SettingsContextType>({
   toggleVictorySound: () => {},
   setCommentaryVoice: () => {},
   setVoiceEngine: () => {},
+  setCommentaryLanguage: () => {},
 });
 
 export const useSettings = () => useContext(SettingsContext);
