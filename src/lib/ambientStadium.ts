@@ -128,8 +128,65 @@ export function stopAmbientStadium() {
 
 export function setAmbientVolume(v: number) {
   if (masterGain) {
-    masterGain.gain.setTargetAtTime(Math.max(0, Math.min(1, v)), masterGain.context.currentTime, 0.1);
+    baseVolume = Math.max(0, Math.min(1, v));
+    if (!boosting) {
+      masterGain.gain.setTargetAtTime(baseVolume, masterGain.context.currentTime, 0.1);
+    }
   }
+}
+
+let baseVolume = 0.3;
+let boosting = false;
+let boostTimeout: ReturnType<typeof setTimeout> | null = null;
+
+/** Temporarily boost ambient volume for a crowd roar effect */
+export function crowdRoar(intensity: "four" | "six" = "six") {
+  if (!masterGain || !running) return;
+  const peak = intensity === "six" ? Math.min(baseVolume * 3.5, 1) : Math.min(baseVolume * 2.5, 1);
+  const duration = intensity === "six" ? 2.5 : 1.8;
+  const ac = masterGain.context;
+
+  boosting = true;
+  if (boostTimeout) clearTimeout(boostTimeout);
+
+  // Quick ramp up
+  masterGain.gain.cancelScheduledValues(ac.currentTime);
+  masterGain.gain.setTargetAtTime(peak, ac.currentTime, 0.08);
+
+  // Also add a burst of extra crowd noise
+  try {
+    const burstLen = Math.floor(ac.sampleRate * duration);
+    const buf = ac.createBuffer(2, burstLen, ac.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < burstLen; i++) {
+        d[i] = (Math.random() * 2 - 1) * 0.6;
+      }
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 600;
+    bp.Q.value = 0.4;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.12, ac.currentTime);
+    g.gain.setValueAtTime(0.12, ac.currentTime + duration * 0.4);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+    src.connect(bp);
+    bp.connect(g);
+    g.connect(masterGain);
+    src.start();
+    src.stop(ac.currentTime + duration);
+  } catch { /* ignore */ }
+
+  // Fade back down
+  boostTimeout = setTimeout(() => {
+    if (masterGain) {
+      masterGain.gain.setTargetAtTime(baseVolume, masterGain.context.currentTime, 0.3);
+    }
+    boosting = false;
+  }, duration * 1000);
 }
 
 export function isAmbientPlaying() {

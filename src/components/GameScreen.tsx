@@ -15,7 +15,7 @@ import { useHandCricket } from "@/hooks/useHandCricket";
 import { useHandDetection } from "@/hooks/useHandDetection";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
 import { SFX, Haptics } from "@/lib/sounds";
-import { startAmbientStadium, stopAmbientStadium, setAmbientVolume } from "@/lib/ambientStadium";
+import { startAmbientStadium, stopAmbientStadium, setAmbientVolume, crowdRoar } from "@/lib/ambientStadium";
 import { getInningsChangeCommentary } from "@/lib/commentary";
 import { playCrowdForResult, CrowdSFX, speakDuoCommentary, speakCommentary } from "@/lib/voiceCommentary";
 import { isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
@@ -208,7 +208,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
     } else if (typeof r.runs === "number") {
       const abs = Math.abs(r.runs);
       if (abs === 6) {
-        setTimeout(() => { if (soundEnabled) SFX.six(); if (hapticsEnabled) Haptics.heavy(); }, 100);
+        setTimeout(() => { if (soundEnabled) SFX.six(); if (hapticsEnabled) Haptics.heavy(); crowdRoar("six"); }, 100);
         setFireworkType("six");
         if (soundEnabled) {
           setTimeout(() => SFX.fireworkWhoosh(), 400);
@@ -216,7 +216,7 @@ export default function GameScreen({ onHome }: GameScreenProps) {
         }
         if (hapticsEnabled) setTimeout(() => Haptics.firework(), 800);
       } else if (abs === 4) {
-        setTimeout(() => { if (soundEnabled) SFX.four(); if (hapticsEnabled) Haptics.medium(); }, 100);
+        setTimeout(() => { if (soundEnabled) SFX.four(); if (hapticsEnabled) Haptics.medium(); crowdRoar("four"); }, 100);
         setFireworkType("four");
         if (soundEnabled) setTimeout(() => SFX.fireworkPop(), 400);
       } else {
