@@ -60,7 +60,22 @@ export default function TapPlayingUI({
   isPvP = false, waitingForOpponent = false, cooldownOverride,
   extraContent, modeLabel = "TAP MODE", matchConfig, innings1Balls, commentators,
 }: TapPlayingUIProps) {
-  const { soundEnabled, hapticsEnabled, commentaryEnabled, voiceEnabled, crowdEnabled, commentaryVoice, voiceEngine, commentaryLanguage } = useSettings();
+  const { soundEnabled, hapticsEnabled, commentaryEnabled, voiceEnabled, crowdEnabled, commentaryVoice, voiceEngine, commentaryLanguage, musicEnabled, ambientVolume } = useSettings();
+
+  // Ambient stadium music
+  useEffect(() => {
+    if (soundEnabled && musicEnabled && !result) {
+      startAmbientStadium(ambientVolume);
+    } else {
+      stopAmbientStadium();
+    }
+    return () => { stopAmbientStadium(); };
+  }, [soundEnabled, musicEnabled, result]);
+
+  // Update volume in real-time
+  useEffect(() => {
+    if (soundEnabled && musicEnabled) setAmbientVolume(ambientVolume);
+  }, [ambientVolume, soundEnabled, musicEnabled]);
   const [lastPlayed, setLastPlayed] = useState<Move | null>(null);
   const [cooldown, setCooldown] = useState(false);
   const [showExplosion, setShowExplosion] = useState<{ emoji: string; key: number } | null>(null);
