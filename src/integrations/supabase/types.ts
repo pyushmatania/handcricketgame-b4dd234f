@@ -64,25 +64,40 @@ export type Database = {
       }
       match_invites: {
         Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
           created_at: string
+          declined_at: string | null
+          expires_at: string
           from_user_id: string
           game_id: string
+          game_type: string
           id: string
           status: string
           to_user_id: string
         }
         Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
           created_at?: string
+          declined_at?: string | null
+          expires_at?: string
           from_user_id: string
           game_id: string
+          game_type?: string
           id?: string
           status?: string
           to_user_id: string
         }
         Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
           created_at?: string
+          declined_at?: string | null
+          expires_at?: string
           from_user_id?: string
           game_id?: string
+          game_type?: string
           id?: string
           status?: string
           to_user_id?: string
@@ -130,19 +145,30 @@ export type Database = {
           abandoned_by: string | null
           created_at: string
           current_turn: number
+          game_type: string
           guest_id: string | null
           guest_move: string | null
+          guest_move_submitted_at: string | null
           guest_reserve_ms: number
           guest_score: number
           host_batting: boolean
           host_id: string
           host_move: string | null
+          host_move_submitted_at: string | null
           host_reserve_ms: number
           host_score: number
           id: string
           innings: number
+          innings_number: number
+          phase: string | null
+          phase_started_at: string | null
+          room_code: string
+          round_result_payload: Json | null
+          started_at: string | null
           status: string
           target_guest_id: string | null
+          turn_deadline_at: string | null
+          turn_number: number
           updated_at: string
           winner_id: string | null
         }
@@ -150,19 +176,30 @@ export type Database = {
           abandoned_by?: string | null
           created_at?: string
           current_turn?: number
+          game_type?: string
           guest_id?: string | null
           guest_move?: string | null
+          guest_move_submitted_at?: string | null
           guest_reserve_ms?: number
           guest_score?: number
           host_batting?: boolean
           host_id: string
           host_move?: string | null
+          host_move_submitted_at?: string | null
           host_reserve_ms?: number
           host_score?: number
           id?: string
           innings?: number
+          innings_number?: number
+          phase?: string | null
+          phase_started_at?: string | null
+          room_code?: string
+          round_result_payload?: Json | null
+          started_at?: string | null
           status?: string
           target_guest_id?: string | null
+          turn_deadline_at?: string | null
+          turn_number?: number
           updated_at?: string
           winner_id?: string | null
         }
@@ -170,19 +207,30 @@ export type Database = {
           abandoned_by?: string | null
           created_at?: string
           current_turn?: number
+          game_type?: string
           guest_id?: string | null
           guest_move?: string | null
+          guest_move_submitted_at?: string | null
           guest_reserve_ms?: number
           guest_score?: number
           host_batting?: boolean
           host_id?: string
           host_move?: string | null
+          host_move_submitted_at?: string | null
           host_reserve_ms?: number
           host_score?: number
           id?: string
           innings?: number
+          innings_number?: number
+          phase?: string | null
+          phase_started_at?: string | null
+          room_code?: string
+          round_result_payload?: Json | null
+          started_at?: string | null
           status?: string
           target_guest_id?: string | null
+          turn_deadline_at?: string | null
+          turn_number?: number
           updated_at?: string
           winner_id?: string | null
         }
