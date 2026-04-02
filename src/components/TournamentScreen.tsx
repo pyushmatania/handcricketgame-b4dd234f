@@ -352,6 +352,34 @@ export default function TournamentScreen({ onHome }: Props) {
           </motion.div>
         )}
       </div>
+
+      {/* Pre-match ceremony */}
+      {showPreMatch && (
+        <EnhancedPreMatch
+          playerName={playerName}
+          opponentName={opp.name}
+          tossWinner={playerName}
+          battingFirst={playerName}
+          onComplete={handlePreMatchComplete}
+        />
+      )}
+
+      {/* Post-match ceremony */}
+      {showPostMatch && game.result && (
+        <EnhancedPostMatch
+          playerName={playerName}
+          opponentName={opp.name}
+          result={game.result}
+          playerScore={game.userScore}
+          opponentScore={game.aiScore}
+          ballHistory={game.ballHistory}
+          onComplete={() => {
+            setShowPostMatch(false);
+            if (game.result !== "win") setEliminated(true);
+            setPhase("result");
+          }}
+        />
+      )}
     </div>
   );
 }
