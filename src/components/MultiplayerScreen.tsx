@@ -116,7 +116,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ballTimerStartRef = useRef<number | null>(null);
   const reserveUsedRef = useRef(0);
-  const hydratedGameIdRef = useRef<string | null>(null);
+  // hydratedGameIdRef removed — hydration now uses currentGame.id check
   const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
 
