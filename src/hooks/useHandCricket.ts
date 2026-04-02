@@ -12,6 +12,11 @@ export interface BallResult {
   description: string;
 }
 
+export interface MatchConfig {
+  overs: number | null; // null = unlimited
+  wickets: number; // default 1 (current), 3 for limited overs
+}
+
 export interface GameState {
   phase: InningsPhase;
   userScore: number;
@@ -24,7 +29,13 @@ export interface GameState {
   lastResult: BallResult | null;
   result: GameResult;
   ballHistory: BallResult[];
+  config: MatchConfig;
+  // Ball counts per innings for over tracking
+  innings1Balls: number;
+  innings2Balls: number;
 }
+
+const defaultConfig: MatchConfig = { overs: null, wickets: 1 };
 
 const initialState: GameState = {
   phase: "not_started",
@@ -38,6 +49,9 @@ const initialState: GameState = {
   lastResult: null,
   result: null,
   ballHistory: [],
+  config: defaultConfig,
+  innings1Balls: 0,
+  innings2Balls: 0,
 };
 
 function getMoveValue(move: Move | AiMove): number {
@@ -81,14 +95,27 @@ function resolveResult(userMove: Move, aiMove: AiMove, isBatting: boolean): { ru
   }
 }
 
+/** Check if overs are exhausted for the current innings */
+function isOversExhausted(ballsInInnings: number, config: MatchConfig): boolean {
+  if (!config.overs) return false;
+  return ballsInInnings >= config.overs * 6;
+}
+
+/** Check if wickets are exhausted */
+function isWicketsExhausted(wickets: number, config: MatchConfig): boolean {
+  return wickets >= config.wickets;
+}
+
 export function useHandCricket() {
   const [game, setGame] = useState<GameState>(initialState);
 
-  const startGame = useCallback((batFirst: boolean) => {
+  const startGame = useCallback((batFirst: boolean, config?: MatchConfig) => {
+    const c = config || defaultConfig;
     setGame({
       ...initialState,
       phase: batFirst ? "first_batting" : "first_bowling",
       isBatting: batFirst,
+      config: c,
     });
   }, []);
 
@@ -104,29 +131,41 @@ export function useHandCricket() {
 
       let newState = { ...prev, lastResult: ballResult, ballHistory: newHistory };
 
+      // Track balls per innings
+      if (prev.currentInnings === 1) {
+        newState.innings1Balls = prev.innings1Balls + 1;
+      } else {
+        newState.innings2Balls = prev.innings2Balls + 1;
+      }
+
+      const currentBalls = prev.currentInnings === 1 ? newState.innings1Balls : newState.innings2Balls;
+
       if (prev.isBatting) {
         if (runs === "OUT") {
-          // End batting innings
-          if (prev.currentInnings === 1) {
-            newState = {
-              ...newState,
-              phase: "second_bowling",
-              target: prev.userScore + 1,
-              currentInnings: 2,
-              isBatting: false,
-              userWickets: prev.userWickets + 1,
-            };
-          } else {
-            // Second innings batting out
-            const aiTotal = prev.aiScore;
-            const userTotal = prev.userScore;
-            newState = {
-              ...newState,
-              phase: "finished",
-              userWickets: prev.userWickets + 1,
-              result: userTotal > aiTotal ? "win" : userTotal < aiTotal ? "loss" : "draw",
-            };
+          const newWickets = prev.userWickets + 1;
+          newState.userWickets = newWickets;
+
+          if (isWicketsExhausted(newWickets, prev.config)) {
+            // All wickets gone
+            if (prev.currentInnings === 1) {
+              newState = {
+                ...newState,
+                phase: "second_bowling",
+                target: prev.userScore + 1,
+                currentInnings: 2,
+                isBatting: false,
+              };
+            } else {
+              const aiTotal = prev.aiScore;
+              const userTotal = prev.userScore;
+              newState = {
+                ...newState,
+                phase: "finished",
+                result: userTotal > aiTotal ? "win" : userTotal < aiTotal ? "loss" : "draw",
+              };
+            }
           }
+          // If wickets not exhausted, batting continues
         } else {
           const newScore = prev.userScore + (runs as number);
           newState.userScore = newScore;
@@ -139,25 +178,29 @@ export function useHandCricket() {
       } else {
         // Bowling
         if (runs === "OUT") {
-          if (prev.currentInnings === 1) {
-            newState = {
-              ...newState,
-              phase: "second_batting",
-              target: prev.aiScore + 1,
-              currentInnings: 2,
-              isBatting: true,
-              aiWickets: prev.aiWickets + 1,
-            };
-          } else {
-            const aiTotal = prev.aiScore;
-            const userTotal = prev.userScore;
-            newState = {
-              ...newState,
-              phase: "finished",
-              aiWickets: prev.aiWickets + 1,
-              result: userTotal > aiTotal ? "win" : userTotal < aiTotal ? "loss" : "draw",
-            };
+          const newAiWickets = prev.aiWickets + 1;
+          newState.aiWickets = newAiWickets;
+
+          if (isWicketsExhausted(newAiWickets, prev.config)) {
+            if (prev.currentInnings === 1) {
+              newState = {
+                ...newState,
+                phase: "second_batting",
+                target: prev.aiScore + 1,
+                currentInnings: 2,
+                isBatting: true,
+              };
+            } else {
+              const aiTotal = prev.aiScore;
+              const userTotal = prev.userScore;
+              newState = {
+                ...newState,
+                phase: "finished",
+                result: userTotal > aiTotal ? "win" : userTotal < aiTotal ? "loss" : "draw",
+              };
+            }
           }
+          // If wickets not exhausted, AI continues batting
         } else {
           const aiRuns = Math.abs(runs as number);
           const newAiScore = prev.aiScore + aiRuns;
@@ -166,6 +209,40 @@ export function useHandCricket() {
           if (prev.target && newAiScore >= prev.target) {
             newState.phase = "finished";
             newState.result = "loss";
+          }
+        }
+      }
+
+      // Check overs exhausted (only if not already finished by wicket/chase)
+      if (newState.phase !== "finished" && newState.phase !== "not_started") {
+        if (isOversExhausted(currentBalls, prev.config)) {
+          if (prev.currentInnings === 1) {
+            if (prev.isBatting) {
+              newState = {
+                ...newState,
+                phase: "second_bowling",
+                target: newState.userScore + 1,
+                currentInnings: 2,
+                isBatting: false,
+              };
+            } else {
+              newState = {
+                ...newState,
+                phase: "second_batting",
+                target: newState.aiScore + 1,
+                currentInnings: 2,
+                isBatting: true,
+              };
+            }
+          } else {
+            // 2nd innings overs done
+            const userTotal = newState.userScore;
+            const aiTotal = newState.aiScore;
+            newState = {
+              ...newState,
+              phase: "finished",
+              result: userTotal > aiTotal ? "win" : userTotal < aiTotal ? "loss" : "draw",
+            };
           }
         }
       }
