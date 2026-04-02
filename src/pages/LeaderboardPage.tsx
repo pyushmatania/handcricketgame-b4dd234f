@@ -13,6 +13,7 @@ import AchievementFeed from "@/components/AchievementFeed";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import FormSparkline from "@/components/FormSparkline";
 import PlayerOfTheWeek from "@/components/PlayerOfTheWeek";
+import MostActiveTicker from "@/components/MostActiveTicker";
 import { getRankTier } from "@/lib/rankTiers";
 import { useWeeklyChallenges } from "@/hooks/useWeeklyChallenges";
 import { toast } from "@/components/ui/use-toast";
