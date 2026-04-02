@@ -1207,6 +1207,27 @@ export default function MultiplayerScreen({ onHome }: Props) {
           gameType={currentGame?.game_type}
           onComplete={() => {
             setShowVSIntro(false);
+            // Show enhanced pre-match ceremony for PvP
+            if (pvpPreMatchShownRef.current) {
+              setShowPvPPreMatch(true);
+            } else if (currentGame) {
+              setPhase(statusToPhase(currentGame.status));
+            }
+          }}
+        />
+      )}
+
+      {/* Enhanced Pre-Match Ceremony */}
+      {showPvPPreMatch && currentGame && (
+        <EnhancedPreMatch
+          playerName={myName}
+          opponentName={opponentName}
+          tossWinner={myName}
+          battingFirst={currentGame.host_batting ? (isHost ? myName : opponentName) : (isHost ? opponentName : myName)}
+          rivalryStats={rivalryStats}
+          isPvP={true}
+          onComplete={() => {
+            setShowPvPPreMatch(false);
             if (currentGame) {
               setPhase(statusToPhase(currentGame.status));
             }
