@@ -121,6 +121,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
           opponentName={AI_NAME}
           tossWinner={tossInfo.winner}
           battingFirst={tossInfo.battingFirst}
+          commentators={matchCommentators}
           onComplete={handlePreMatchComplete}
         />
       )}
