@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Move, BallResult, GameResult, InningsPhase } from "@/hooks/useHandCricket";
+import type { Move, BallResult, GameResult, InningsPhase, MatchConfig } from "@/hooks/useHandCricket";
 import { SFX, Haptics } from "@/lib/sounds";
 import { getCommentary, getInningsChangeCommentary } from "@/lib/commentary";
 import { speakCommentary, playCrowdForResult, CrowdSFX } from "@/lib/voiceCommentary";
@@ -40,6 +40,8 @@ export interface TapPlayingUIProps {
   cooldownOverride?: boolean;
   extraContent?: React.ReactNode;
   modeLabel?: string;
+  matchConfig?: MatchConfig;
+  innings1Balls?: number;
 }
 
 export default function TapPlayingUI({
@@ -48,7 +50,7 @@ export default function TapPlayingUI({
   playerName, opponentName, opponentEmoji = "🏏",
   onMove, onReset, onHome,
   isPvP = false, waitingForOpponent = false, cooldownOverride,
-  extraContent, modeLabel = "TAP MODE",
+  extraContent, modeLabel = "TAP MODE", matchConfig, innings1Balls,
 }: TapPlayingUIProps) {
   const { soundEnabled, hapticsEnabled, commentaryEnabled, voiceEnabled, crowdEnabled } = useSettings();
   const [lastPlayed, setLastPlayed] = useState<Move | null>(null);
@@ -62,6 +64,21 @@ export default function TapPlayingUI({
   const gameStateForScoreboard = {
     phase, userScore, aiScore, userWickets, aiWickets,
     target, currentInnings, isBatting, lastResult, result, ballHistory,
+    config: matchConfig || { overs: null, wickets: 1 },
+    innings1Balls: innings1Balls || (currentInnings === 1 ? ballHistory.length : Math.max(0, ballHistory.length - (ballHistory.filter((_, i) => {
+      // Estimate innings1 balls from history
+      let balls = 0;
+      for (let j = 0; j <= i; j++) {
+        balls++;
+        if (ballHistory[j].runs === "OUT" && j < ballHistory.length - 1) {
+          // Check if this was the innings break
+          const remaining = ballHistory.slice(j + 1);
+          if (remaining.length > 0) return j + 1 === balls;
+        }
+      }
+      return false;
+    }).length || ballHistory.length))),
+    innings2Balls: 0,
   };
 
   // Innings change commentary
@@ -127,7 +144,13 @@ export default function TapPlayingUI({
 
       {/* Scoreboard */}
       {phase !== "not_started" && (
-        <ScoreBoard game={gameStateForScoreboard as any} playerName={playerName} aiName={opponentName} aiEmoji={opponentEmoji} />
+        <ScoreBoard
+          game={gameStateForScoreboard as any}
+          playerName={playerName}
+          aiName={opponentName}
+          aiEmoji={opponentEmoji}
+          isPvP={isPvP}
+        />
       )}
 
       {/* Commentary bar */}
@@ -147,7 +170,7 @@ export default function TapPlayingUI({
         )}
       </AnimatePresence>
 
-      {/* Last result — compact inline */}
+      {/* Last result — compact inline with both moves shown */}
       <AnimatePresence mode="wait">
         {lastResult && phase !== "not_started" && phase !== "finished" && !waitingForOpponent && (
           <motion.div

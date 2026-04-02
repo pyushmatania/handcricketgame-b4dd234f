@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { useHandCricket, type Move } from "@/hooks/useHandCricket";
+import { useHandCricket, type Move, type MatchConfig } from "@/hooks/useHandCricket";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
 import { SFX, Haptics } from "@/lib/sounds";
 import { playCrowdForResult } from "@/lib/voiceCommentary";
@@ -12,6 +12,7 @@ import OddEvenToss from "./OddEvenToss";
 import EnhancedPreMatch from "./EnhancedPreMatch";
 import EnhancedPostMatch from "./EnhancedPostMatch";
 import TapPlayingUI from "./TapPlayingUI";
+import OverSelector from "./OverSelector";
 
 const AI_NAME = "Rohit AI";
 const AI_EMOJI = "🏏";
@@ -27,6 +28,11 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
   const { user } = useAuth();
   const savedRef = useRef(false);
 
+  // Match config
+  const [matchConfig, setMatchConfig] = useState<MatchConfig | null>(null);
+  const [showOverSelector, setShowOverSelector] = useState(true);
+  const [playerXP, setPlayerXP] = useState(0);
+
   // Ceremony states
   const [showPreMatch, setShowPreMatch] = useState(false);
   const [showPostMatch, setShowPostMatch] = useState(false);
@@ -38,13 +44,21 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => { if (data?.display_name) setPlayerName(data.display_name); });
+    supabase.from("profiles").select("display_name, xp").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data?.display_name) setPlayerName(data.display_name);
+        if (data?.xp) setPlayerXP(data.xp);
+      });
   }, [user]);
 
   const handleTossComplete = useCallback((tossWinner: string, battingFirst: string) => {
     setTossInfo({ winner: tossWinner, battingFirst });
   }, []);
+
+  const handleOverSelect = (config: MatchConfig) => {
+    setMatchConfig(config);
+    setShowOverSelector(false);
+  };
 
   useEffect(() => {
     if (game.phase === "finished" && !savedRef.current) {
@@ -66,10 +80,10 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
 
   const handlePreMatchComplete = () => {
     setShowPreMatch(false);
-    if (pendingBatFirst !== null) {
+    if (pendingBatFirst !== null && matchConfig) {
       if (soundEnabled) SFX.gameStart();
       if (hapticsEnabled) Haptics.medium();
-      startGame(pendingBatFirst);
+      startGame(pendingBatFirst, matchConfig);
     }
   };
 
@@ -81,6 +95,8 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
     setShowPreMatch(false);
     setShowPostMatch(false);
     postMatchShownRef.current = false;
+    setMatchConfig(null);
+    setShowOverSelector(true);
   };
 
   return (
@@ -140,14 +156,26 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass-card">
           <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
           <span className="font-display text-[9px] tracking-[0.2em] text-accent font-bold">TAP MODE</span>
+          {matchConfig && (
+            <span className="text-[7px] font-display text-muted-foreground">
+              {matchConfig.overs ? `${matchConfig.overs}ov • ${matchConfig.wickets}w` : "∞"}
+            </span>
+          )}
         </div>
         <RulesSheet />
       </div>
 
       {/* Main content */}
       <div className="relative z-10 flex-1 flex flex-col px-4 pb-3 max-w-lg mx-auto w-full overflow-hidden">
-        {/* Toss */}
-        {game.phase === "not_started" && !showPreMatch && (
+        {/* Over selector - shown first */}
+        {showOverSelector && game.phase === "not_started" && !showPreMatch && (
+          <div className="mt-4">
+            <OverSelector playerXP={playerXP} onSelect={handleOverSelect} />
+          </div>
+        )}
+
+        {/* Toss - after over selection */}
+        {!showOverSelector && matchConfig && game.phase === "not_started" && !showPreMatch && (
           <div className="mt-4">
             <OddEvenToss
               onResult={handleStart}
@@ -178,6 +206,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
           onReset={handleStartNew}
           onHome={onHome}
           modeLabel="TAP MODE"
+          matchConfig={matchConfig || undefined}
         />
       </div>
     </div>
