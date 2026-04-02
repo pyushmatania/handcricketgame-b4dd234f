@@ -131,7 +131,7 @@ interface ProfileData {
   avatar_index: number;
 }
 
-type TabType = "stats" | "matches" | "friends";
+type TabType = "stats" | "matches" | "friends" | "trophy";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
