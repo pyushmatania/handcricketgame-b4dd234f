@@ -193,7 +193,22 @@ export default function MatchInviteNotification() {
       }
 
       setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-      navigate(`/game/multiplayer?game=${acceptedGameId}`, { replace: true });
+
+      // Verify the game is in a joinable state before navigating
+      const gameId = acceptedGameId as string;
+      const { data: gameData } = await supabase
+        .from("multiplayer_games")
+        .select("status, guest_id")
+        .eq("id", gameId)
+        .maybeSingle();
+
+      if (gameData && (gameData as any).guest_id === user.id) {
+        // Force a full page navigation to ensure state resets properly for rematch
+        window.location.href = `/game/multiplayer?game=${gameId}`;
+      } else {
+        // Fallback — still navigate but warn
+        navigate(`/game/multiplayer?game=${gameId}`, { replace: true });
+      }
     } finally {
       setJoiningInviteId(null);
     }

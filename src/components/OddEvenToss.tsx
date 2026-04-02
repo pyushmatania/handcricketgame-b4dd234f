@@ -99,8 +99,10 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
   const handleInningsChoice = (batFirst: boolean) => {
     if (soundEnabled) SFX.tossSelect();
     const battingFirstName = batFirst ? playerName : opponentName;
+    const bowlingFirstName = batFirst ? opponentName : playerName;
     onTossComplete?.(playerName, battingFirstName);
-    onResult(batFirst);
+    // Brief display before calling onResult
+    setTimeout(() => onResult(batFirst), 800);
   };
 
   const winnerName = tossWon ? playerName : opponentName;
@@ -131,6 +133,23 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
               className="text-4xl"
             >🎰</motion.div>
             <p className="text-[11px] text-muted-foreground font-display">Randomly assigning Odd/Even...</p>
+            {playerChoice && opponentChoice && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="px-4 py-2 rounded-xl bg-primary/15 border border-primary/30">
+                    <span className="text-[10px] font-display font-bold text-primary">
+                      {playerName}: {playerChoice.toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground font-black">VS</span>
+                  <div className="px-4 py-2 rounded-xl bg-accent/15 border border-accent/30">
+                    <span className="text-[10px] font-display font-bold text-accent">
+                      {opponentName}: {opponentChoice.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         )}
 
@@ -304,7 +323,9 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
             <AnimatePresence>
               {revealStep >= 3 && tossWon && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-3">
-                  <p className="text-[11px] text-muted-foreground">Select your choice</p>
+                  <p className="text-[11px] text-foreground font-display font-bold">
+                    {playerName}, you won! What do you want to do?
+                  </p>
                   <div className="flex gap-3">
                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleInningsChoice(true)}
                       className="flex-1 py-3.5 bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl text-sm shadow-[0_0_25px_hsl(217_91%_60%/0.25)] border border-primary/30">
@@ -319,13 +340,22 @@ export default function OddEvenToss({ onResult, playerName = "You", opponentName
               )}
             </AnimatePresence>
 
-            {/* AI chose message */}
+            {/* AI chose — show clear result */}
             <AnimatePresence>
               {revealStep >= 3 && !tossWon && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="space-y-2">
                   <p className="text-[10px] text-muted-foreground font-display tracking-wider">
                     {opponentName} is choosing...
                   </p>
+                  <motion.div
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="flex items-center justify-center gap-1"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/20" />
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>

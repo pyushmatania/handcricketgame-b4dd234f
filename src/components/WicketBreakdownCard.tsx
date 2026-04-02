@@ -107,7 +107,7 @@ export default function WicketBreakdownCard({ data, onContinue }: WicketBreakdow
       </div>
 
       {/* Header badge */}
-      <div className="relative z-10 pt-12 pb-3 px-4 text-center">
+      <div className="relative z-10 pt-12 pb-3 px-4 text-center space-y-2">
         <motion.div
           initial={{ scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -123,6 +123,35 @@ export default function WicketBreakdownCard({ data, onContinue }: WicketBreakdow
             {data.isInningsChange ? "INNINGS BREAK" : "WICKET!"}
           </span>
         </motion.div>
+
+        {/* Clear role announcement for innings change */}
+        {data.isInningsChange && data.newTarget && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-1.5"
+          >
+            <p className="font-display text-xs font-black text-secondary tracking-wider">
+              🎯 TARGET: {data.newTarget} RUNS
+            </p>
+            <p className="font-display text-[10px] font-bold text-foreground tracking-wider">
+              {data.batsmanName} scored {data.totalScore} — now it's your turn!
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <div className="px-3 py-1.5 rounded-xl bg-primary/15 border border-primary/25">
+                <span className="text-[9px] font-display font-bold text-primary">
+                  🏏 {data.bowlerName} BATS NOW
+                </span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-accent/15 border border-accent/25">
+                <span className="text-[9px] font-display font-bold text-accent">
+                  🎯 {data.batsmanName} BOWLS NOW
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Content */}
@@ -329,7 +358,9 @@ export default function WicketBreakdownCard({ data, onContinue }: WicketBreakdow
             className="absolute inset-0 bg-white/10 origin-left"
           />
           <span className="relative z-10">
-            {data.isInningsChange ? "⚡ START 2ND INNINGS" : "⚡ CONTINUE"} • {autoTimer}s
+            {data.isInningsChange
+              ? `⚡ ${data.bowlerName.toUpperCase()} BATS NOW • ${autoTimer}s`
+              : `⚡ CONTINUE • ${autoTimer}s`}
           </span>
         </motion.button>
       </div>

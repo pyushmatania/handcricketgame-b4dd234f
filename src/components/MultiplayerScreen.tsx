@@ -843,9 +843,13 @@ export default function MultiplayerScreen({ onHome }: Props) {
     let newWinner: string | null = null;
     let result = "";
 
-    const isOut = hostMove === guestMove;
+    // DEF + DEF = OUT
+    const isBothDef = hostMove === "DEF" && guestMove === "DEF";
+    // Same move = OUT (including DEF+DEF)
+    const isOut = hostMove === guestMove || isBothDef;
+
     if (isOut) {
-      result = `Both played ${hostMove} — OUT!`;
+      result = isBothDef ? "Both played DEF — OUT!" : `Both played ${hostMove} — OUT!`;
       if (game.innings === 1) {
         newInnings = 2;
         newHostBatting = !game.host_batting;
@@ -858,8 +862,16 @@ export default function MultiplayerScreen({ onHome }: Props) {
         }
       }
     } else {
+      // DEF + number = runs go to the BATSMAN (not 0)
       const battingMove = battingIsHost ? hostMove : guestMove;
-      const runs = battingMove === "DEF" ? 0 : parseInt(battingMove);
+      const bowlingMove = battingIsHost ? guestMove : hostMove;
+      let runs: number;
+      if (battingMove === "DEF") {
+        // Batsman defended, bowler played a number — runs go to batsman
+        runs = bowlingMove === "DEF" ? 0 : parseInt(bowlingMove);
+      } else {
+        runs = parseInt(battingMove);
+      }
       if (battingIsHost) { newHostScore += runs; result = `+${runs} runs to Host`; }
       else { newGuestScore += runs; result = `+${runs} runs to Guest`; }
       if (game.innings === 2) {
@@ -882,7 +894,13 @@ export default function MultiplayerScreen({ onHome }: Props) {
       ballRuns = "OUT";
     } else {
       const battingMove = battingIsHost ? hostMove : guestMove;
-      const r = battingMove === "DEF" ? 0 : parseInt(battingMove);
+      const bowlingMove = battingIsHost ? guestMove : hostMove;
+      let r: number;
+      if (battingMove === "DEF") {
+        r = bowlingMove === "DEF" ? 0 : parseInt(bowlingMove);
+      } else {
+        r = parseInt(battingMove);
+      }
       ballRuns = isBattingLocal ? r : -r;
     }
 
