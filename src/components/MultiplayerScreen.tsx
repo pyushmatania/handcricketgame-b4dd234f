@@ -115,13 +115,28 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [createModePickerOpen, setCreateModePickerOpen] = useState(false);
   const [lobbyMessage, setLobbyMessage] = useState<string | null>(null);
 
-  const [ballTimer, setBallTimer] = useState(BALL_TIMER_MS);
-  const [reserveTime, setReserveTime] = useState(RESERVE_TIMER_MS);
-  const [usingReserve, setUsingReserve] = useState(false);
+  // Timer state — idle detection + countdown
+  const [idleMs, setIdleMs] = useState(0);
+  const [countdownMs, setCountdownMs] = useState(COUNTDOWN_MS);
+  const [showCountdown, setShowCountdown] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const ballTimerStartRef = useRef<number | null>(null);
-  const reserveUsedRef = useRef(0);
-  // hydratedGameIdRef removed — hydration now uses currentGame.id check
+  const turnStartRef = useRef<number>(Date.now());
+  
+  // Tease messages
+  const TEASE_MESSAGES = [
+    { text: "Bro sleeping or playing? 😴💤", unlocked: true },
+    { text: "My grandma plays faster than you 👵🏏", unlocked: true },
+    { text: "Even the pitch is getting bored 🥱", unlocked: true },
+    { text: "Scared to lose? Just quit already 🏳️😂", unlocked: false, cost: 50 },
+    { text: "Your batting is as useful as a chocolate bat 🍫", unlocked: false, cost: 75 },
+    { text: "I've seen better shots from a broken TV 📺", unlocked: false, cost: 100 },
+    { text: "Are you playing cricket or sleeping cricket? 💤🏏", unlocked: false, cost: 150 },
+    { text: "Even Dinda would beat you today 😭", unlocked: false, cost: 200 },
+  ];
+  const [sentTease, setSentTease] = useState<string | null>(null);
+  const [receivedTease, setReceivedTease] = useState<string | null>(null);
+  const [showTeasePanel, setShowTeasePanel] = useState(false);
+
   const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
 
