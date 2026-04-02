@@ -420,6 +420,29 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
                       ))}
                     </div>
 
+                    {/* PvP Record */}
+                    {friendPvp && friendPvp.totalGames > 0 && (
+                      <div className="glass-card rounded-xl p-2.5 border border-primary/15">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="text-xs">⚔️</span>
+                          <span className="text-[6px] font-display text-muted-foreground tracking-widest">PvP RECORD</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { label: "GAMES", value: friendPvp.totalGames, color: "text-foreground" },
+                            { label: "WINS", value: friendPvp.wins, color: "text-neon-green" },
+                            { label: "LOSSES", value: friendPvp.losses, color: "text-out-red" },
+                            { label: "WIN%", value: `${friendPvp.totalGames > 0 ? Math.round((friendPvp.wins / friendPvp.totalGames) * 100) : 0}%`, color: "text-primary" },
+                          ].map((s) => (
+                            <div key={s.label} className="text-center">
+                              <span className={`font-display text-sm font-black ${s.color} block leading-none`}>{s.value}</span>
+                              <span className="text-[5px] font-display text-muted-foreground tracking-widest">{s.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Login streak */}
                     {(fp.login_streak ?? 0) > 0 && (
                       <div className="glass-card rounded-xl p-2.5 flex items-center gap-3">
