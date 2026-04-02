@@ -52,7 +52,7 @@ export async function speakCommentary(text: string, enabled: boolean, engine: Vo
 
   const useElevenLabs = engine === "elevenlabs" || (engine === "auto" && isElevenLabsAvailable());
 
-  if (useElevenLabs && engine !== "system") {
+  if (useElevenLabs) {
     stopVoice();
     const success = await speakElevenLabs(clean);
     if (success) return;
