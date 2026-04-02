@@ -110,6 +110,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [showVSIntro, setShowVSIntro] = useState(false);
   const [cooldown, setCooldown] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [lastBallResult, setLastBallResult] = useState<BallResult | null>(null);
   const [joinState, setJoinState] = useState<"idle" | "joining" | "failed" | "full" | "expired">("idle");
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [roomCodeError, setRoomCodeError] = useState<string | null>(null);
