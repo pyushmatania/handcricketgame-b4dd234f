@@ -90,6 +90,55 @@ export function mapInviteInsertError(error: any): string {
   return "Invite failed (unknown backend error)";
 }
 
+export function mapJoinRoomError(error: any): string {
+  const msg = getErrorText(error);
+
+  if (error?.code === "42501" || msg.includes("row-level security") || msg.includes("permission denied")) {
+    return "Join failed (policy issue).";
+  }
+  if (msg.includes("not authenticated")) {
+    return "Join failed (not signed in).";
+  }
+  if (msg.includes("already full") || msg.includes("another player")) {
+    return "Join failed (room already taken).";
+  }
+  if (msg.includes("not found") || msg.includes("no longer joinable") || msg.includes("expired")) {
+    return "Join failed (match expired).";
+  }
+
+  return "Join failed (unknown backend error).";
+}
+
+export function mapAcceptInviteError(error: any): string {
+  const msg = getErrorText(error);
+
+  if (error?.code === "42501" || msg.includes("row-level security") || msg.includes("permission denied")) {
+    return "Invite failed (policy issue).";
+  }
+  if (msg.includes("not authenticated")) {
+    return "Invite failed (not signed in).";
+  }
+  if (msg.includes("already handled")) {
+    return "Invite already handled.";
+  }
+  if (msg.includes("already full") || msg.includes("another player")) {
+    return "Invite failed (room already taken).";
+  }
+  if (msg.includes("expired") || msg.includes("not found") || msg.includes("no longer joinable")) {
+    return "Invite failed (match expired).";
+  }
+
+  return "Invite accept failed.";
+}
+
+export async function claimMultiplayerGame(gameId: string) {
+  return await (supabase as any).rpc("claim_multiplayer_game", { p_game_id: gameId });
+}
+
+export async function acceptMatchInvite(inviteId: string) {
+  return await (supabase as any).rpc("accept_match_invite", { p_invite_id: inviteId });
+}
+
 export async function createMultiplayerRoom(hostId: string, gameType: MultiplayerGameType, targetGuestId?: string) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const roomCode = generateRoomCode();

@@ -3,7 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { logPostgrestError } from "@/lib/multiplayerRoom";
+import { toast } from "@/components/ui/use-toast";
+import {
+  acceptMatchInvite,
+  formatPostgrestError,
+  logPostgrestError,
+  mapAcceptInviteError,
+} from "@/lib/multiplayerRoom";
 import { SFX, Haptics } from "@/lib/sounds";
 
 const INVITE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
@@ -67,7 +73,6 @@ export default function MatchInviteNotification() {
     return () => { clearInterval(pollInterval); supabase.removeChannel(channel); };
   }, [user]);
 
-  // Play sound & vibration when new invites arrive
   useEffect(() => {
     if (invites.length > prevInviteCountRef.current && prevInviteCountRef.current >= 0) {
       try { SFX.matchInvite(); } catch {}
@@ -76,15 +81,12 @@ export default function MatchInviteNotification() {
     prevInviteCountRef.current = invites.length;
   }, [invites.length]);
 
-  // Tick every second for countdown & auto-expire
   useEffect(() => {
     if (invites.length === 0) return;
     const interval = setInterval(() => {
       setTick((t) => t + 1);
-      // Remove expired invites
       setInvites((prev) => {
         const alive = prev.filter((inv) => getTimeLeftFromInvite(inv) > 0);
-        // Auto-decline expired ones
         const expired = prev.filter((inv) => getTimeLeftFromInvite(inv) <= 0);
         expired.forEach((inv) => {
           supabase
@@ -123,7 +125,6 @@ export default function MatchInviteNotification() {
 
     if (!data || !data.length) { setInvites([]); return; }
 
-    // Filter out expired invites
     const validInvites = (data as any[]).filter((d) => getTimeLeftFromInvite(d as Invite) > 0);
     if (validInvites.length === 0) { setInvites([]); return; }
 
@@ -147,91 +148,71 @@ export default function MatchInviteNotification() {
   const acceptInvite = async (invite: Invite) => {
     if (!user) return;
     setJoiningInviteId(invite.id);
+
     try {
       const { data: existingGame } = await supabase
         .from("multiplayer_games")
-        .select("id, host_id, guest_id, status, target_guest_id")
+        .select("id, host_id, guest_id, status")
         .eq("id", invite.game_id)
         .maybeSingle();
 
-      if (!existingGame) {
-        const { error: inviteExpiredError } = await supabase.from("match_invites").update({ status: "expired" } as any).eq("id", invite.id);
-        if (inviteExpiredError) {
-          logPostgrestError("acceptInvite mark expired failed", inviteExpiredError, { invite_id: invite.id });
+      const currentGame = existingGame as any;
+
+      if (!currentGame || ["finished", "abandoned", "cancelled"].includes(currentGame.status)) {
+        const { error: expireError } = await supabase
+          .from("match_invites")
+          .update({ status: "expired", cancelled_at: new Date().toISOString() } as any)
+          .eq("id", invite.id)
+          .eq("status", "pending");
+
+        if (expireError) {
+          logPostgrestError("acceptInvite expire stale invite failed", expireError, { invite_id: invite.id, game_id: invite.game_id });
         }
+
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+        toast({ title: "Invite expired", description: "This battle room is no longer available." });
         return;
       }
 
-      const g = existingGame as any;
-      let finalGameId: string | null = null;
+      if (currentGame.guest_id && currentGame.guest_id !== user.id && currentGame.host_id !== user.id) {
+        const { error: staleError } = await supabase
+          .from("match_invites")
+          .update({ status: "declined", declined_at: new Date().toISOString() } as any)
+          .eq("id", invite.id)
+          .eq("status", "pending");
 
-      if (g.status === "finished" || g.status === "abandoned") {
-        const { error: inviteExpiredError } = await supabase.from("match_invites").update({ status: "expired" } as any).eq("id", invite.id);
-        if (inviteExpiredError) {
-          logPostgrestError("acceptInvite finished game expiry failed", inviteExpiredError, { invite_id: invite.id, game_id: invite.game_id });
+        if (staleError) {
+          logPostgrestError("acceptInvite mark full invite failed", staleError, { invite_id: invite.id, game_id: invite.game_id });
         }
+
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+        toast({ title: "Room already taken", description: "Another player already joined this match." });
         return;
       }
 
-      if (g.guest_id && g.guest_id !== user.id && g.host_id !== user.id) {
-        const { error: inviteDeclineError } = await supabase.from("match_invites").update({ status: "declined" } as any).eq("id", invite.id);
-        if (inviteDeclineError) {
-          logPostgrestError("acceptInvite mark declined failed", inviteDeclineError, { invite_id: invite.id, game_id: invite.game_id });
+      const { data: acceptedGameId, error: acceptError } = await acceptMatchInvite(invite.id);
+
+      if (acceptError || !acceptedGameId) {
+        if (acceptError) {
+          logPostgrestError("acceptInvite rpc failed", acceptError, {
+            invite_id: invite.id,
+            game_id: invite.game_id,
+            user_id: user.id,
+          });
         }
-        setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+
+        toast({
+          title: "Unable to join match",
+          description: acceptError
+            ? `${mapAcceptInviteError(acceptError)} — ${formatPostgrestError(acceptError)}`
+            : "No game was returned after accepting the invite.",
+        });
+        await loadPendingInvites();
         return;
-      }
-
-      if (!g.guest_id && g.status === "waiting") {
-        const { error: joinError } = await supabase
-          .from("multiplayer_games")
-          .update({ guest_id: user.id, status: "toss" } as any)
-          .eq("id", invite.game_id)
-          .eq("status", "waiting")
-          .is("guest_id", null);
-
-        if (joinError) {
-          logPostgrestError("acceptInvite join room failed", joinError, { invite_id: invite.id, game_id: invite.game_id, user_id: user.id });
-        }
-
-        if (!joinError) {
-          finalGameId = invite.game_id;
-        }
-      }
-
-      if (!finalGameId) {
-        const { data: refreshedGame } = await supabase
-          .from("multiplayer_games")
-          .select("id, host_id, guest_id, status")
-          .eq("id", invite.game_id)
-          .maybeSingle();
-
-        if (
-          refreshedGame &&
-          (((refreshedGame as any).guest_id === user.id) || ((refreshedGame as any).host_id === user.id)) &&
-          (refreshedGame as any).status !== "finished" &&
-          (refreshedGame as any).status !== "abandoned"
-        ) {
-          finalGameId = (refreshedGame as any).id;
-        }
-      }
-
-      if (!finalGameId) return;
-
-      const { error: acceptError } = await supabase
-        .from("match_invites")
-        .update({ status: "accepted", accepted_at: new Date().toISOString() } as any)
-        .eq("id", invite.id)
-        .eq("status", "pending");
-
-      if (acceptError) {
-        logPostgrestError("acceptInvite mark accepted failed", acceptError, { invite_id: invite.id, game_id: invite.game_id });
       }
 
       setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-      navigate(`/game/multiplayer?game=${finalGameId}`, { replace: true });
+      navigate(`/game/multiplayer?game=${acceptedGameId}`, { replace: true });
     } finally {
       setJoiningInviteId(null);
     }

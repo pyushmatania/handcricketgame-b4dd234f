@@ -7,7 +7,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import OddEvenToss from "./OddEvenToss";
 import SpinningCricketBall from "./SpinningCricketBall";
 import type { Move } from "@/hooks/useHandCricket";
-import { createMultiplayerRoom, mapCreateRoomError } from "@/lib/multiplayerRoom";
+import {
+  claimMultiplayerGame,
+  createMultiplayerRoom,
+  formatPostgrestError,
+  logPostgrestError,
+  mapCreateRoomError,
+  mapJoinRoomError,
+} from "@/lib/multiplayerRoom";
 
 const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
   { move: "DEF", emoji: "✊", label: "DEF", color: "border-accent/30 bg-accent/5" },
@@ -103,7 +110,6 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [createModePickerOpen, setCreateModePickerOpen] = useState(false);
   const [lobbyMessage, setLobbyMessage] = useState<string | null>(null);
 
-  // Timer state
   const [ballTimer, setBallTimer] = useState(BALL_TIMER_MS);
   const [reserveTime, setReserveTime] = useState(RESERVE_TIMER_MS);
   const [usingReserve, setUsingReserve] = useState(false);
@@ -116,7 +122,6 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
   useEffect(() => {
     if (!user) navigate("/auth");
-    // Load my name
     if (user) {
       supabase.from("profiles").select("display_name").eq("user_id", user.id).single()
         .then(({ data }) => { if (data) setMyName(data.display_name); });
@@ -134,59 +139,65 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
     if (!existingGame) {
       setJoinState("expired");
+      setLobbyMessage("Match expired or removed.");
       return null;
     }
 
     const game = existingGame as unknown as MultiplayerGame;
 
-    if (game.status === "finished" || game.status === "abandoned") {
+    if (["finished", "abandoned", "cancelled"].includes(game.status)) {
       setJoinState("expired");
+      setLobbyMessage("Match expired or already ended.");
       return null;
     }
 
     if (game.host_id === user.id || game.guest_id === user.id) {
       setJoinState("idle");
+      setRoomCodeError(null);
+      setLobbyMessage(null);
       return game;
     }
 
-    if (game.guest_id && game.guest_id !== user.id) {
-      setJoinState("full");
+    const { data: claimedGameId, error: claimError } = await claimMultiplayerGame(gameId);
+
+    if (claimError) {
+      logPostgrestError("joinExistingGame rpc claim failed", claimError, {
+        game_id: gameId,
+        user_id: user.id,
+      });
+
+      const claimText = `${mapJoinRoomError(claimError)} — ${formatPostgrestError(claimError)}`;
+      const lower = `${claimError?.message ?? ""} ${claimError?.details ?? ""}`.toLowerCase();
+
+      if (lower.includes("already full") || lower.includes("another player")) {
+        setJoinState("full");
+      } else if (lower.includes("expired") || lower.includes("not found") || lower.includes("no longer joinable")) {
+        setJoinState("expired");
+      } else {
+        setJoinState("failed");
+      }
+
+      setRoomCodeError(mapJoinRoomError(claimError));
+      setLobbyMessage(claimText);
       return null;
     }
 
-    if (game.status !== "waiting") {
-      setJoinState("failed");
-      return null;
-    }
-
-    const { error: joinError } = await supabase
-      .from("multiplayer_games")
-      .update({ guest_id: user!.id, status: "toss" } as any)
-      .eq("id", gameId)
-      .eq("status", "waiting")
-      .is("guest_id", null);
-
-    if (joinError) {
-      setJoinState("failed");
-      return null;
-    }
-
+    const finalGameId = (claimedGameId as string) || gameId;
     const { data: updatedGame } = await supabase
       .from("multiplayer_games")
       .select("*")
-      .eq("id", gameId)
+      .eq("id", finalGameId)
       .maybeSingle();
 
-    if (updatedGame && (updatedGame as any).guest_id === user!.id) {
+    if (updatedGame && (((updatedGame as any).guest_id === user.id) || ((updatedGame as any).host_id === user.id))) {
       setJoinState("idle");
+      setRoomCodeError(null);
+      setLobbyMessage(null);
       return updatedGame as any as MultiplayerGame;
-    }
-    if ((updatedGame as any)?.guest_id && (updatedGame as any).guest_id !== user!.id) {
-      setJoinState("full");
-      return null;
     }
 
     setJoinState("failed");
+    setLobbyMessage("Join failed — room claim did not attach you to the match.");
     return null;
   }, [user]);
 
@@ -517,7 +528,6 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
     const joined = await joinExistingGame(matched.id);
     if (!joined) {
-      setRoomCodeError("Failed to join room.");
       return;
     }
 
