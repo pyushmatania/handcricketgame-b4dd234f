@@ -92,6 +92,13 @@ export default function ShopPage() {
   const handleEquip = async (item: ShopItem) => {
     if (!user) return;
 
+    // Game passes are auto-active once purchased, no equip needed
+    if (item.category === "game_pass") {
+      toast.info("Game passes are always active once purchased! 🎫");
+      setSelectedItem(null);
+      return;
+    }
+
     // Unequip all in same category, equip this one
     const categoryItems = items.filter(i => i.category === item.category);
     const ownedInCategory = categoryItems.filter(i => isOwned(i.id));
