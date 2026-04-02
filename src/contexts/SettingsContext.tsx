@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 export type VoiceEngine = "auto" | "elevenlabs" | "system";
+export type CommentaryLanguage = "english" | "hindi" | "both";
 
 interface Settings {
   soundEnabled: boolean;
@@ -13,6 +14,7 @@ interface Settings {
   victorySoundEnabled: boolean;
   commentaryVoice: string;
   voiceEngine: VoiceEngine;
+  commentaryLanguage: CommentaryLanguage;
 }
 
 interface SettingsContextType extends Settings {
