@@ -132,11 +132,17 @@ export function mapAcceptInviteError(error: any): string {
 }
 
 export async function claimMultiplayerGame(gameId: string) {
-  return await (supabase as any).rpc("claim_multiplayer_game", { p_game_id: gameId });
+  console.log("[MP] claimMultiplayerGame called", { gameId });
+  const result = await supabase.rpc("claim_multiplayer_game", { p_game_id: gameId });
+  console.log("[MP] claimMultiplayerGame result", { data: result.data, error: result.error });
+  return result;
 }
 
 export async function acceptMatchInvite(inviteId: string) {
-  return await (supabase as any).rpc("accept_match_invite", { p_invite_id: inviteId });
+  console.log("[MP] acceptMatchInvite called", { inviteId });
+  const result = await supabase.rpc("accept_match_invite", { p_invite_id: inviteId });
+  console.log("[MP] acceptMatchInvite result", { data: result.data, error: result.error });
+  return result;
 }
 
 export async function createMultiplayerRoom(hostId: string, gameType: MultiplayerGameType, targetGuestId?: string) {

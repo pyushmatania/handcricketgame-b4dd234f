@@ -116,7 +116,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ballTimerStartRef = useRef<number | null>(null);
   const reserveUsedRef = useRef(0);
-  const hydratedGameIdRef = useRef<string | null>(null);
+  // hydratedGameIdRef removed — hydration now uses currentGame.id check
   const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
 
@@ -203,12 +203,29 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
   useEffect(() => {
     if (!user || !gameIdFromQuery) return;
-    if (hydratedGameIdRef.current === gameIdFromQuery) return;
-    hydratedGameIdRef.current = gameIdFromQuery;
 
     const hydrateGame = async () => {
+      console.log("[MP] hydrateGame", { gameIdFromQuery, currentGameId: currentGame?.id, phase });
+
+      // If already viewing this game, just refresh its state
+      if (currentGame?.id === gameIdFromQuery && phase !== "lobby") {
+        const { data: refreshed } = await supabase
+          .from("multiplayer_games")
+          .select("*")
+          .eq("id", gameIdFromQuery)
+          .maybeSingle();
+        if (refreshed) {
+          const g = refreshed as unknown as MultiplayerGame;
+          setCurrentGame(g);
+          setPhase(statusToPhase(g.status));
+          if (g.guest_id) loadOpponentName(g);
+        }
+        return;
+      }
+
       setJoinState("joining");
       const game = await joinExistingGame(gameIdFromQuery);
+      console.log("[MP] hydrateGame joinExistingGame result", { game: game?.id, status: game?.status });
       if (!game) return;
 
       const isParticipant =
@@ -227,7 +244,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
     };
 
     void hydrateGame();
-  }, [user, gameIdFromQuery, joinExistingGame]);
+  }, [user, gameIdFromQuery]);
 
   useEffect(() => {
     if (!user || gameIdFromQuery || phase !== "lobby") return;
