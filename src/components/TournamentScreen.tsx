@@ -357,6 +357,7 @@ export default function TournamentScreen({ onHome }: Props) {
           opponentName={opp.name}
           tossWinner={tossInfo.winner}
           battingFirst={tossInfo.battingFirst}
+          commentators={matchCommentators}
           onComplete={handlePreMatchComplete}
         />
       )}
