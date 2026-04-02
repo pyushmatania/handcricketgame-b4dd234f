@@ -256,7 +256,7 @@ export default function ShopPage() {
                       <h3 className="font-display text-lg font-black text-foreground tracking-wider">{item.name}</h3>
                       <p className="text-[10px] text-muted-foreground mt-1">{item.description}</p>
                       <span className="text-[8px] text-muted-foreground/50 font-display tracking-wider mt-1 block">
-                        {item.category === "bat_skin" ? "🏏 Bat Skin" : item.category === "vs_effect" ? "⚔️ VS Effect" : "🖼️ Avatar Frame"}
+                        {item.category === "bat_skin" ? "🏏 Bat Skin" : item.category === "vs_effect" ? "⚔️ VS Effect" : item.category === "game_pass" ? "🎫 Game Pass" : "🖼️ Avatar Frame"}
                       </span>
                     </div>
 
