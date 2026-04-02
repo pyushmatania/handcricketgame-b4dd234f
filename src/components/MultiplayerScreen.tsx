@@ -32,7 +32,7 @@ const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
   { move: 6, emoji: "👍", label: "6", color: "border-primary/40 bg-primary/10" },
 ];
 
-const TURN_TIMER_MS = 5000; // 5s per turn
+const TURN_TIMER_MS = 10000; // 10s per turn
 const GAME_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_CONSECUTIVE_MISSES = 3; // 3 missed turns = forfeit
 const MOVE_SETS: Record<GameType, { move: Move; emoji: string; label: string; color: string }[]> = {
