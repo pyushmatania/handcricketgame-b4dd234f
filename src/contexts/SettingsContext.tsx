@@ -40,6 +40,7 @@ const defaults: Settings = {
   commentaryVoice: "nPczCjzI2devNBz1zQrb", // Brian (default)
   voiceEngine: "system" as VoiceEngine,
   commentaryLanguage: "both" as CommentaryLanguage,
+  ceremoniesEnabled: false,
 };
 
 const SettingsContext = createContext<SettingsContextType>({
