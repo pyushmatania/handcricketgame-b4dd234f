@@ -11,8 +11,9 @@ import {
   mapAcceptInviteError,
 } from "@/lib/multiplayerRoom";
 import { SFX, Haptics } from "@/lib/sounds";
+import PlayerAvatar from "@/components/PlayerAvatar";
 
-const INVITE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const INVITE_EXPIRY_MS = 5 * 60 * 1000;
 
 interface Invite {
   id: string;
@@ -24,6 +25,9 @@ interface Invite {
   expires_at?: string;
   game_type?: string;
   from_name?: string;
+  from_avatar_index?: number;
+  from_wins?: number;
+  from_total_matches?: number;
 }
 
 function getTimeLeft(createdAt: string): number {
@@ -42,6 +46,12 @@ function formatTime(ms: number): string {
   const sec = s % 60;
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
+
+const GAME_TYPE_META: Record<string, { emoji: string; label: string; color: string }> = {
+  ar: { emoji: "📸", label: "AR DUEL", color: "text-primary" },
+  tap: { emoji: "⚡", label: "TAP DUEL", color: "text-accent" },
+  tournament: { emoji: "🏆", label: "TOURNAMENT", color: "text-score-gold" },
+};
 
 export default function MatchInviteNotification() {
   const { user } = useAuth();
@@ -95,9 +105,7 @@ export default function MatchInviteNotification() {
             .eq("id", inv.id)
             .eq("status", "pending")
             .then(({ error }) => {
-              if (error) {
-                logPostgrestError("match invite auto-expire failed", error, { invite_id: inv.id });
-              }
+              if (error) logPostgrestError("match invite auto-expire failed", error, { invite_id: inv.id });
             });
         });
         return alive;
@@ -131,41 +139,40 @@ export default function MatchInviteNotification() {
     const fromIds = [...new Set(validInvites.map((d) => d.from_user_id))];
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("user_id, display_name")
+      .select("user_id, display_name, avatar_index, wins, total_matches")
       .in("user_id", fromIds);
 
     if (profilesError) {
       logPostgrestError("loadPendingInvites profile lookup failed", profilesError, { from_user_ids: fromIds });
     }
 
-    const nameMap: Record<string, string> = {};
-    if (profiles) profiles.forEach((p: any) => { nameMap[p.user_id] = p.display_name; });
+    const profileMap: Record<string, any> = {};
+    if (profiles) profiles.forEach((p: any) => { profileMap[p.user_id] = p; });
 
     const deduped = [...new Map(validInvites.map((d) => [d.id, d])).values()];
-    setInvites(deduped.map((d: any) => ({ ...d, from_name: nameMap[d.from_user_id] || "Player" })));
+    setInvites(deduped.map((d: any) => ({
+      ...d,
+      from_name: profileMap[d.from_user_id]?.display_name || "Player",
+      from_avatar_index: profileMap[d.from_user_id]?.avatar_index || 0,
+      from_wins: profileMap[d.from_user_id]?.wins || 0,
+      from_total_matches: profileMap[d.from_user_id]?.total_matches || 0,
+    })));
   };
 
   const acceptInvite = async (invite: Invite) => {
     if (!user) return;
     setJoiningInviteId(invite.id);
-    console.log("[InviteNotif] acceptInvite start", { invite_id: invite.id, game_id: invite.game_id });
 
     try {
       const { data: acceptedGameId, error: acceptError } = await acceptMatchInvite(invite.id);
 
-      console.log("[InviteNotif] acceptMatchInvite result", { acceptedGameId, acceptError });
-
       if (acceptError || !acceptedGameId) {
         if (acceptError) {
           logPostgrestError("acceptInvite rpc failed", acceptError, {
-            invite_id: invite.id,
-            game_id: invite.game_id,
-            user_id: user.id,
+            invite_id: invite.id, game_id: invite.game_id, user_id: user.id,
           });
         }
-
         const errorMsg = acceptError?.message?.toLowerCase() ?? "";
-
         if (errorMsg.includes("expired") || errorMsg.includes("not found")) {
           toast({ title: "Invite expired", description: "This battle room is no longer available." });
         } else if (errorMsg.includes("already full") || errorMsg.includes("another player")) {
@@ -180,16 +187,13 @@ export default function MatchInviteNotification() {
               : "No game was returned after accepting the invite.",
           });
         }
-
         setInvites((prev) => prev.filter((i) => i.id !== invite.id));
         await loadPendingInvites();
         return;
       }
 
       setInvites((prev) => prev.filter((i) => i.id !== invite.id));
-      const targetUrl = `/game/multiplayer?game=${acceptedGameId}`;
-      console.log("[InviteNotif] navigating to", targetUrl);
-      navigate(targetUrl, { replace: true });
+      navigate(`/game/multiplayer?game=${acceptedGameId}`, { replace: true });
     } finally {
       setJoiningInviteId(null);
     }
@@ -205,61 +209,127 @@ export default function MatchInviteNotification() {
     if (error) {
       logPostgrestError("declineInvite failed", error, { invite_id: invite.id, game_id: invite.game_id });
     }
-
     setInvites((prev) => prev.filter((i) => i.id !== invite.id));
   };
 
   if (invites.length === 0) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md space-y-2">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md space-y-3">
       <AnimatePresence>
         {invites.map((inv) => {
           const timeLeft = getTimeLeftFromInvite(inv);
           const urgency = timeLeft < 60000;
+          const pct = Math.min(100, (timeLeft / INVITE_EXPIRY_MS) * 100);
+          const meta = GAME_TYPE_META[inv.game_type || "ar"] || GAME_TYPE_META.ar;
+          const winRate = inv.from_total_matches && inv.from_total_matches > 0
+            ? Math.round(((inv.from_wins || 0) / inv.from_total_matches) * 100)
+            : 0;
+
           return (
             <motion.div
               key={inv.id}
-              initial={{ opacity: 0, y: -30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              className="glass-premium rounded-2xl p-4 border border-primary/20 shadow-[0_0_30px_hsl(217_91%_60%/0.15)]"
+              initial={{ opacity: 0, y: -60, scale: 0.8, rotateX: -15 }}
+              animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+              exit={{ opacity: 0, y: -40, scale: 0.85 }}
+              transition={{ type: "spring", damping: 18, stiffness: 200 }}
+              className="relative overflow-hidden rounded-2xl border border-primary/30 shadow-[0_0_40px_hsl(217_91%_60%/0.2),0_8px_32px_rgba(0,0,0,0.4)]"
+              style={{ background: "linear-gradient(135deg, hsl(222 47% 11% / 0.97), hsl(217 33% 17% / 0.95))" }}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 flex items-center justify-center">
-                  <span className="text-xl">⚔️</span>
-                </div>
-                <div className="flex-1">
-                  <span className="font-display text-[10px] font-bold text-foreground block">MATCH CHALLENGE!</span>
-                  <span className="text-[9px] text-muted-foreground font-display">
-                    <span className="text-primary font-bold">{inv.from_name}</span> wants to play
-                  </span>
-                  <span className="text-[8px] text-accent/90 font-display uppercase tracking-wider">
-                    Mode: {inv.game_type?.toUpperCase() || "AR"}
-                  </span>
-                </div>
-                <div className={`px-2 py-1 rounded-lg ${urgency ? "bg-out-red/15 border border-out-red/30" : "bg-muted/30 border border-border/30"}`}>
-                  <span className={`font-mono text-[10px] font-bold ${urgency ? "text-out-red" : "text-muted-foreground"}`}>
-                    {formatTime(timeLeft)}
-                  </span>
-                </div>
+              {/* Animated glow pulse behind */}
+              <motion.div
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10 pointer-events-none"
+              />
+
+              {/* Timer progress bar at top */}
+              <div className="absolute top-0 left-0 right-0 h-1">
+                <motion.div
+                  className={`h-full ${urgency ? "bg-out-red" : "bg-gradient-to-r from-primary to-accent"}`}
+                  style={{ width: `${pct}%` }}
+                  transition={{ duration: 0.5 }}
+                />
               </div>
-              <div className="flex gap-2 mt-3">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  disabled={joiningInviteId === inv.id}
-                  onClick={() => acceptInvite(inv)}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-neon-green/20 to-neon-green/10 border border-neon-green/30 font-display text-[9px] font-bold text-neon-green tracking-wider disabled:opacity-50"
-                >
-                  {joiningInviteId === inv.id ? "JOINING..." : "✓ ACCEPT"}
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => declineInvite(inv)}
-                  className="py-2.5 px-4 rounded-xl bg-out-red/10 border border-out-red/20 font-display text-[9px] font-bold text-out-red tracking-wider"
-                >
-                  ✕
-                </motion.button>
+
+              <div className="relative z-10 p-4">
+                {/* Header: BATTLE CHALLENGE */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <motion.span
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="text-xl"
+                    >⚔️</motion.span>
+                    <span className="font-display text-[10px] font-black text-foreground tracking-[0.2em]">
+                      BATTLE CHALLENGE!
+                    </span>
+                  </div>
+                  <div className={`px-2.5 py-1 rounded-lg ${urgency ? "bg-out-red/15 border border-out-red/30" : "bg-muted/20 border border-border/30"}`}>
+                    <span className={`font-mono text-[10px] font-bold ${urgency ? "text-out-red" : "text-muted-foreground"}`}>
+                      {formatTime(timeLeft)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Player info */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="relative">
+                    <PlayerAvatar avatarIndex={inv.from_avatar_index ?? 0} size="md" />
+                    <motion.div
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-neon-green/20 border border-neon-green/40 flex items-center justify-center"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-neon-green" />
+                    </motion.div>
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-display text-sm font-black text-foreground block">
+                      {inv.from_name}
+                    </span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-[9px] font-display font-bold ${meta.color}`}>
+                        {meta.emoji} {meta.label}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground">•</span>
+                      <span className="text-[8px] text-neon-green font-bold">{winRate}% WR</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-2">
+                  <motion.button
+                    whileTap={{ scale: 0.92 }}
+                    whileHover={{ scale: 1.02 }}
+                    disabled={joiningInviteId === inv.id}
+                    onClick={() => acceptInvite(inv)}
+                    className="flex-1 py-3 rounded-xl bg-gradient-to-r from-neon-green/25 to-neon-green/10 border border-neon-green/40 font-display text-[10px] font-black text-neon-green tracking-[0.15em] disabled:opacity-50 relative overflow-hidden"
+                  >
+                    {joiningInviteId === inv.id ? (
+                      <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 0.8, repeat: Infinity }}>
+                        JOINING...
+                      </motion.span>
+                    ) : (
+                      <>
+                        <motion.div
+                          animate={{ x: ["-100%", "200%"] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-neon-green/10 to-transparent pointer-events-none"
+                        />
+                        ⚡ ACCEPT
+                      </>
+                    )}
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => declineInvite(inv)}
+                    className="py-3 px-5 rounded-xl bg-out-red/10 border border-out-red/20 font-display text-[10px] font-bold text-out-red tracking-wider"
+                  >
+                    ✕
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           );

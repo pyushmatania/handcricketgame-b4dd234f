@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import OddEvenToss from "./OddEvenToss";
 import SpinningCricketBall from "./SpinningCricketBall";
+import WaitingRoom from "./WaitingRoom";
+import VSIntroScreen from "./VSIntroScreen";
 import type { Move } from "@/hooks/useHandCricket";
 import {
   claimMultiplayerGame,
@@ -100,7 +102,10 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const [currentGame, setCurrentGame] = useState<MultiplayerGame | null>(null);
   const [ownHostedGame, setOwnHostedGame] = useState<LobbyGame | null>(null);
   const [opponentName, setOpponentName] = useState("Opponent");
+  const [opponentAvatarIndex, setOpponentAvatarIndex] = useState(1);
+  const [myAvatarIndex, setMyAvatarIndex] = useState(0);
   const [myName, setMyName] = useState("You");
+  const [showVSIntro, setShowVSIntro] = useState(false);
   const [cooldown, setCooldown] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [joinState, setJoinState] = useState<"idle" | "joining" | "failed" | "full" | "expired">("idle");
@@ -123,8 +128,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
   useEffect(() => {
     if (!user) navigate("/auth");
     if (user) {
-      supabase.from("profiles").select("display_name").eq("user_id", user.id).single()
-        .then(({ data }) => { if (data) setMyName(data.display_name); });
+      supabase.from("profiles").select("display_name, avatar_index").eq("user_id", user.id).single()
+        .then(({ data }) => { if (data) { setMyName(data.display_name); setMyAvatarIndex((data as any).avatar_index ?? 0); } });
     }
   }, [user, navigate]);
 
@@ -293,13 +298,21 @@ export default function MultiplayerScreen({ onHome }: Props) {
         { event: "UPDATE", schema: "public", table: "multiplayer_games", filter: `id=eq.${currentGame.id}` },
         (payload) => {
           const updated = payload.new as MultiplayerGame;
-          setCurrentGame(updated);
-
+          const prevPhase = phase;
           const nextPhase = statusToPhase(updated.status);
-          setPhase(nextPhase);
+          
+          setCurrentGame(updated);
 
           if (updated.guest_id) {
             loadOpponentName(updated);
+          }
+
+          // Show VS intro when transitioning from waiting to toss
+          if (prevPhase === "waiting" && nextPhase === "toss" && !showVSIntro) {
+            setShowVSIntro(true);
+            // Phase will be set after VS intro completes
+          } else {
+            setPhase(nextPhase);
           }
 
           if (updated.host_move && updated.guest_move) {
@@ -469,8 +482,11 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const loadOpponentName = async (game: MultiplayerGame) => {
     const oppId = user?.id === game.host_id ? game.guest_id : game.host_id;
     if (!oppId) return;
-    const { data } = await supabase.from("profiles").select("display_name").eq("user_id", oppId).single();
-    if (data) setOpponentName(data.display_name);
+    const { data } = await supabase.from("profiles").select("display_name, avatar_index").eq("user_id", oppId).single();
+    if (data) {
+      setOpponentName(data.display_name);
+      setOpponentAvatarIndex((data as any).avatar_index ?? 1);
+    }
   };
 
   const createGame = async (gameType: GameType = selectedGameType) => {
@@ -820,49 +836,14 @@ export default function MultiplayerScreen({ onHome }: Props) {
         )}
 
         {/* WAITING FOR OPPONENT */}
-        {phase === "waiting" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col items-center justify-center gap-5">
-            {/* Spinning cricket ball waiting animation */}
-            <SpinningCricketBall size={96} />
-
-            <div className="text-center space-y-2">
-              <h2 className="font-display text-lg font-black text-foreground tracking-wider">
-                WAITING FOR OPPONENT
-              </h2>
-              <p className="text-[10px] text-muted-foreground">
-                Share the match with a friend or wait for someone to join
-              </p>
-            </div>
-
-            {/* Match ID card */}
-            <div className="glass-premium rounded-2xl p-4 w-full max-w-xs text-center space-y-2">
-              <span className="font-display text-[8px] text-muted-foreground tracking-[0.3em]">MATCH CODE</span>
-              <p className="font-mono text-lg font-bold text-primary tracking-widest">
-                {currentGame?.room_code}
-              </p>
-              <div className="flex items-center justify-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                <span className="text-[9px] text-neon-green font-display font-bold">LIVE</span>
-              </div>
-            </div>
-
-            {/* Animated dots */}
-            <div className="flex gap-2">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1, 0.8] }}
-                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }}
-                  className="w-2.5 h-2.5 rounded-full bg-primary"
-                />
-              ))}
-            </div>
-
-            <button onClick={() => { setPhase("lobby"); setCurrentGame(null); navigate("/game/multiplayer", { replace: true }); }}
-              className="text-[10px] text-out-red/70 font-display mt-4 tracking-wider">
-              CANCEL MATCH
-            </button>
-          </motion.div>
+        {phase === "waiting" && currentGame && (
+          <WaitingRoom
+            roomCode={currentGame.room_code}
+            playerName={myName}
+            playerAvatarIndex={myAvatarIndex}
+            gameType={currentGame.game_type}
+            onCancel={() => { setPhase("lobby"); setCurrentGame(null); navigate("/game/multiplayer", { replace: true }); }}
+          />
         )}
 
         {/* TOSS PHASE */}
@@ -1079,6 +1060,23 @@ export default function MultiplayerScreen({ onHome }: Props) {
             <button onClick={() => setCreateModePickerOpen(false)} className="w-full py-2 text-xs text-muted-foreground">Cancel</button>
           </div>
         </div>
+      )}
+
+      {/* VS Intro Overlay */}
+      {showVSIntro && (
+        <VSIntroScreen
+          playerName={myName}
+          opponentName={opponentName}
+          playerAvatarIndex={myAvatarIndex}
+          opponentAvatarIndex={opponentAvatarIndex}
+          gameType={currentGame?.game_type}
+          onComplete={() => {
+            setShowVSIntro(false);
+            if (currentGame) {
+              setPhase(statusToPhase(currentGame.status));
+            }
+          }}
+        />
       )}
     </div>
   );
