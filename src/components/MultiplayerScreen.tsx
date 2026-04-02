@@ -716,12 +716,12 @@ export default function MultiplayerScreen({ onHome }: Props) {
                 <div className="glass-premium rounded-xl p-3 space-y-1.5">
                   <span className="font-display text-[9px] font-bold text-muted-foreground tracking-widest">⏱️ TIMER RULES</span>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-md bg-secondary/20 flex items-center justify-center"><span className="text-[8px]">⏳</span></div>
-                    <span className="text-[9px] text-muted-foreground"><span className="text-secondary font-bold">3s</span> per ball</span>
+                    <div className="w-5 h-5 rounded-md bg-secondary/20 flex items-center justify-center"><span className="text-[8px]">😴</span></div>
+                    <span className="text-[9px] text-muted-foreground"><span className="text-secondary font-bold">15s</span> idle grace period</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-md bg-out-red/20 flex items-center justify-center"><span className="text-[8px]">🔋</span></div>
-                    <span className="text-[9px] text-muted-foreground"><span className="text-out-red font-bold">10s</span> reserve per match</span>
+                    <div className="w-5 h-5 rounded-md bg-out-red/20 flex items-center justify-center"><span className="text-[8px]">⚠️</span></div>
+                    <span className="text-[9px] text-muted-foreground"><span className="text-out-red font-bold">30s</span> countdown or auto-forfeit</span>
                   </div>
                 </div>
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCreateModePickerOpen(true)}
