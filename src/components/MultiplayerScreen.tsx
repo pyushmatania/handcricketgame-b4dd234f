@@ -27,8 +27,8 @@ const MOVES: { move: Move; emoji: string; label: string; color: string }[] = [
   { move: 6, emoji: "👍", label: "6", color: "border-primary/40 bg-primary/10" },
 ];
 
-const BALL_TIMER_MS = 3000;
-const RESERVE_TIMER_MS = 10000;
+const IDLE_THRESHOLD_MS = 15000; // 15s before countdown appears
+const COUNTDOWN_MS = 30000; // 30s countdown to auto-lose
 const GAME_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 const MOVE_SETS: Record<GameType, { move: Move; emoji: string; label: string; color: string }[]> = {
   ar: MOVES,
