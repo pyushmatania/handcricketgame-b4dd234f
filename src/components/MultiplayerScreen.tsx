@@ -659,10 +659,8 @@ export default function MultiplayerScreen({ onHome }: Props) {
   const isBatting = currentGame ? (isHost ? currentGame.host_batting : !currentGame.host_batting) : false;
   const myScore = currentGame ? (isHost ? currentGame.host_score : currentGame.guest_score) : 0;
   const oppScore = currentGame ? (isHost ? currentGame.guest_score : currentGame.host_score) : 0;
-  const ballTimerSec = (ballTimer / 1000).toFixed(1);
-  const reserveSec = (reserveTime / 1000).toFixed(1);
-  const ballTimerPct = (ballTimer / BALL_TIMER_MS) * 100;
-  const reservePct = (reserveTime / RESERVE_TIMER_MS) * 100;
+  const countdownSec = Math.ceil(countdownMs / 1000);
+  const countdownPct = (countdownMs / COUNTDOWN_MS) * 100;
   const isAbandoned = currentGame?.status === "abandoned";
   const abandonedByMe = currentGame?.abandoned_by === user?.id;
   const modeLabel = currentGame ? gameTypeLabel(currentGame.game_type) : "DUEL";
