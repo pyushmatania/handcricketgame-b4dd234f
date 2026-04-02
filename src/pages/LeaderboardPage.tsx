@@ -98,6 +98,7 @@ const formatSeasonLabel = (start: Date) => {
 const SORT_OPTIONS = [
   { label: "WINS", icon: "🏆", key: "wins" as const },
   { label: "HIGH SCORE", icon: "⭐", key: "high_score" as const },
+  { label: "XP", icon: "✨", key: "xp" as const },
   { label: "MATCHES", icon: "🏏", key: "total_matches" as const },
   { label: "STREAK", icon: "🔥", key: "best_streak" as const },
 ];
