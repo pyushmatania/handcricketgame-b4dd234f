@@ -802,6 +802,20 @@ export default function LeaderboardPage() {
           </div>
         </div>
       )}
+      {selectedFriendId && (() => {
+        const fl = friendLeaders.find(f => f.user_id === selectedFriendId);
+        if (!fl) return null;
+        return (
+          <FriendStatsModal
+            friend={{ ...fl, avatar_index: 0 }}
+            onClose={() => setSelectedFriendId(null)}
+            onChallenge={(friendId) => {
+              setSelectedFriendId(null);
+              setChallengeTargetId(friendId);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
