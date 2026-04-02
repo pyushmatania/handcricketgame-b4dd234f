@@ -61,8 +61,31 @@ export default function OverBreakScreen({ stats, commentaryLines, commentators, 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex flex-col"
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden"
     >
+      {/* Night stadium photo background */}
+      <img src={stadiumNight} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+      {/* Crowd silhouette overlay at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+      {/* Floodlight glow effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(4)].map((_, i) => (
+          <motion.div key={i}
+            animate={{ opacity: [0.1, 0.3, 0.1] }}
+            transition={{ duration: 3, repeat: Infinity, delay: i * 0.7 }}
+            className="absolute rounded-full"
+            style={{
+              width: 16, height: 16,
+              top: `${4 + i * 3}%`,
+              left: `${15 + i * 22}%`,
+              background: "hsl(var(--secondary))",
+              filter: "blur(6px)",
+              boxShadow: "0 0 30px 12px hsl(45 93% 58% / 0.15)",
+            }}
+          />
+        ))}
+      </div>
       {/* Header */}
       <div className="pt-12 pb-4 px-4 text-center">
         <motion.div
