@@ -1498,7 +1498,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                 onClick={() => {
                   setPhase("lobby");
                   setCurrentGame(null);
-                  setCountdownMs(COUNTDOWN_MS);
+                  setTurnCountdownMs(TURN_TIMER_MS);
                   setPvpBallHistory([]);
                   pvpPostMatchShownRef.current = false;
                   pvpPreMatchShownRef.current = false;
