@@ -159,11 +159,14 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
   // Rematch invite state
   const [rematchSent, setRematchSent] = useState(false);
+  const [rematchCountdown, setRematchCountdown] = useState<number | null>(null);
+  const [rematchExpiredMsg, setRematchExpiredMsg] = useState<string | null>(null);
   const [incomingRematch, setIncomingRematch] = useState<{
     inviteId: string;
     gameId: string;
     fromName: string;
   } | null>(null);
+  const [incomingRematchCountdown, setIncomingRematchCountdown] = useState<number | null>(null);
 
   const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
@@ -442,6 +445,91 @@ export default function MultiplayerScreen({ onHome }: Props) {
       supabase.removeChannel(channel);
     };
   }, [user?.id, currentGame?.id, currentGame?.status, opponentName]);
+
+  // ─── Gaslighting messages when rematch expires ──────────────────
+  const GASLIGHT_WINNER = [
+    `${opponentName} ghosted you... guess one beating was enough 💀`,
+    `They saw your score and chose peace. Smart move honestly 😏`,
+    `${opponentName} is probably still crying. Give them time 🥲`,
+    `No response. Your dominance broke their spirit 👑`,
+    `${opponentName} left the chat. Championship mentality can't be matched 🏆`,
+    `Radio silence. They know they can't handle the heat 🔥`,
+    `${opponentName} chose self-care over self-destruction. Wise 🧘`,
+    `Timeout! ${opponentName} is still recovering from that last over 😂`,
+  ];
+  const GASLIGHT_LOSER = [
+    `${opponentName} didn't even bother... you're not worth their time apparently 💅`,
+    `Ghosted. Even ${opponentName} thinks you need more practice 📚`,
+    `No response. Maybe they felt bad about destroying you again 🤷`,
+    `${opponentName} said "too easy, next" without even clicking 😬`,
+    `Timeout! ${opponentName} probably forgot you exist already 👻`,
+    `They're celebrating their win, not thinking about you 🎉`,
+    `${opponentName} moved on faster than your batting collapse 📉`,
+    `No rematch needed when the outcome is already decided 🗑️`,
+  ];
+
+  // Rematch countdown — 45s timer for sent rematch invites
+  useEffect(() => {
+    if (!rematchSent) { setRematchCountdown(null); return; }
+    setRematchCountdown(45);
+    const interval = setInterval(() => {
+      setRematchCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          setRematchSent(false);
+          setRematchCountdown(null);
+          const didWin = currentGame?.winner_id === user?.id;
+          const pool = didWin ? GASLIGHT_WINNER : GASLIGHT_LOSER;
+          setRematchExpiredMsg(pool[Math.floor(Math.random() * pool.length)]);
+          setTimeout(() => setRematchExpiredMsg(null), 6000);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [rematchSent]);
+
+  // Incoming rematch countdown — 45s for the receiver
+  useEffect(() => {
+    if (!incomingRematch) { setIncomingRematchCountdown(null); return; }
+    // Notification chime
+    try {
+      const ctx = new AudioContext();
+      if (ctx.state === "suspended") ctx.resume();
+      [880, 1100].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.15);
+        osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+      });
+      navigator.vibrate?.([100, 50, 150]);
+    } catch {}
+    setIncomingRematchCountdown(45);
+    const interval = setInterval(() => {
+      setIncomingRematchCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          if (incomingRematch) {
+            supabase.from("match_invites").update({
+              status: "expired", declined_at: new Date().toISOString(),
+            }).eq("id", incomingRematch.inviteId).then(() => {});
+          }
+          setIncomingRematch(null);
+          setIncomingRematchCountdown(null);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [incomingRematch?.inviteId]);
 
   // Timer management — idle detection + countdown
   const myMove = currentGame ? (user?.id === currentGame.host_id ? currentGame.host_move : currentGame.guest_move) : null;
@@ -1205,7 +1293,35 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     <p className="font-display text-xs font-black text-foreground tracking-wider">
                       {incomingRematch.fromName.toUpperCase()} WANTS A REMATCH!
                     </p>
-                    <p className="text-[9px] text-muted-foreground font-display">Ready for another round?</p>
+                    {incomingRematchCountdown !== null && (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-full max-w-[160px] h-1.5 bg-muted/40 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{
+                              background: incomingRematchCountdown <= 10
+                                ? "hsl(var(--out-red))"
+                                : incomingRematchCountdown <= 20
+                                  ? "hsl(var(--secondary))"
+                                  : "hsl(var(--neon-green))",
+                            }}
+                            initial={{ width: "100%" }}
+                            animate={{ width: `${(incomingRematchCountdown / 45) * 100}%` }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </div>
+                        <span className={`font-display text-[10px] font-black tabular-nums ${
+                          incomingRematchCountdown <= 10 ? "text-out-red" : "text-muted-foreground"
+                        }`}>
+                          {incomingRematchCountdown}s
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-[9px] text-muted-foreground font-display">
+                      {incomingRematchCountdown !== null && incomingRematchCountdown <= 10
+                        ? "⚡ Hurry up! Invite expiring soon!"
+                        : "Ready for another round?"}
+                    </p>
                     <div className="flex gap-2 pt-1">
                       <motion.button
                         whileTap={{ scale: 0.95 }}
@@ -1214,6 +1330,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                           const { data: joinedGameId, error } = await supabase.rpc("accept_match_invite", { p_invite_id: incomingRematch.inviteId });
                           if (!error && joinedGameId) {
                             setIncomingRematch(null);
+                            setIncomingRematchCountdown(null);
                             setRematchSent(false);
                             const { data: gameData } = await supabase.from("multiplayer_games").select("*").eq("id", joinedGameId).maybeSingle();
                             if (gameData) {
@@ -1247,6 +1364,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                             }).eq("id", incomingRematch.inviteId);
                           }
                           setIncomingRematch(null);
+                          setIncomingRematchCountdown(null);
                         }}
                         className="py-3 px-4 bg-muted/50 border border-border text-foreground font-display font-bold text-xs rounded-xl tracking-wider"
                       >
@@ -1254,6 +1372,22 @@ export default function MultiplayerScreen({ onHome }: Props) {
                       </motion.button>
                     </div>
                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Rematch expired gaslighting message */}
+            <AnimatePresence>
+              {rematchExpiredMsg && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="w-full max-w-xs glass-premium rounded-xl p-3 border border-out-red/20"
+                >
+                  <p className="text-[10px] text-center font-display text-muted-foreground leading-relaxed">
+                    {rematchExpiredMsg}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1268,7 +1402,6 @@ export default function MultiplayerScreen({ onHome }: Props) {
                   const gameType = (currentGame.game_type || "tap") as GameType;
                   const { data: newGame, error } = await createMultiplayerRoom(user.id, gameType, opponentId);
                   if (newGame && !error) {
-                    // Send a match invite to the opponent
                     await supabase.from("match_invites").insert({
                       game_id: (newGame as any).id,
                       from_user_id: user.id,
@@ -1276,7 +1409,7 @@ export default function MultiplayerScreen({ onHome }: Props) {
                       game_type: gameType,
                     });
                     setRematchSent(true);
-                    // Navigate to the new game waiting room
+                    setRematchExpiredMsg(null);
                     setCurrentGame(newGame as unknown as MultiplayerGame);
                     setPhase("waiting");
                     setCountdownMs(COUNTDOWN_MS);
@@ -1291,12 +1424,27 @@ export default function MultiplayerScreen({ onHome }: Props) {
                     navigate(`/game/multiplayer?game=${(newGame as any).id}`, { replace: true });
                   }
                 }}
-                className={`flex-1 py-3.5 font-display font-bold rounded-2xl tracking-wider border ${
+                className={`flex-1 py-3.5 font-display font-bold rounded-2xl tracking-wider border relative overflow-hidden ${
                   rematchSent
                     ? "bg-muted/50 text-muted-foreground border-border"
                     : "bg-gradient-to-r from-secondary to-secondary/70 text-secondary-foreground shadow-[0_0_20px_hsl(45_93%_58%/0.3)] border-secondary/40"
                 }`}>
-                {rematchSent ? "⏳ SENT" : "🔄 REMATCH"}
+                {rematchSent ? (
+                  <span className="flex items-center justify-center gap-2">
+                    ⏳ WAITING
+                    {rematchCountdown !== null && (
+                      <span className="text-[10px] font-mono tabular-nums">{rematchCountdown}s</span>
+                    )}
+                  </span>
+                ) : "🔄 REMATCH"}
+                {rematchSent && rematchCountdown !== null && (
+                  <motion.div
+                    className="absolute bottom-0 left-0 h-0.5 bg-secondary/50"
+                    initial={{ width: "100%" }}
+                    animate={{ width: `${(rematchCountdown / 45) * 100}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                )}
               </motion.button>
               <motion.button whileTap={{ scale: 0.95 }}
                 onClick={() => {
