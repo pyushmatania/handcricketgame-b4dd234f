@@ -20,12 +20,18 @@ interface FriendProfile {
   display_name: string;
   wins: number;
   losses: number;
+  draws?: number;
   total_matches: number;
   high_score: number;
   best_streak: number;
+  current_streak?: number;
+  abandons?: number;
   invite_code: string;
   avatar_url?: string | null;
   avatar_index?: number;
+  xp?: number;
+  coins?: number;
+  rank_tier?: string;
 }
 type GameType = "ar" | "tap" | "tournament";
 
@@ -77,7 +83,7 @@ export default function FriendsPage() {
     const friendIds = data.map((f: any) => f.friend_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, wins, losses, total_matches, high_score, best_streak, invite_code, avatar_url, avatar_index")
+      .select("user_id, display_name, wins, losses, draws, total_matches, high_score, best_streak, current_streak, abandons, invite_code, avatar_url, avatar_index, xp, coins, rank_tier")
       .in("user_id", friendIds);
     if (profiles) setFriends(profiles as unknown as FriendProfile[]);
   };
