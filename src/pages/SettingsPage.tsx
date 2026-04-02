@@ -15,6 +15,12 @@ const COMMENTARY_VOICES = [
   { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", desc: "Crisp & clear delivery", emoji: "👩‍💼" },
 ];
 
+const VOICE_ENGINES = [
+  { id: "auto" as const, name: "AUTO", desc: "ElevenLabs first, system fallback", emoji: "🔄" },
+  { id: "elevenlabs" as const, name: "ELEVENLABS", desc: "Premium AI voices only", emoji: "✨" },
+  { id: "system" as const, name: "SYSTEM", desc: "10 unique system voices, free", emoji: "🗣️" },
+];
+
 interface SettingGroup {
   title: string;
   icon: string;
