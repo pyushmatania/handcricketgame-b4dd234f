@@ -350,6 +350,7 @@ export type Database = {
           abandons: number
           avatar_index: number
           avatar_url: string | null
+          best_login_streak: number
           best_streak: number
           coins: number
           created_at: string
@@ -362,6 +363,8 @@ export type Database = {
           high_score: number
           id: string
           invite_code: string
+          last_login_date: string | null
+          login_streak: number
           losses: number
           rank_tier: string
           total_matches: number
@@ -374,6 +377,7 @@ export type Database = {
           abandons?: number
           avatar_index?: number
           avatar_url?: string | null
+          best_login_streak?: number
           best_streak?: number
           coins?: number
           created_at?: string
@@ -386,6 +390,8 @@ export type Database = {
           high_score?: number
           id?: string
           invite_code?: string
+          last_login_date?: string | null
+          login_streak?: number
           losses?: number
           rank_tier?: string
           total_matches?: number
@@ -398,6 +404,7 @@ export type Database = {
           abandons?: number
           avatar_index?: number
           avatar_url?: string | null
+          best_login_streak?: number
           best_streak?: number
           coins?: number
           created_at?: string
@@ -410,6 +417,8 @@ export type Database = {
           high_score?: number
           id?: string
           invite_code?: string
+          last_login_date?: string | null
+          login_streak?: number
           losses?: number
           rank_tier?: string
           total_matches?: number

@@ -198,6 +198,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
           result={game.result}
           playerScore={game.userScore}
           opponentScore={game.aiScore}
+          ballHistory={game.ballHistory}
           onComplete={() => setShowPostMatch(false)}
         />
       )}

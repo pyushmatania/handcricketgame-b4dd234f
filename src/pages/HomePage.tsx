@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
 import RivalrySection from "@/components/RivalrySection";
+import DailyStreakWidget from "@/components/DailyStreakWidget";
 import { useRivals } from "@/hooks/useRivals";
 
 interface ProfileData {
@@ -137,6 +138,9 @@ export default function HomePage() {
             ))}
           </div>
         </motion.div>
+
+        {/* ── Daily Streak ───────────────────────── */}
+        <DailyStreakWidget />
 
         {/* ── Play Now CTA ───────────────────────── */}
         <motion.button
