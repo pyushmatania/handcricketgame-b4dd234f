@@ -9,7 +9,8 @@ import SpinningCricketBall from "./SpinningCricketBall";
 import WaitingRoom from "./WaitingRoom";
 import VSIntroScreen from "./VSIntroScreen";
 import TapPlayingUI from "./TapPlayingUI";
-import { PreMatchCeremony, PostMatchCeremony } from "./MatchCeremony";
+import EnhancedPreMatch from "./EnhancedPreMatch";
+import EnhancedPostMatch from "./EnhancedPostMatch";
 import type { Move, BallResult } from "@/hooks/useHandCricket";
 import {
   claimMultiplayerGame,
