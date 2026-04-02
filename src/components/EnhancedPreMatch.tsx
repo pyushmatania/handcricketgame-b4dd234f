@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SFX } from "@/lib/sounds";
-import { CrowdSFX } from "@/lib/voiceCommentary";
-import { playElevenLabsMusic, stopMusic, isElevenLabsAvailable, speakDuoLines } from "@/lib/elevenLabsAudio";
+import { CrowdSFX, speakDuoCommentary } from "@/lib/voiceCommentary";
+import { playElevenLabsMusic, stopMusic, isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
 import { useSettings } from "@/contexts/SettingsContext";
 import {
   pickMatchCommentators, type Commentator, type CommentaryLine,
