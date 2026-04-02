@@ -171,7 +171,7 @@ export default function TapGameScreen({ onHome }: TapGameScreenProps) {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 flex-1 flex flex-col px-4 pb-3 max-w-lg mx-auto w-full overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col px-4 pb-4 max-w-lg mx-auto w-full overflow-hidden">
         {/* Over selector - shown first */}
         {showOverSelector && game.phase === "not_started" && !showPreMatch && (
           <div className="mt-4">

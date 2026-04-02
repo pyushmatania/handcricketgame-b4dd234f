@@ -495,7 +495,7 @@ export default function TapPlayingUI({
 
       {/* Tap buttons grid */}
       {phase !== "not_started" && phase !== "finished" && !waitingForOpponent && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative pb-1">
           <AnimatePresence>
             {showExplosion && (
               <motion.div
