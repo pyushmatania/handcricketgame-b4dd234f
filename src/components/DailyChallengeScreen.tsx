@@ -3,9 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useHandCricket, type Move } from "@/hooks/useHandCricket";
 import { useMatchSaver } from "@/hooks/useMatchSaver";
 import { SFX, Haptics } from "@/lib/sounds";
-import { getCommentary, getInningsChangeCommentary } from "@/lib/commentary";
+import { getInningsChangeCommentary } from "@/lib/commentary";
 import { useSettings } from "@/contexts/SettingsContext";
+import { playCrowdForResult, CrowdSFX } from "@/lib/voiceCommentary";
+import { speakDuoLines } from "@/lib/elevenLabsAudio";
+import { pickConfiguredMatchCommentators, getDuoCommentary, type Commentator, type CommentaryLine } from "@/lib/commentaryDuo";
 import ScoreBoard from "./ScoreBoard";
+import CelebrationEffects from "./CelebrationEffects";
 import RulesSheet from "./RulesSheet";
 
 interface Props { onHome: () => void; }
@@ -31,17 +35,18 @@ function getTodayKey(): string {
 }
 
 export default function DailyChallengeScreen({ onHome }: Props) {
-  const { soundEnabled, hapticsEnabled, commentaryEnabled } = useSettings();
+  const { soundEnabled, hapticsEnabled, commentaryEnabled, voiceEnabled, crowdEnabled, commentaryVoice } = useSettings();
   const { game, startGame, playBall, resetGame } = useHandCricket();
   const { saveMatch } = useMatchSaver();
   const [phase, setPhase] = useState<"intro" | "playing" | "done">("intro");
   const [cooldown, setCooldown] = useState(false);
-  const [commentary, setCommentary] = useState<string | null>(null);
+  const [commentary, setCommentary] = useState<CommentaryLine[] | null>(null);
   const [showExplosion, setShowExplosion] = useState<{ emoji: string; key: number } | null>(null);
   const [alreadyPlayed, setAlreadyPlayed] = useState(false);
   const [bestToday, setBestToday] = useState<number | null>(null);
   const savedRef = useRef(false);
   const prevPhaseRef = useRef(game.phase);
+  const [matchCommentators] = useState<[Commentator, Commentator]>(() => pickConfiguredMatchCommentators(commentaryVoice));
 
   const dailyTarget = getDailyTarget();
   const todayKey = getTodayKey();
@@ -73,8 +78,15 @@ export default function DailyChallengeScreen({ onHome }: Props) {
   useEffect(() => {
     const prev = prevPhaseRef.current; prevPhaseRef.current = game.phase;
     if (prev !== game.phase && game.phase !== "not_started" && game.phase !== "finished") {
-      if (commentaryEnabled) { setCommentary(getInningsChangeCommentary(game)); setTimeout(() => setCommentary(null), 3000); }
+      if (commentaryEnabled) {
+        const text = getInningsChangeCommentary(game);
+        const lines: CommentaryLine[] = [{ commentatorId: matchCommentators[0].name, text, isKeyMoment: true }];
+        setCommentary(lines);
+        if (voiceEnabled) speakDuoLines([{ text, voiceId: matchCommentators[0].voiceId }]);
+        setTimeout(() => setCommentary(null), 3000);
+      }
       if (soundEnabled) SFX.gameStart();
+      if (crowdEnabled) CrowdSFX.ambientMurmur(2);
     }
   }, [game.phase]);
 
@@ -89,7 +101,24 @@ export default function DailyChallengeScreen({ onHome }: Props) {
       else if (abs === 4) setTimeout(() => { if (soundEnabled) SFX.four(); if (hapticsEnabled) Haptics.medium(); }, 100);
       else { if (soundEnabled) SFX.runs(abs); if (hapticsEnabled) Haptics.light(); }
     }
-    if (commentaryEnabled) { setCommentary(getCommentary({ game, result: r })); setTimeout(() => setCommentary(null), 2500); }
+    if (crowdEnabled) playCrowdForResult(r.runs, game.isBatting, false);
+    if (commentaryEnabled) {
+      const duoLines = getDuoCommentary(
+        matchCommentators[0].name, matchCommentators[1].name,
+        r.runs, game.isBatting, "You", "AI"
+      );
+      setCommentary(duoLines);
+      if (voiceEnabled) {
+        const keyLines = duoLines.filter(l => l.isKeyMoment);
+        if (keyLines.length > 0) {
+          speakDuoLines(keyLines.map(l => ({
+            text: l.text,
+            voiceId: (matchCommentators.find(c => c.name === l.commentatorId || c.id === l.commentatorId) || matchCommentators[0]).voiceId,
+          })));
+        }
+      }
+      setTimeout(() => setCommentary(null), 3500);
+    }
   }, [game.lastResult]);
 
   const handleMove = (move: Move) => {
@@ -115,6 +144,8 @@ export default function DailyChallengeScreen({ onHome }: Props) {
       <div className="absolute inset-0 vignette pointer-events-none" />
       <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
         style={{ background: "radial-gradient(ellipse, hsl(45 93% 58% / 0.06) 0%, transparent 70%)" }} />
+
+      <CelebrationEffects lastResult={game.lastResult} gameResult={game.result} phase={game.phase} />
 
       {/* Premium top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2">
@@ -167,6 +198,18 @@ export default function DailyChallengeScreen({ onHome }: Props) {
         {/* PLAYING */}
         {phase === "playing" && (
           <>
+            {/* Commentator badges */}
+            <div className="flex items-center justify-center gap-2 mb-1">
+              {matchCommentators.map((c, i) => (
+                <div key={c.id} className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[7px] font-display font-bold tracking-wider ${
+                  i === 0 ? "bg-primary/10 text-primary border border-primary/15" : "bg-accent/10 text-accent border border-accent/15"
+                }`}>
+                  <span className="text-[9px]">{c.avatar}</span>
+                  {c.name}
+                </div>
+              ))}
+            </div>
+
             <div className="glass-premium rounded-xl p-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/10 border border-secondary/25 flex items-center justify-center text-xl">📅</div>
               <div className="flex-1">
@@ -181,11 +224,23 @@ export default function DailyChallengeScreen({ onHome }: Props) {
             <ScoreBoard game={game} />
 
             <AnimatePresence>
-              {commentary && (
+              {commentary && commentary.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                  className="glass-card rounded-xl px-4 py-2.5 text-center flex items-center justify-center gap-2">
-                  <span className="text-xs">📢</span>
-                  <p className="font-display text-[10px] font-bold text-foreground tracking-wider">{commentary}</p>
+                  className="glass-card rounded-lg px-2 py-1.5 space-y-1">
+                  {commentary.map((line, i) => {
+                    const comm = matchCommentators.find(c => c.name === line.commentatorId || c.id === line.commentatorId) || matchCommentators[0];
+                    return (
+                      <div key={i} className="flex items-start gap-1.5">
+                        <span className="text-[8px] flex-shrink-0">{comm.avatar}</span>
+                        <div>
+                          <span className={`text-[6px] font-display font-bold tracking-wider ${
+                            comm.id === matchCommentators[0].id ? "text-primary" : "text-accent"
+                          }`}>{comm.name}</span>
+                          <p className="font-display text-[8px] font-bold text-foreground tracking-wider line-clamp-2">{line.text}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </motion.div>
               )}
             </AnimatePresence>
