@@ -602,6 +602,79 @@ export default function FriendStatsModal({ friend, onClose, onChallenge }: Props
                         </div>
                       </div>
                     )}
+
+                    {/* Last Win Highlight */}
+                    {(() => {
+                      const lastWin = recentFriendMatches.find(m => m.result === "win");
+                      if (!lastWin) return null;
+                      return (
+                        <div className="glass-premium rounded-xl p-3 border border-neon-green/15">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm">🏆</span>
+                            <span className="text-[6px] font-display text-muted-foreground tracking-widest">LAST WIN</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
+                              <span className="font-display text-lg font-black text-neon-green">{lastWin.user_score}</span>
+                            </div>
+                            <div className="flex-1">
+                              <span className="font-display text-[10px] font-bold text-foreground block">
+                                Won {lastWin.user_score} - {lastWin.ai_score}
+                              </span>
+                              <span className="text-[7px] text-muted-foreground font-display">
+                                {lastWin.mode === "tap" ? "🎮 Tap" : lastWin.mode === "ar" ? "📸 AR" : "🏏"} • {formatDate(lastWin.created_at)}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[7px] font-display text-neon-green/70 font-bold block">
+                                +{lastWin.user_score - lastWin.ai_score} runs
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Recent Match History */}
+                    {recentFriendMatches.length > 0 && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-4 rounded-full bg-primary" />
+                          <span className="font-display text-[8px] font-bold text-muted-foreground tracking-[0.25em]">RECENT MATCHES</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {recentFriendMatches.slice(0, 10).map((m) => {
+                            const won = m.result === "win";
+                            const lost = m.result === "loss";
+                            const margin = Math.abs(m.user_score - m.ai_score);
+                            return (
+                              <div key={m.id} className={`p-2 rounded-xl ${
+                                won ? "bg-neon-green/5 border border-neon-green/10" : lost ? "bg-out-red/5 border border-out-red/10" : "bg-secondary/5 border border-secondary/10"
+                              }`}>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[8px] font-display font-black ${
+                                    won ? "bg-neon-green/20 text-neon-green" : lost ? "bg-out-red/20 text-out-red" : "bg-secondary/20 text-secondary"
+                                  }`}>{won ? "W" : lost ? "L" : "D"}</div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`font-display text-xs font-black ${won ? "text-neon-green" : "text-foreground"}`}>{m.user_score}</span>
+                                    <span className="text-[6px] text-muted-foreground font-display">vs</span>
+                                    <span className={`font-display text-xs font-black ${lost ? "text-out-red" : "text-foreground"}`}>{m.ai_score}</span>
+                                  </div>
+                                  <span className="text-[6px] text-muted-foreground font-display">{m.mode === "tap" ? "🎮" : m.mode === "ar" ? "📸" : "🏏"}</span>
+                                  <span className="flex-1" />
+                                  {margin > 0 && (
+                                    <span className={`text-[7px] font-display font-bold ${won ? "text-neon-green/70" : "text-out-red/70"}`}>
+                                      {won ? "+" : "-"}{margin}
+                                    </span>
+                                  )}
+                                  <span className="text-[6px] text-muted-foreground font-display">{formatDate(m.created_at)}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
                   </motion.div>
                 )}
 
