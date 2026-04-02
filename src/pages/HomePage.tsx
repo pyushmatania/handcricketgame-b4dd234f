@@ -191,6 +191,10 @@ export default function HomePage() {
           </div>
         </motion.div>
 
+
+        {/* ── Rivalry Section ────────────────────── */}
+        <RivalrySection rivals={rivals} loading={rivalsLoading} />
+
         {/* ── Past Match Widget ──────────────────── */}
         {recentMatch && (
           <motion.div
