@@ -327,6 +327,14 @@ const DEFENDING_TENSION: DuoGen[] = [
   ],
 ];
 
+// Helper to pick from English or Hindi pools based on language setting
+function pickLangPool<T>(enPool: T[], hiPool: T[], lang: CommentaryLanguage = "english"): T {
+  const pick = <U>(arr: U[]): U => arr[Math.floor(Math.random() * arr.length)];
+  if (lang === "hindi") return pick(hiPool);
+  if (lang === "english") return pick(enPool);
+  return Math.random() > 0.5 ? pick(hiPool) : pick(enPool);
+}
+
 export function getDuoCommentary(
   c1Name: string,
   c2Name: string,
@@ -334,19 +342,21 @@ export function getDuoCommentary(
   isBatting: boolean,
   playerName: string,
   opponentName: string,
-  extra?: any
+  extra?: any,
+  lang: CommentaryLanguage = "english"
 ): CommentaryLine[] {
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-  
   if (runs === "OUT") {
-    return pick(WICKET_CONVERSATIONS)(c1Name, c2Name, playerName, opponentName, extra);
+    return pickLangPool(WICKET_CONVERSATIONS, HINDI_WICKET_CONVERSATIONS, lang)(c1Name, c2Name, playerName, opponentName, extra);
   }
   
   const absRuns = Math.abs(runs);
-  if (absRuns === 6) return pick(SIX_CONVERSATIONS)(c1Name, c2Name, isBatting ? playerName : opponentName, isBatting ? opponentName : playerName, extra);
-  if (absRuns === 4) return pick(FOUR_CONVERSATIONS)(c1Name, c2Name, isBatting ? playerName : opponentName, isBatting ? opponentName : playerName, extra);
-  if (absRuns === 0) return pick(DOT_BALL_CONVERSATIONS)(c1Name, c2Name, playerName, opponentName, extra);
-  if (absRuns === 1) return pick(SINGLE_CONVERSATIONS)(c1Name, c2Name, playerName, opponentName, extra);
+  const p = isBatting ? playerName : opponentName;
+  const o = isBatting ? opponentName : playerName;
+  if (absRuns === 6) return pickLangPool(SIX_CONVERSATIONS, HINDI_SIX_CONVERSATIONS, lang)(c1Name, c2Name, p, o, extra);
+  if (absRuns === 4) return pickLangPool(FOUR_CONVERSATIONS, HINDI_FOUR_CONVERSATIONS, lang)(c1Name, c2Name, p, o, extra);
+  if (absRuns === 0) return pickLangPool(DOT_BALL_CONVERSATIONS, HINDI_DOT_BALL_CONVERSATIONS, lang)(c1Name, c2Name, playerName, opponentName, extra);
+  if (absRuns === 1) return pickLangPool(SINGLE_CONVERSATIONS, HINDI_SINGLE_CONVERSATIONS, lang)(c1Name, c2Name, playerName, opponentName, extra);
+  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   return pick(MULTI_RUN_CONVERSATIONS)(c1Name, c2Name, playerName, opponentName, absRuns);
 }
 
@@ -369,14 +379,13 @@ export function getOverBreakCommentary(
     remainingBalls: number;
     oversCompleted: number;
     totalOvers: number | null;
-  }
+  },
+  lang: CommentaryLanguage = "english"
 ): CommentaryLine[] {
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-  
   if (isBatting) {
-    return pick(OVER_BREAK_BATTING)(c1Name, c2Name, playerName, opponentName, stats);
+    return pickLangPool(OVER_BREAK_BATTING, HINDI_OVER_BREAK_BATTING, lang)(c1Name, c2Name, playerName, opponentName, stats);
   } else {
-    return pick(OVER_BREAK_BOWLING)(c1Name, c2Name, playerName, opponentName, stats);
+    return pickLangPool(OVER_BREAK_BOWLING, HINDI_OVER_BREAK_BOWLING, lang)(c1Name, c2Name, playerName, opponentName, stats);
   }
 }
 
