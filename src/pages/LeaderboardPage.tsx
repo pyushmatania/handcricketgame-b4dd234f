@@ -111,6 +111,7 @@ export default function LeaderboardPage() {
   const [viewingArchive, setViewingArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<any[]>([]);
   const [challengeTargetId, setChallengeTargetId] = useState<string | null>(null);
+  const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
 
   useEffect(() => {
     if (mainTab === "global" || mainTab === "rage") loadGlobal();
