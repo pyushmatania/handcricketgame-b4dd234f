@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import PlayerAvatar from "@/components/PlayerAvatar";
+import FriendStatsModal from "@/components/FriendStatsModal";
 import {
   createMultiplayerRoom,
   formatPostgrestError,
