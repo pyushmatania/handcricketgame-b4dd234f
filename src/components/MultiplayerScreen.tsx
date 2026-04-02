@@ -159,11 +159,14 @@ export default function MultiplayerScreen({ onHome }: Props) {
 
   // Rematch invite state
   const [rematchSent, setRematchSent] = useState(false);
+  const [rematchCountdown, setRematchCountdown] = useState<number | null>(null);
+  const [rematchExpiredMsg, setRematchExpiredMsg] = useState<string | null>(null);
   const [incomingRematch, setIncomingRematch] = useState<{
     inviteId: string;
     gameId: string;
     fromName: string;
   } | null>(null);
+  const [incomingRematchCountdown, setIncomingRematchCountdown] = useState<number | null>(null);
 
   const resolvedTurnRef = useRef<string | null>(null);
   const gameIdFromQuery = searchParams.get("game");
