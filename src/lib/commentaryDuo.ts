@@ -2,7 +2,24 @@
  * Multi-Commentator System — 5 personas, 2 randomly assigned per match.
  * Indian cricket culture mix with natural conversations.
  * Key moments get TTS, regular balls get text-only.
+ * Supports English, Hindi, and Mixed commentary modes.
  */
+
+import type { CommentaryLanguage } from "@/contexts/SettingsContext";
+import {
+  HINDI_SIX_CONVERSATIONS,
+  HINDI_FOUR_CONVERSATIONS,
+  HINDI_WICKET_CONVERSATIONS,
+  HINDI_DOT_BALL_CONVERSATIONS,
+  HINDI_SINGLE_CONVERSATIONS,
+  HINDI_OVER_BREAK_BATTING,
+  HINDI_OVER_BREAK_BOWLING,
+  HINDI_POST_MATCH_WIN,
+  HINDI_POST_MATCH_LOSS,
+  HINDI_POST_MATCH_DRAW,
+  HINDI_PRE_MATCH_INTRO,
+  getRandomHindiDuoConversation,
+} from "@/lib/commentaryHindi";
 
 export interface Commentator {
   id: string;
@@ -310,6 +327,14 @@ const DEFENDING_TENSION: DuoGen[] = [
   ],
 ];
 
+// Helper to pick from English or Hindi pools based on language setting
+function pickLangPool<T>(enPool: T[], hiPool: T[], lang: CommentaryLanguage = "english"): T {
+  const pick = <U>(arr: U[]): U => arr[Math.floor(Math.random() * arr.length)];
+  if (lang === "hindi") return pick(hiPool);
+  if (lang === "english") return pick(enPool);
+  return Math.random() > 0.5 ? pick(hiPool) : pick(enPool);
+}
+
 export function getDuoCommentary(
   c1Name: string,
   c2Name: string,
@@ -317,19 +342,21 @@ export function getDuoCommentary(
   isBatting: boolean,
   playerName: string,
   opponentName: string,
-  extra?: any
+  extra?: any,
+  lang: CommentaryLanguage = "english"
 ): CommentaryLine[] {
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-  
   if (runs === "OUT") {
-    return pick(WICKET_CONVERSATIONS)(c1Name, c2Name, playerName, opponentName, extra);
+    return pickLangPool(WICKET_CONVERSATIONS, HINDI_WICKET_CONVERSATIONS, lang)(c1Name, c2Name, playerName, opponentName, extra);
   }
   
   const absRuns = Math.abs(runs);
-  if (absRuns === 6) return pick(SIX_CONVERSATIONS)(c1Name, c2Name, isBatting ? playerName : opponentName, isBatting ? opponentName : playerName, extra);
-  if (absRuns === 4) return pick(FOUR_CONVERSATIONS)(c1Name, c2Name, isBatting ? playerName : opponentName, isBatting ? opponentName : playerName, extra);
-  if (absRuns === 0) return pick(DOT_BALL_CONVERSATIONS)(c1Name, c2Name, playerName, opponentName, extra);
-  if (absRuns === 1) return pick(SINGLE_CONVERSATIONS)(c1Name, c2Name, playerName, opponentName, extra);
+  const p = isBatting ? playerName : opponentName;
+  const o = isBatting ? opponentName : playerName;
+  if (absRuns === 6) return pickLangPool(SIX_CONVERSATIONS, HINDI_SIX_CONVERSATIONS, lang)(c1Name, c2Name, p, o, extra);
+  if (absRuns === 4) return pickLangPool(FOUR_CONVERSATIONS, HINDI_FOUR_CONVERSATIONS, lang)(c1Name, c2Name, p, o, extra);
+  if (absRuns === 0) return pickLangPool(DOT_BALL_CONVERSATIONS, HINDI_DOT_BALL_CONVERSATIONS, lang)(c1Name, c2Name, playerName, opponentName, extra);
+  if (absRuns === 1) return pickLangPool(SINGLE_CONVERSATIONS, HINDI_SINGLE_CONVERSATIONS, lang)(c1Name, c2Name, playerName, opponentName, extra);
+  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   return pick(MULTI_RUN_CONVERSATIONS)(c1Name, c2Name, playerName, opponentName, absRuns);
 }
 
@@ -352,14 +379,13 @@ export function getOverBreakCommentary(
     remainingBalls: number;
     oversCompleted: number;
     totalOvers: number | null;
-  }
+  },
+  lang: CommentaryLanguage = "english"
 ): CommentaryLine[] {
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-  
   if (isBatting) {
-    return pick(OVER_BREAK_BATTING)(c1Name, c2Name, playerName, opponentName, stats);
+    return pickLangPool(OVER_BREAK_BATTING, HINDI_OVER_BREAK_BATTING, lang)(c1Name, c2Name, playerName, opponentName, stats);
   } else {
-    return pick(OVER_BREAK_BOWLING)(c1Name, c2Name, playerName, opponentName, stats);
+    return pickLangPool(OVER_BREAK_BOWLING, HINDI_OVER_BREAK_BOWLING, lang)(c1Name, c2Name, playerName, opponentName, stats);
   }
 }
 
@@ -384,7 +410,7 @@ export function getChaseTensionCommentary(
 // ─── Pre-match ceremony pages ─────────────────────────────────
 
 export function getPreMatchDuoIntro(
-  c1Name: string, c2Name: string, playerName: string, opponentName: string
+  c1Name: string, c2Name: string, playerName: string, opponentName: string, lang: CommentaryLanguage = "english"
 ): CommentaryLine[] {
   const intros: DuoGen[] = [
     (c1, c2, p, o) => [
@@ -400,6 +426,9 @@ export function getPreMatchDuoIntro(
       { commentatorId: c2, text: `${c1}, I've been waiting for this all day! Both players are fired up!`, isKeyMoment: true },
     ],
   ];
+  if (lang === "hindi" || (lang === "both" && Math.random() > 0.5)) {
+    return pickLangPool(intros, HINDI_PRE_MATCH_INTRO, lang)(c1Name, c2Name, playerName, opponentName);
+  }
   return intros[Math.floor(Math.random() * intros.length)](c1Name, c2Name, playerName, opponentName);
 }
 

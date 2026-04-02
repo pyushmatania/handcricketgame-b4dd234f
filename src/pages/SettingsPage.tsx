@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/contexts/SettingsContext";
+import type { CommentaryLanguage } from "@/contexts/SettingsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
+import { SYSTEM_VOICE_PERSONAS, speakWithSystemPersona } from "@/lib/systemVoices";
+import { speakElevenLabs, isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
 
 const COMMENTARY_VOICES = [
   { id: "nPczCjzI2devNBz1zQrb", name: "Brian", desc: "Deep authoritative broadcaster", emoji: "🎙️" },
@@ -19,6 +22,28 @@ const VOICE_ENGINES = [
   { id: "auto" as const, name: "AUTO", desc: "ElevenLabs first, system fallback", emoji: "🔄" },
   { id: "elevenlabs" as const, name: "ELEVENLABS", desc: "Premium AI voices only", emoji: "✨" },
   { id: "system" as const, name: "SYSTEM", desc: "10 unique system voices, free", emoji: "🗣️" },
+];
+
+const LANGUAGE_OPTIONS: { id: CommentaryLanguage; name: string; desc: string; emoji: string }[] = [
+  { id: "english", name: "ENGLISH", desc: "Classic cricket commentary", emoji: "🇬🇧" },
+  { id: "hindi", name: "HINDI", desc: "Full Hinglish & Bollywood vibes", emoji: "🇮🇳" },
+  { id: "both", name: "MIXED", desc: "Best of both — random mix", emoji: "🌍" },
+];
+
+const PREVIEW_LINES_EN = [
+  "What a shot! That's gone straight into the stands!",
+  "Brilliant bowling! The batsman has no answer!",
+  "And the crowd goes absolutely wild! Six runs!",
+  "Dot ball! Building pressure here!",
+  "That's a classic cover drive — textbook!",
+];
+
+const PREVIEW_LINES_HI = [
+  "Kya shot hai! Ball toh parking lot mein gayi!",
+  "Arre baap re! Bowler ki halat kharab ho gayi!",
+  "Chhakkaa! Stadium mein earthquake aa gaya!",
+  "Dot ball! Batter statue ban gaya!",
+  "Sachin wali cover drive! Master class!",
 ];
 
 interface SettingGroup {
@@ -41,6 +66,29 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [expandedGroup, setExpandedGroup] = useState<string | null>("audio");
+  const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
+
+  const previewSystemVoice = useCallback(async (personaId: string) => {
+    if (previewingVoice) return;
+    setPreviewingVoice(personaId);
+    const persona = SYSTEM_VOICE_PERSONAS.find(p => p.id === personaId);
+    if (!persona) { setPreviewingVoice(null); return; }
+    const isHindi = settings.commentaryLanguage === "hindi";
+    const lines = isHindi ? PREVIEW_LINES_HI : PREVIEW_LINES_EN;
+    const line = lines[Math.floor(Math.random() * lines.length)];
+    await speakWithSystemPersona(line, persona);
+    setPreviewingVoice(null);
+  }, [previewingVoice, settings.commentaryLanguage]);
+
+  const previewElevenLabsVoice = useCallback(async (voiceId: string) => {
+    if (previewingVoice) return;
+    setPreviewingVoice(voiceId);
+    const isHindi = settings.commentaryLanguage === "hindi";
+    const lines = isHindi ? PREVIEW_LINES_HI : PREVIEW_LINES_EN;
+    const line = lines[Math.floor(Math.random() * lines.length)];
+    await speakElevenLabs(line, voiceId);
+    setPreviewingVoice(null);
+  }, [previewingVoice, settings.commentaryLanguage]);
 
   const clearData = () => {
     localStorage.removeItem("hc_onboarding_done");
@@ -215,6 +263,43 @@ export default function SettingsPage() {
                       </motion.div>
                     )}
 
+                    {/* Commentary Language selector */}
+                    {group.title === "COMMENTARY" && settings.commentaryEnabled && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-premium rounded-xl p-3.5"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-base">🌐</span>
+                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">COMMENTARY LANGUAGE</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {LANGUAGE_OPTIONS.map((lang) => {
+                            const isActive = settings.commentaryLanguage === lang.id;
+                            return (
+                              <button
+                                key={lang.id}
+                                onClick={() => settings.setCommentaryLanguage(lang.id)}
+                                className={`p-2.5 rounded-xl text-center transition-all ${
+                                  isActive
+                                    ? "glass-premium border border-accent/30 shadow-[0_0_12px_hsl(var(--accent)/0.15)]"
+                                    : "glass-card border border-transparent hover:border-muted-foreground/10"
+                                }`}
+                              >
+                                <span className="text-lg block mb-1">{lang.emoji}</span>
+                                <span className={`font-display text-[8px] font-bold block ${isActive ? "text-accent" : "text-foreground"}`}>{lang.name}</span>
+                                <span className="text-[6px] text-muted-foreground block mt-0.5">{lang.desc}</span>
+                                {isActive && (
+                                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-accent text-xs block mt-1">✓</motion.span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+
                     {/* Voice picker inside Commentary group — only show for ElevenLabs/Auto */}
                     {group.title === "COMMENTARY" && settings.voiceEnabled && settings.voiceEngine !== "system" && (
                       <motion.div
@@ -225,10 +310,12 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-base">🗣️</span>
                           <span className="font-display text-[10px] font-bold text-foreground tracking-wider">ELEVENLABS VOICE</span>
+                          <span className="text-[7px] text-muted-foreground ml-auto">tap to preview</span>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                           {COMMENTARY_VOICES.map((voice) => {
                             const isActive = settings.commentaryVoice === voice.id;
+                            const isPreviewing = previewingVoice === voice.id;
                             return (
                               <button
                                 key={voice.id}
@@ -245,11 +332,59 @@ export default function SettingsPage() {
                                     <span className={`font-display text-[9px] font-bold block ${isActive ? "text-secondary" : "text-foreground"}`}>{voice.name}</span>
                                     <span className="text-[7px] text-muted-foreground truncate block">{voice.desc}</span>
                                   </div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); previewElevenLabsVoice(voice.id); }}
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                                      isPreviewing ? "bg-secondary/20 animate-pulse" : "bg-muted/30 hover:bg-muted/50"
+                                    }`}
+                                  >
+                                    <span className="text-[10px]">{isPreviewing ? "⏳" : "▶"}</span>
+                                  </button>
                                   {isActive && (
                                     <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-secondary text-xs">✓</motion.span>
                                   )}
                                 </div>
                               </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* System Voice Personas preview — only show for System/Auto */}
+                    {group.title === "COMMENTARY" && settings.voiceEnabled && settings.voiceEngine !== "elevenlabs" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-premium rounded-xl p-3.5"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-base">🎭</span>
+                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">SYSTEM VOICES</span>
+                          <span className="text-[7px] text-muted-foreground ml-auto">tap ▶ to preview</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {SYSTEM_VOICE_PERSONAS.map((persona) => {
+                            const isPreviewing = previewingVoice === persona.id;
+                            return (
+                              <div
+                                key={persona.id}
+                                className="glass-card p-2 rounded-xl flex items-center gap-2 border border-transparent"
+                              >
+                                <span className="text-sm">{persona.avatar}</span>
+                                <div className="flex-1 min-w-0">
+                                  <span className="font-display text-[9px] font-bold text-foreground block">{persona.name}</span>
+                                  <span className="text-[7px] text-muted-foreground block capitalize">{persona.style} • {persona.region}</span>
+                                </div>
+                                <button
+                                  onClick={() => previewSystemVoice(persona.id)}
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                                    isPreviewing ? "bg-primary/20 animate-pulse" : "bg-muted/30 hover:bg-muted/50"
+                                  }`}
+                                >
+                                  <span className="text-[10px]">{isPreviewing ? "⏳" : "▶"}</span>
+                                </button>
+                              </div>
                             );
                           })}
                         </div>
