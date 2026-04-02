@@ -53,20 +53,18 @@ function computeStats(ballHistory: BallResult[], isBatting: boolean) {
   return { sixes, fours, threes, twos, singles, dots, biggestShot, totalBalls, strikeRate, boundaryPct, battingBalls };
 }
 
-const POST_WIN = [
-  (p: string, ps: number, os: number) => `What a magnificent victory by ${p}! Scoring ${ps} against ${os}!`,
-  (p: string) => `${p} takes the match! The crowd is on their feet! Absolutely sensational!`,
-];
+import {
+  POST_WIN_EXPANDED, POST_LOSS_EXPANDED, POST_DRAW_EXPANDED,
+  PVP_RAGE_WIN, PVP_RAGE_LOSS, PVP_RAGE_DRAW, PVP_CLOSING,
+  STATS_SIXES, STATS_FOURS, STATS_SR, STATS_BDRY_PCT, STATS_BIGGEST,
+  PRE_MATCH_INTROS, PRE_MATCH_RIVALRY, PRE_MATCH_TOSS, PRE_MATCH_GO,
+} from "@/lib/commentary";
 
-const POST_LOSS = [
-  (_p: string, o: string, ps: number, os: number) => `${o} wins the match with ${os} runs against ${ps}! What a performance!`,
-  (p: string) => `${p} fought hard but couldn't pull it off. Head held high, though!`,
-];
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 
-const POST_DRAW = [
-  (p: string, o: string) => `It's a tie! ${p} and ${o} couldn't be separated! What drama!`,
-  (_p: string, _o: string) => `Incredible! Neither side gives in! A match for the ages!`,
-];
+const POST_WIN = POST_WIN_EXPANDED;
+const POST_LOSS = POST_LOSS_EXPANDED;
+const POST_DRAW = POST_DRAW_EXPANDED;
 
 export function PostMatchCeremony({ playerName, opponentName, result, playerScore, opponentScore, ballHistory, onComplete, isPvP = false }: PostMatchProps) {
   const [stage, setStage] = useState<Stage>("result");
