@@ -1,0 +1,2 @@
+ALTER TABLE public.multiplayer_games DROP CONSTRAINT multiplayer_games_status_check;
+ALTER TABLE public.multiplayer_games ADD CONSTRAINT multiplayer_games_status_check CHECK (status = ANY (ARRAY['waiting'::text, 'toss'::text, 'playing'::text, 'finished'::text, 'abandoned'::text]));
