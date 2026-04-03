@@ -270,9 +270,13 @@ export default function BattlePassPage() {
       setPurchasing(false);
       return;
     }
+    SFX.coinSpend();
+    Haptics.coinSpend();
     setCoins((c) => c - 500);
     setIsPremium(true);
     setPurchasing(false);
+    SFX.levelUp();
+    Haptics.success();
     toast({ title: "🎉 Premium Pass Unlocked!", description: "You now have access to all premium rewards." });
   }, [user, coins, purchasing, toast]);
 
