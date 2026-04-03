@@ -44,7 +44,7 @@ export default function ShotResultOverlay({ lastResult, triggerKey }: ShotResult
         {/* Big text */}
         <motion.div
           initial={{ scale: 0, rotateZ: -10 }}
-          animate={{ scale: [0, 1.4, 1.1], rotateZ: [−10, 3, 0] }}
+          animate={{ scale: [0, 1.4, 1.1], rotateZ: [-10, 3, 0] }}
           exit={{ scale: 0, opacity: 0 }}
           transition={{ duration: 0.5, times: [0, 0.6, 1] }}
           className="text-center relative z-10"
