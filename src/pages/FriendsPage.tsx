@@ -557,34 +557,39 @@ export default function FriendsPage() {
         </AnimatePresence>
       </div>
       {challengeTargetId && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center p-4">
-          <div className="w-full max-w-sm glass-premium rounded-3xl p-4 space-y-3 border border-primary/30 shadow-[0_0_40px_hsl(217_91%_60%/0.2)]">
-            <p className="font-display text-xs text-foreground font-black tracking-wider">Which game should we play?</p>
-            <p className="text-[9px] text-muted-foreground">Send a battle invite with your chosen format.</p>
+        <div className="fixed inset-0 z-50 bg-[hsl(222_47%_4%/0.85)] backdrop-blur-md flex items-end justify-center p-4">
+          <motion.div
+            initial={{ y: 200, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="w-full max-w-sm rounded-3xl border-2 border-game-red/30 bg-gradient-to-b from-[hsl(222_40%_13%)] to-[hsl(222_40%_8%)] p-5 space-y-3 shadow-[0_0_30px_hsl(4_90%_58%/0.15)]"
+          >
+            <p className="font-game-title text-base text-foreground">Choose Battle Mode</p>
+            <p className="text-[9px] text-muted-foreground font-game-body">Send a battle invite with your chosen format.</p>
             {([
-              { key: "ar", icon: "📸", subtitle: "Futuristic AR showdown" },
-              { key: "tap", icon: "⚡", subtitle: "Arcade speed challenge" },
-              { key: "tournament", icon: "🏆", subtitle: "Championship clash" },
-            ] as { key: GameType; icon: string; subtitle: string }[]).map((mode) => (
-              <button
+              { key: "ar", icon: "📸", label: "AR Mode", subtitle: "Futuristic AR showdown", color: "from-game-purple to-[hsl(291_47%_40%)]" },
+              { key: "tap", icon: "⚡", label: "Tap Mode", subtitle: "Arcade speed challenge", color: "from-game-blue to-[hsl(207_90%_44%)]" },
+              { key: "tournament", icon: "🏆", label: "Tournament", subtitle: "Championship clash", color: "from-game-gold to-[hsl(43_96%_42%)]" },
+            ] as { key: GameType; icon: string; label: string; subtitle: string; color: string }[]).map((mode) => (
+              <motion.button
                 key={mode.key}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   void challengeFriend(challengeTargetId, mode.key);
                   setChallengeTargetId(null);
                 }}
-                className="w-full p-3 rounded-2xl text-left bg-gradient-to-r from-primary/20 to-accent/10 border border-primary/30 font-display tracking-wider transition-transform active:scale-[0.98]"
+                className={`w-full p-3.5 rounded-2xl text-left bg-gradient-to-r ${mode.color} border-b-3 border-[hsl(222_25%_15%)] active:translate-y-[1px] transition-transform`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-background/40 border border-primary/30 flex items-center justify-center text-xl">{mode.icon}</div>
+                  <div className="w-11 h-11 rounded-xl bg-[hsl(222_47%_6%/0.4)] border border-white/10 flex items-center justify-center text-xl">{mode.icon}</div>
                   <div>
-                    <p className="text-xs font-bold uppercase">{mode.key}</p>
-                    <p className="text-[10px] text-muted-foreground">{mode.subtitle}</p>
+                    <p className="text-sm font-game-display text-white tracking-wider">{mode.label}</p>
+                    <p className="text-[9px] text-white/60 font-game-body">{mode.subtitle}</p>
                   </div>
                 </div>
-              </button>
+              </motion.button>
             ))}
-            <button onClick={() => setChallengeTargetId(null)} className="w-full py-2 text-xs text-muted-foreground">Cancel</button>
-          </div>
+            <button onClick={() => setChallengeTargetId(null)} className="w-full py-2.5 text-xs text-muted-foreground font-game-body hover:text-foreground transition-colors">Cancel</button>
+          </motion.div>
         </div>
       )}
 
