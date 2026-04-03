@@ -8,20 +8,23 @@ import { speakCommentary, playCrowdForResult, CrowdSFX, speakDuoCommentary } fro
 import { isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
 import { useSettings } from "@/contexts/SettingsContext";
 import { pickMatchCommentators, getDuoCommentary, getOverBreakCommentary, type Commentator, type CommentaryLine } from "@/lib/commentaryDuo";
+import { pickConfiguredMatchCommentators } from "@/lib/commentaryDuo";
 import ScoreBoard from "./ScoreBoard";
 import CelebrationEffects from "./CelebrationEffects";
+import ShotResultOverlay from "./ShotResultOverlay";
 import OverBreakScreen from "./OverBreakScreen";
 import WicketBreakdownCard, { type WicketBreakdownData } from "./WicketBreakdownCard";
-import pitchStrips from "@/assets/pitch-strips.jpg";
-import { pickConfiguredMatchCommentators } from "@/lib/commentaryDuo";
+import pitch3d from "@/assets/pitch-3d.jpg";
+import GameButton from "./shared/GameButton";
 
-const MOVES_CONFIG: { move: Move; emoji: string; label: string; color: string; glow: string }[] = [
-  { move: "DEF", emoji: "✊", label: "DEF", color: "from-accent/20 to-accent/5 border-accent/25", glow: "shadow-[0_0_15px_hsl(168_80%_50%/0.15)]" },
-  { move: 1, emoji: "☝️", label: "1", color: "from-primary/20 to-primary/5 border-primary/25", glow: "shadow-[0_0_15px_hsl(217_91%_60%/0.15)]" },
-  { move: 2, emoji: "✌️", label: "2", color: "from-neon-green/20 to-neon-green/5 border-neon-green/25", glow: "shadow-[0_0_15px_hsl(142_71%_45%/0.15)]" },
-  { move: 3, emoji: "🤟", label: "3", color: "from-secondary/20 to-secondary/5 border-secondary/25", glow: "shadow-[0_0_15px_hsl(45_93%_58%/0.15)]" },
-  { move: 4, emoji: "🖖", label: "4", color: "from-secondary/25 to-secondary/10 border-secondary/30", glow: "shadow-[0_0_20px_hsl(45_93%_58%/0.2)]" },
-  { move: 6, emoji: "👍", label: "6", color: "from-primary/25 to-primary/10 border-primary/30", glow: "shadow-[0_0_20px_hsl(217_91%_60%/0.25)]" },
+/* ── Move button config ── */
+const MOVES: { move: Move; label: string; emoji: string; color: string; border: string; glow: string }[] = [
+  { move: "DEF", label: "DEF", emoji: "✊", color: "from-[hsl(210_10%_40%)] to-[hsl(210_10%_30%)]", border: "border-[hsl(210_10%_22%)]", glow: "" },
+  { move: 1, label: "1", emoji: "☝️", color: "from-[hsl(200_70%_45%)] to-[hsl(200_70%_35%)]", border: "border-[hsl(200_70%_28%)]", glow: "shadow-[0_0_12px_hsl(200_70%_45%/0.3)]" },
+  { move: 2, label: "2", emoji: "✌️", color: "from-game-green to-[hsl(122_39%_38%)]", border: "border-[hsl(122_39%_28%)]", glow: "shadow-[0_0_12px_hsl(122_39%_49%/0.3)]" },
+  { move: 3, label: "3", emoji: "🤟", color: "from-game-gold to-[hsl(43_96%_42%)]", border: "border-[hsl(43_96%_32%)]", glow: "shadow-[0_0_12px_hsl(43_96%_56%/0.3)]" },
+  { move: 4, label: "4", emoji: "🖖", color: "from-[hsl(25_90%_55%)] to-[hsl(25_90%_42%)]", border: "border-[hsl(25_90%_32%)]", glow: "shadow-[0_0_14px_hsl(25_90%_55%/0.35)]" },
+  { move: 6, label: "6", emoji: "👍", color: "from-[hsl(280_70%_55%)] to-[hsl(280_70%_42%)]", border: "border-[hsl(280_70%_32%)]", glow: "shadow-[0_0_16px_hsl(280_70%_55%/0.4)]" },
 ];
 
 export interface TapPlayingUIProps {
@@ -72,25 +75,24 @@ export default function TapPlayingUI({
     return () => { stopAmbientStadium(); };
   }, [soundEnabled, musicEnabled, result]);
 
-  // Update volume in real-time
   useEffect(() => {
     if (soundEnabled && musicEnabled) setAmbientVolume(ambientVolume);
   }, [ambientVolume, soundEnabled, musicEnabled]);
+
   const [lastPlayed, setLastPlayed] = useState<Move | null>(null);
   const [cooldown, setCooldown] = useState(false);
-  const [showExplosion, setShowExplosion] = useState<{ emoji: string; key: number } | null>(null);
   const [commentary, setCommentary] = useState<CommentaryLine[] | null>(null);
   const [showOverBreak, setShowOverBreak] = useState(false);
   const [overBreakData, setOverBreakData] = useState<any>(null);
   const [showWicketBreakdown, setShowWicketBreakdown] = useState(false);
   const [wicketBreakdownData, setWicketBreakdownData] = useState<WicketBreakdownData | null>(null);
   const [floodlightFlicker, setFloodlightFlicker] = useState(false);
+  const [shotOverlayKey, setShotOverlayKey] = useState(0);
   const prevPhaseRef = useRef(phase);
   const prevBallCountRef = useRef(0);
   const prevWicketsRef = useRef({ user: 0, ai: 0 });
   const partnershipStartRef = useRef({ score: 0, balls: 0 });
 
-  // Pick 2 commentators for this match session
   const [matchCommentators] = useState<[Commentator, Commentator]>(() =>
     commentators || pickConfiguredMatchCommentators(commentaryVoice)
   );
@@ -98,7 +100,7 @@ export default function TapPlayingUI({
   const effectiveCooldown = cooldownOverride !== undefined ? cooldownOverride : cooldown;
 
   const config = matchConfig || { overs: null, wickets: 1 };
-  const currentBalls = currentInnings === 1 ? (innings1Balls ?? ballHistory.length) : 
+  const currentBalls = currentInnings === 1 ? (innings1Balls ?? ballHistory.length) :
     ballHistory.length - (innings1Balls ?? 0);
 
   const gameStateForScoreboard = {
@@ -109,7 +111,7 @@ export default function TapPlayingUI({
     innings2Balls: 0,
   };
 
-  // Check for over completion (every 6 balls) — only for limited overs
+  // Over completion check
   useEffect(() => {
     if (!config.overs || phase === "not_started" || phase === "finished") return;
     const totalBalls = currentBalls;
@@ -118,10 +120,8 @@ export default function TapPlayingUI({
 
     if (totalBalls > 0 && totalBalls % 6 === 0 && totalBalls !== prevBalls && totalBalls > prevBalls) {
       const oversCompleted = Math.floor(totalBalls / 6);
-      // Don't show break on last over (game ends)
       if (config.overs && oversCompleted >= config.overs) return;
 
-      // Calculate over stats
       const recentBalls = ballHistory.slice(-6);
       let overRuns = 0;
       const thisOverBalls: { runs: number | "OUT" }[] = [];
@@ -141,10 +141,9 @@ export default function TapPlayingUI({
 
       const overBreakMerge = { overRuns, thisOverBalls, crr, rrr, oversCompleted, totalOvers: config.overs };
 
-      // If wicket fell on this ball, merge into wicket breakdown card instead
       if (lastResult && lastResult.runs === "OUT") {
         setWicketBreakdownData(prev => prev ? { ...prev, overBreakStats: overBreakMerge } : prev);
-        return; // Don't show separate over break
+        return;
       }
 
       const stats = {
@@ -163,7 +162,6 @@ export default function TapPlayingUI({
       setOverBreakData({ stats, lines });
       setShowOverBreak(true);
 
-      // Speak key moment lines
       if (voiceEnabled && commentaryEnabled) {
         speakDuoCommentary(lines, matchCommentators, voiceEngine);
       }
@@ -189,21 +187,18 @@ export default function TapPlayingUI({
     }
   }, [phase]);
 
-  // Wicket & innings change breakdown card
+  // Wicket breakdown card
   useEffect(() => {
     if (!lastResult || lastResult.runs !== "OUT") return;
     if (phase === "not_started") return;
 
     const currentBallsTotal = ballHistory.length;
     const inningsBalls = currentInnings === 1 ? (innings1Balls ?? currentBallsTotal) : currentBallsTotal - (innings1Balls ?? 0);
-
-    // Compute batsman stats from ball history (current innings partnership)
     const partStart = partnershipStartRef.current;
     const currentScore = isBatting ? userScore : aiScore;
     const pRuns = currentScore - partStart.score;
     const pBalls = inningsBalls - partStart.balls;
 
-    // Count batsman fours and sixes from recent partnership balls
     const recentBalls = ballHistory.slice(partStart.balls);
     let fours = 0, sixes = 0, batsmanRuns = 0;
     for (const b of recentBalls) {
@@ -214,17 +209,12 @@ export default function TapPlayingUI({
       }
     }
 
-    // Bowling stats — the "bowler" is the opponent
-    const bowlerWickets = isBatting ? aiWickets : userWickets; // doesn't apply perfectly, use wicket count
     const totalWickets = isBatting ? userWickets : aiWickets;
     const oversStr = `${Math.floor(inningsBalls / 6)}.${inningsBalls % 6}`;
-
     const isInningsChange = phase === "second_batting" || phase === "second_bowling";
-    const prevP = prevPhaseRef.current;
-    const justChangedInnings = (prevP === "first_batting" || prevP === "first_bowling") && isInningsChange;
 
     const breakdownData: WicketBreakdownData = {
-      type: justChangedInnings ? "innings_change" : "wicket",
+      type: isInningsChange ? "innings_change" : "wicket",
       batsmanName: isBatting ? playerName : opponentName,
       batsmanRuns,
       batsmanBalls: pBalls,
@@ -240,29 +230,26 @@ export default function TapPlayingUI({
       totalWickets,
       currentOver: oversStr,
       target,
-      isInningsChange: justChangedInnings,
-      newTarget: justChangedInnings ? target : undefined,
+      isInningsChange,
+      newTarget: isInningsChange ? target : undefined,
       dismissalType: lastResult.description,
     };
 
-    // Reset partnership tracking for next batsman
     partnershipStartRef.current = { score: currentScore, balls: inningsBalls };
-
-    // Trigger floodlight flicker on wickets
     setFloodlightFlicker(true);
     setTimeout(() => setFloodlightFlicker(false), 2000);
 
-    // Don't show if game is finished (post-match handles that)
     if (phase !== "finished") {
       setWicketBreakdownData(breakdownData);
       setShowWicketBreakdown(true);
     }
   }, [lastResult?.runs === "OUT" ? ballHistory.length : null]);
 
-
+  // Ball result SFX + commentary + shot overlay
   useEffect(() => {
     if (!lastResult) return;
     const r = lastResult;
+    setShotOverlayKey(Date.now());
     if (soundEnabled) SFX.batHit();
     if (r.runs === "OUT") {
       setTimeout(() => {
@@ -286,7 +273,6 @@ export default function TapPlayingUI({
         undefined, commentaryLanguage
       );
       setCommentary(duoLines);
-
       if (voiceEnabled) {
         if (duoLines.some(l => l.isKeyMoment)) {
           speakDuoCommentary(duoLines, matchCommentators, voiceEngine);
@@ -294,7 +280,6 @@ export default function TapPlayingUI({
           speakCommentary(duoLines[0].text, true, voiceEngine);
         }
       }
-
       setTimeout(() => setCommentary(null), 3500);
     }
   }, [lastResult]);
@@ -310,11 +295,6 @@ export default function TapPlayingUI({
       setCooldown(true);
       setTimeout(() => setCooldown(false), 800);
     }
-    const moveData = MOVES_CONFIG.find(m => m.move === move);
-    if (moveData) {
-      setShowExplosion({ emoji: moveData.emoji, key: Date.now() });
-      setTimeout(() => setShowExplosion(null), 800);
-    }
   };
 
   const handleOverBreakContinue = useCallback(() => {
@@ -327,39 +307,34 @@ export default function TapPlayingUI({
     setWicketBreakdownData(null);
   }, []);
 
+  // Filter moves for noDefence mode
+  const activeMoves = config.noDefence ? MOVES.filter(m => m.move !== "DEF") : MOVES;
+
   return (
     <>
       <CelebrationEffects lastResult={lastResult} gameResult={result} phase={phase} />
+      <ShotResultOverlay lastResult={lastResult} triggerKey={shotOverlayKey} />
 
-      {/* Cricket ground background — side-on broadcast angle */}
+      {/* 3D Cricket pitch background */}
       {phase !== "not_started" && (
         <div className="fixed inset-0 z-0 pointer-events-none">
-          <img src={pitchStrips} alt="" className="w-full h-full object-cover opacity-[0.12]" style={{ objectPosition: "center 60%" }} />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/40 to-background/80" />
-          <div className="absolute inset-0 floodlight-glow" />
-          <div className="absolute inset-0 boundary-glow" />
+          <img src={pitch3d} alt="" className="w-full h-full object-cover opacity-20" style={{ objectPosition: "center 40%" }} />
+          <div className="absolute inset-0 bg-gradient-to-b from-[hsl(220_25%_8%/0.7)] via-[hsl(220_25%_8%/0.4)] to-[hsl(220_25%_8%/0.85)]" />
         </div>
       )}
 
-      {/* Floodlight flicker on wickets — warm pulse */}
+      {/* Floodlight flicker */}
       <AnimatePresence>
         {floodlightFlicker && (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.3, 0.05, 0.25, 0.08, 0.2, 0] }}
+            animate={{ opacity: [0, 0.3, 0.05, 0.25, 0] }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.8, times: [0, 0.1, 0.2, 0.35, 0.5, 0.7, 1] }}
+            transition={{ duration: 1.8 }}
             className="fixed inset-0 z-[5] pointer-events-none"
           >
-            {/* Top-left floodlight */}
-            <div className="absolute top-0 left-0 w-40 h-40 rounded-full"
-              style={{ background: "radial-gradient(circle, hsl(45 93% 58% / 0.4) 0%, transparent 70%)", filter: "blur(20px)" }} />
-            {/* Top-right floodlight */}
-            <div className="absolute top-0 right-0 w-40 h-40 rounded-full"
-              style={{ background: "radial-gradient(circle, hsl(45 93% 58% / 0.35) 0%, transparent 70%)", filter: "blur(20px)" }} />
-            {/* Center warm wash */}
-            <div className="absolute inset-0"
-              style={{ background: "radial-gradient(ellipse at 50% 20%, hsl(40 80% 60% / 0.08) 0%, transparent 60%)" }} />
+            <div className="absolute top-0 left-0 w-40 h-40 rounded-full" style={{ background: "radial-gradient(circle, hsl(43 96% 56% / 0.4) 0%, transparent 70%)", filter: "blur(20px)" }} />
+            <div className="absolute top-0 right-0 w-40 h-40 rounded-full" style={{ background: "radial-gradient(circle, hsl(43 96% 56% / 0.35) 0%, transparent 70%)", filter: "blur(20px)" }} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -376,7 +351,7 @@ export default function TapPlayingUI({
         )}
       </AnimatePresence>
 
-      {/* Wicket / Innings breakdown card */}
+      {/* Wicket breakdown */}
       <AnimatePresence>
         {showWicketBreakdown && wicketBreakdownData && (
           <WicketBreakdownCard
@@ -386,12 +361,12 @@ export default function TapPlayingUI({
         )}
       </AnimatePresence>
 
-
+      {/* Commentator badges */}
       {phase !== "not_started" && phase !== "finished" && (
         <div className="flex items-center justify-center gap-2 mb-1">
           {matchCommentators.map((c, i) => (
-            <div key={c.id} className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[7px] font-display font-bold tracking-wider ${
-              i === 0 ? "bg-primary/10 text-primary border border-primary/15" : "bg-accent/10 text-accent border border-accent/15"
+            <div key={c.id} className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[7px] font-game-display font-bold tracking-wider ${
+              i === 0 ? "bg-game-green/10 text-game-green border border-game-green/15" : "bg-game-gold/10 text-game-gold border border-game-gold/15"
             }`}>
               <span className="text-[9px]">{c.avatar}</span>
               {c.name}
@@ -411,25 +386,25 @@ export default function TapPlayingUI({
         />
       )}
 
-      {/* Duo Commentary bar */}
+      {/* Commentary strip */}
       <AnimatePresence>
         {commentary && commentary.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="glass-card rounded-lg px-2 py-1.5 space-y-1"
+            className="rounded-xl px-3 py-2 space-y-1 bg-[hsl(220_20%_14%/0.9)] border border-game-gold/15 backdrop-blur-md"
           >
             {commentary.map((line, i) => {
               const comm = matchCommentators.find(c => c.name === line.commentatorId || c.id === line.commentatorId) || matchCommentators[0];
               return (
                 <div key={i} className="flex items-start gap-1.5">
-                  <span className="text-[8px] flex-shrink-0">{comm.avatar}</span>
+                  <span className="text-[9px] flex-shrink-0">{comm.avatar}</span>
                   <div>
-                    <span className={`text-[6px] font-display font-bold tracking-wider ${
-                      comm.id === matchCommentators[0].id ? "text-primary" : "text-accent"
+                    <span className={`text-[6px] font-game-display font-bold tracking-wider ${
+                      comm.id === matchCommentators[0].id ? "text-game-green" : "text-game-gold"
                     }`}>{comm.name}</span>
-                    <p className="font-display text-[8px] font-bold text-foreground tracking-wider line-clamp-2">
+                    <p className="font-game-body text-[9px] font-bold text-white/90 tracking-wide line-clamp-2">
                       {line.text}
                     </p>
                   </div>
@@ -440,7 +415,7 @@ export default function TapPlayingUI({
         )}
       </AnimatePresence>
 
-      {/* Last result — compact inline with both moves shown */}
+      {/* Last result — moves comparison */}
       <AnimatePresence mode="wait">
         {lastResult && phase !== "not_started" && phase !== "finished" && (
           <motion.div
@@ -448,110 +423,75 @@ export default function TapPlayingUI({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="glass-premium rounded-lg p-2 relative overflow-hidden"
+            className="rounded-xl p-2.5 relative overflow-hidden bg-[hsl(220_20%_14%/0.8)] border border-white/10"
           >
-            <motion.div
-              initial={{ opacity: 0.4 }}
-              animate={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
-              className={`absolute inset-0 ${lastResult.runs === "OUT" ? "bg-out-red/15" : "bg-primary/10"}`}
-            />
             <div className="flex items-center justify-center gap-4 relative z-10">
               <div className="text-center">
-                <p className="text-[6px] text-muted-foreground font-bold tracking-[0.2em] mb-0.5">{playerName.toUpperCase().slice(0, 8)}</p>
-                <motion.div
-                  initial={{ rotateY: 90 }}
-                  animate={{ rotateY: 0 }}
-                  className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center mx-auto"
-                >
-                  <span className="text-lg">{MOVES_CONFIG.find((m) => m.move === lastResult?.userMove)?.emoji || "❓"}</span>
+                <p className="text-[6px] text-white/50 font-game-display font-bold tracking-[0.2em] mb-0.5">{playerName.toUpperCase().slice(0, 8)}</p>
+                <motion.div initial={{ rotateY: 90 }} animate={{ rotateY: 0 }}
+                  className="w-10 h-10 rounded-xl bg-gradient-to-br from-game-green/20 to-game-green/5 border border-game-green/25 flex items-center justify-center mx-auto">
+                  <span className="text-xl">{MOVES.find(m => m.move === lastResult?.userMove)?.emoji || "❓"}</span>
                 </motion.div>
-                <p className="text-[8px] font-display font-bold text-primary mt-0.5 tracking-wider">
-                  {lastResult.userMove === "DEF" ? "DEF" : lastResult.userMove}
-                </p>
+                <p className="text-[8px] font-game-display font-bold text-game-green mt-0.5">{lastResult.userMove === "DEF" ? "DEF" : lastResult.userMove}</p>
               </div>
+
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", delay: 0.15 }}
-                className={`w-9 h-9 rounded-lg flex items-center justify-center font-display font-black text-[10px] ${
+                className={`w-10 h-10 rounded-xl flex items-center justify-center font-game-display font-black text-sm border-b-2 ${
                   lastResult.runs === "OUT"
-                    ? "bg-gradient-to-br from-out-red/20 to-out-red/10 border-2 border-out-red/30 text-out-red"
-                    : "bg-gradient-to-br from-neon-green/20 to-neon-green/10 border-2 border-neon-green/30 text-neon-green"
+                    ? "bg-gradient-to-b from-game-red/30 to-game-red/10 border-game-red/40 text-game-red"
+                    : "bg-gradient-to-b from-game-green/30 to-game-green/10 border-game-green/40 text-game-green"
                 }`}
                 style={{ textShadow: "0 0 15px currentColor" }}
               >
                 {lastResult.runs === "OUT" ? "OUT" : `+${lastResult.runs}`}
               </motion.div>
+
               <div className="text-center">
-                <p className="text-[6px] text-muted-foreground font-bold tracking-[0.2em] mb-0.5">{opponentName.toUpperCase()}</p>
-                <motion.div
-                  initial={{ rotateY: -90 }}
-                  animate={{ rotateY: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/20 flex items-center justify-center mx-auto"
-                >
-                  <span className="text-lg">{MOVES_CONFIG.find((m) => m.move === lastResult?.aiMove)?.emoji || opponentEmoji}</span>
+                <p className="text-[6px] text-white/50 font-game-display font-bold tracking-[0.2em] mb-0.5">{opponentName.toUpperCase().slice(0, 8)}</p>
+                <motion.div initial={{ rotateY: -90 }} animate={{ rotateY: 0 }} transition={{ delay: 0.1 }}
+                  className="w-10 h-10 rounded-xl bg-gradient-to-br from-game-gold/15 to-game-gold/5 border border-game-gold/20 flex items-center justify-center mx-auto">
+                  <span className="text-xl">{MOVES.find(m => m.move === lastResult?.aiMove)?.emoji || opponentEmoji}</span>
                 </motion.div>
-                <p className="text-[8px] font-display font-bold text-accent mt-0.5 tracking-wider">
-                  {lastResult.aiMove === "DEF" ? "DEF" : lastResult.aiMove}
-                </p>
+                <p className="text-[8px] font-game-display font-bold text-game-gold mt-0.5">{lastResult.aiMove === "DEF" ? "DEF" : lastResult.aiMove}</p>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* PvP extra content slot */}
       {extraContent}
-
-      {/* Spacer */}
       <div className="flex-1 min-h-0" />
 
-      {/* Tap buttons grid */}
+      {/* ── Color-coded Move Buttons ── */}
       {phase !== "not_started" && phase !== "finished" && !waitingForOpponent && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative pb-1">
-          <AnimatePresence>
-            {showExplosion && (
-              <motion.div
-                key={showExplosion.key}
-                initial={{ scale: 1, opacity: 1 }}
-                animate={{ scale: 3, opacity: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-                className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
-              >
-                <span className="text-5xl">{showExplosion.emoji}</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <p className="text-center text-[7px] text-muted-foreground font-display mb-1 tracking-[0.2em]">
+          <p className="text-center text-[7px] text-white/40 font-game-display mb-1.5 tracking-[0.2em]">
             {isBatting ? "⚡ TAP YOUR SHOT" : "🎯 TAP YOUR BOWL"}
           </p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {MOVES_CONFIG.map((m) => (
+          <div className={`grid gap-2 ${activeMoves.length === 5 ? "grid-cols-5" : "grid-cols-3"}`}>
+            {activeMoves.map((m) => (
               <motion.button
                 key={m.label}
-                whileTap={{ scale: 0.8 }}
+                whileTap={{ scale: 0.85, y: 2 }}
                 onClick={() => handleMove(m.move)}
                 disabled={effectiveCooldown}
-                className={`relative py-2 rounded-xl font-display font-bold text-sm flex flex-col items-center gap-0.5 transition-all border backdrop-blur-sm ${
+                className={`relative flex flex-col items-center gap-0.5 py-2.5 rounded-2xl font-game-display font-black text-white border-b-4 transition-all active:border-b-2 active:translate-y-[2px] ${
                   effectiveCooldown
-                    ? "opacity-30 cursor-not-allowed border-transparent bg-muted/20"
-                    : lastPlayed === m.move
-                    ? `bg-gradient-to-br ${m.color} text-foreground ${m.glow} border-primary/40`
-                    : `bg-gradient-to-br ${m.color} text-foreground ${m.glow}`
+                    ? "opacity-30 cursor-not-allowed bg-white/5 border-transparent"
+                    : `bg-gradient-to-b ${m.color} ${m.border} ${m.glow}`
                 }`}
               >
-                <span className="text-xl">{m.emoji}</span>
-                <span className="text-[7px] tracking-wider">{m.label}</span>
+                <span className="text-xl leading-none">{m.emoji}</span>
+                <span className="text-[10px] tracking-wider">{m.label}</span>
                 {effectiveCooldown && lastPlayed === m.move && (
                   <motion.div
                     initial={{ scaleX: 1 }}
                     animate={{ scaleX: 0 }}
                     transition={{ duration: 0.8, ease: "linear" }}
-                    className="absolute bottom-0.5 left-2 right-2 h-0.5 bg-primary rounded-full origin-left"
+                    className="absolute bottom-1 left-2 right-2 h-0.5 bg-white/50 rounded-full origin-left"
                   />
                 )}
               </motion.button>
@@ -559,7 +499,7 @@ export default function TapPlayingUI({
           </div>
           {!isPvP && (
             <button onClick={onReset}
-              className="text-[8px] text-muted-foreground/40 underline self-center mt-1 active:scale-95 font-display tracking-wider w-full text-center">
+              className="text-[8px] text-white/25 underline mt-1.5 active:scale-95 font-game-body tracking-wider w-full text-center">
               Reset Match
             </button>
           )}
@@ -568,11 +508,12 @@ export default function TapPlayingUI({
 
       {/* Waiting for opponent (PvP) */}
       {isPvP && waitingForOpponent && phase !== "finished" && phase !== "not_started" && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-score p-3 text-center">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="p-3 text-center rounded-2xl bg-[hsl(220_20%_14%/0.8)] border border-white/10">
           <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
             <span className="text-2xl block mb-1">⏳</span>
           </motion.div>
-          <p className="font-display text-[10px] font-bold text-muted-foreground tracking-wider">
+          <p className="font-game-display text-[10px] font-bold text-white/60 tracking-wider">
             WAITING FOR {opponentName.toUpperCase()}...
           </p>
         </motion.div>
@@ -582,20 +523,18 @@ export default function TapPlayingUI({
       {phase === "finished" && (
         <div className="mt-auto">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-            <div className="glass-card rounded-xl px-3 py-2 text-center">
-              <p className="font-display text-[10px] font-bold text-foreground tracking-wider">
+            <div className="rounded-2xl px-3 py-2 text-center bg-[hsl(220_20%_14%/0.8)] border border-white/10">
+              <p className="font-game-display text-sm font-bold text-white tracking-wider">
                 {result === "win" ? `🏆 ${playerName.toUpperCase()} WINS!` : result === "loss" ? `${opponentName} wins!` : "🤝 A TIE!"}
               </p>
             </div>
             <div className="flex gap-2">
-              <motion.button whileTap={{ scale: 0.95 }} onClick={onReset}
-                className="flex-1 py-3 bg-gradient-to-r from-primary to-primary/70 text-primary-foreground font-display font-bold rounded-2xl tracking-wider shadow-[0_0_20px_hsl(217_91%_60%/0.2)] border border-primary/30 text-sm">
+              <GameButton variant="primary" size="lg" bounce onClick={onReset} className="flex-1">
                 {isPvP ? "🔄 REMATCH" : "⚡ NEW MATCH"}
-              </motion.button>
-              <motion.button whileTap={{ scale: 0.95 }} onClick={onHome}
-                className="flex-1 py-3 glass-premium text-foreground font-display font-bold rounded-2xl tracking-wider border border-primary/10 text-sm">
+              </GameButton>
+              <GameButton variant="secondary" size="lg" bounce onClick={onHome} className="flex-1">
                 HOME
-              </motion.button>
+              </GameButton>
             </div>
           </motion.div>
         </div>
