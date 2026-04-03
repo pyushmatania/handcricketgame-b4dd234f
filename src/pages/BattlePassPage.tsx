@@ -225,36 +225,55 @@ function TierCard({
 /* ── Main Page ── */
 export default function BattlePassPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const countdown = useCountdown(SEASON_END);
   const [isPremium, setIsPremium] = useState(false);
+  const [coins, setCoins] = useState(0);
+  const [currentXp, setCurrentXp] = useState(0);
   const [claimed, setClaimed] = useState<Set<string>>(new Set());
   const [claimingReward, setClaimingReward] = useState<PassReward["free"] | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
 
-  // Mock XP — in production read from profile
-  const currentXp = 1200;
+  // Load profile
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("xp, coins, has_premium_pass")
+        .eq("user_id", user.id)
+        .single();
+      if (data) {
+        setCurrentXp(data.xp ?? 0);
+        setCoins(data.coins ?? 0);
+        setIsPremium(!!(data as any).has_premium_pass);
+      }
+    };
+    load();
+  }, [user]);
 
-  const currentTier = useMemo(() => {
-    let t = 0;
-    for (const r of REWARDS) {
-      if (currentXp >= r.xpNeeded) t = r.tier;
+  const handlePurchasePremium = useCallback(async () => {
+    if (!user || purchasing) return;
+    if (coins < 500) {
+      toast({ title: "Not enough coins", description: "You need 500 coins to unlock the Premium Pass.", variant: "destructive" });
+      return;
     }
-    return t;
-  }, [currentXp]);
-
-  const nextReward = REWARDS.find((r) => r.tier === currentTier + 1);
-  const progressPct = nextReward
-    ? Math.min(
-        ((currentXp - (REWARDS[currentTier - 1]?.xpNeeded ?? 0)) /
-          (nextReward.xpNeeded - (REWARDS[currentTier - 1]?.xpNeeded ?? 0))) *
-          100,
-        100
-      )
-    : 100;
-
-  const handleClaim = (key: string, reward: PassReward["free"]) => {
-    setClaimingReward(reward);
-    setClaimed((prev) => new Set(prev).add(key));
-  };
+    setPurchasing(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ coins: coins - 500, has_premium_pass: true } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      toast({ title: "Purchase failed", description: error.message, variant: "destructive" });
+      setPurchasing(false);
+      return;
+    }
+    setCoins((c) => c - 500);
+    setIsPremium(true);
+    setPurchasing(false);
+    toast({ title: "🎉 Premium Pass Unlocked!", description: "You now have access to all premium rewards." });
+  }, [user, coins, purchasing, toast]);
 
   return (
     <div className="min-h-screen bg-background pb-28 relative">
