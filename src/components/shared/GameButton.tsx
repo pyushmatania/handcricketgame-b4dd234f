@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { SFX, Haptics } from "@/lib/sounds";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
 
 interface GameButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
