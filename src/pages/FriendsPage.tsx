@@ -254,54 +254,59 @@ export default function FriendsPage() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden pb-24">
-      <div className="absolute inset-0 stadium-gradient pointer-events-none" />
-      <div className="absolute inset-0 vignette pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(222_55%_10%)] to-background pointer-events-none" />
       <TopStatusBar />
 
       <div className="relative z-10 max-w-lg mx-auto px-4 pt-4">
+        {/* Header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-6 rounded-full bg-gradient-to-b from-primary to-primary/40" />
-            <h1 className="font-display text-xl font-black text-foreground tracking-wider">FRIENDS</h1>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-game-blue to-[hsl(207_90%_44%)] border-b-3 border-[hsl(207_90%_35%)] flex items-center justify-center text-lg shadow-[0_4px_12px_hsl(207_90%_54%/0.3)]">
+              👥
+            </div>
+            <div>
+              <h1 className="font-game-title text-lg text-foreground">Friends</h1>
+              <span className="text-[8px] text-muted-foreground font-game-display tracking-[0.2em]">PLAY TOGETHER</span>
+            </div>
           </div>
         </motion.div>
 
-        {/* My invite code */}
+        {/* My invite code — game card */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-premium rounded-xl p-3 mb-4 flex items-center justify-between"
+          className="rounded-2xl border-2 border-game-gold/30 bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-3.5 mb-4 flex items-center justify-between shadow-[0_0_16px_hsl(51_100%_50%/0.1)]"
         >
           <div>
-            <span className="text-[8px] text-muted-foreground font-display tracking-widest block">YOUR INVITE CODE</span>
-            <span className="font-display text-lg font-black text-primary tracking-[0.2em]">{myCode}</span>
+            <span className="text-[8px] text-muted-foreground font-game-display tracking-widest block">YOUR INVITE CODE</span>
+            <span className="font-game-display text-lg text-game-gold tracking-[0.2em]">{myCode}</span>
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={copyCode}
-            className="px-3 py-2 rounded-xl glass-card text-[9px] font-display font-bold text-primary tracking-wider"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-b from-game-gold to-[hsl(43_96%_42%)] border-b-2 border-[hsl(43_96%_32%)] text-game-dark font-game-display text-[8px] tracking-wider shadow-[0_2px_8px_hsl(51_100%_50%/0.3)] active:translate-y-[1px] active:border-b-0"
           >
             📋 COPY
           </motion.button>
         </motion.div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-4 glass-card rounded-xl p-1">
+        {/* Tabs — game-styled */}
+        <div className="flex gap-1 mb-4 bg-game-dark/80 rounded-2xl p-1 border border-[hsl(222_25%_22%/0.5)]">
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 py-2 rounded-lg font-display text-[9px] font-bold tracking-widest transition-all flex items-center justify-center gap-1 relative ${
+              className={`flex-1 py-2.5 rounded-xl font-game-display text-[8px] tracking-widest transition-all flex items-center justify-center gap-1 relative ${
                 tab === t.key
-                  ? "bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground"
+                  ? "bg-gradient-to-b from-game-blue to-[hsl(207_90%_44%)] text-white border-b-2 border-[hsl(207_90%_35%)] shadow-[0_2px_8px_hsl(207_90%_54%/0.3)]"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <span className="text-xs">{t.icon}</span>
               {t.label}
               {t.badge && t.badge > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-out-red text-white text-[7px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-game-red border-2 border-game-dark text-white text-[7px] font-game-display flex items-center justify-center">
                   {t.badge}
                 </span>
               )}
