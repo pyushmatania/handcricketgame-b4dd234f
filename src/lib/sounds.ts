@@ -301,6 +301,63 @@ export const SFX = {
     });
     playChord([523, 659, 784, 1047], 0.8, "sine", 0.08, melody.length * 0.16);
   },
+  /** Navigation tab switch — soft pop */
+  navTap() {
+    playNote(880, 0.04, 0, 0.05);
+    playNote(1320, 0.03, 0.02, 0.03);
+  },
+
+  /** Reward claim — sparkle cascade */
+  rewardClaim() {
+    playNote(784, 0.1, 0, 0.1);
+    playNote(988, 0.1, 0.08, 0.1);
+    playNote(1175, 0.12, 0.16, 0.12);
+    playNote(1568, 0.2, 0.26, 0.1);
+    playChord([1175, 1568, 1976], 0.4, "sine", 0.06, 0.4);
+  },
+
+  /** Coin spend — metallic clink */
+  coinSpend() {
+    playNote(1400, 0.06, 0, 0.08);
+    playNote(1000, 0.08, 0.04, 0.06);
+    playNote(700, 0.1, 0.1, 0.04);
+  },
+
+  /** Chest open — dramatic unlock */
+  chestOpen() {
+    playPercussion(200, 0.15, 0.1);
+    playNote(523, 0.15, 0.1, 0.1);
+    playNote(659, 0.15, 0.2, 0.1);
+    playNote(784, 0.15, 0.3, 0.12);
+    playNote(1047, 0.3, 0.4, 0.14);
+    playSoftNoise(0.2, 0.04, 0.35);
+  },
+
+  /** Toggle switch — light click */
+  toggle() {
+    playNote(1100, 0.03, 0, 0.06);
+  },
+
+  /** Error / denied — descending buzz */
+  error() {
+    playNote(400, 0.12, 0, 0.08);
+    playNote(300, 0.15, 0.1, 0.06);
+  },
+
+  /** Level up / tier unlock — ascending fanfare */
+  levelUp() {
+    const notes = [523, 659, 784, 1047, 1318];
+    notes.forEach((n, i) => playNote(n, 0.18, i * 0.1, 0.1));
+    playChord([1047, 1318, 1568], 0.6, "sine", 0.08, notes.length * 0.1);
+  },
+
+  /** Streak milestone — warm celebration */
+  streakMilestone() {
+    playNote(659, 0.12, 0, 0.08);
+    playNote(784, 0.12, 0.1, 0.08);
+    playNote(988, 0.15, 0.2, 0.1);
+    playNote(1175, 0.2, 0.32, 0.1);
+  },
 };
 
 /** Haptic feedback using Vibration API */
@@ -313,4 +370,8 @@ export const Haptics = {
   out() { navigator?.vibrate?.([40, 25, 60]); },
   firework() { navigator?.vibrate?.([8, 15, 8, 15, 20]); },
   matchInvite() { navigator?.vibrate?.([25, 40, 25, 40, 50]); },
+  rewardClaim() { navigator?.vibrate?.([15, 30, 15, 30, 25]); },
+  coinSpend() { navigator?.vibrate?.([10, 20, 10]); },
+  chestOpen() { navigator?.vibrate?.([20, 30, 40, 30, 60]); },
+  navTap() { navigator?.vibrate?.(6); },
 };
