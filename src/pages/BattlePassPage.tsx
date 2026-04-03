@@ -275,6 +275,29 @@ export default function BattlePassPage() {
     toast({ title: "🎉 Premium Pass Unlocked!", description: "You now have access to all premium rewards." });
   }, [user, coins, purchasing, toast]);
 
+  const currentTier = useMemo(() => {
+    let t = 0;
+    for (const r of REWARDS) {
+      if (currentXp >= r.xpNeeded) t = r.tier;
+    }
+    return t;
+  }, [currentXp]);
+
+  const nextReward = REWARDS.find((r) => r.tier === currentTier + 1);
+  const progressPct = nextReward
+    ? Math.min(
+        ((currentXp - (REWARDS[currentTier - 1]?.xpNeeded ?? 0)) /
+          (nextReward.xpNeeded - (REWARDS[currentTier - 1]?.xpNeeded ?? 0))) *
+          100,
+        100
+      )
+    : 100;
+
+  const handleClaim = (key: string, reward: PassReward["free"]) => {
+    setClaimingReward(reward);
+    setClaimed((prev) => new Set(prev).add(key));
+  };
+
   return (
     <div className="min-h-screen bg-background pb-28 relative">
       <TopBar />
