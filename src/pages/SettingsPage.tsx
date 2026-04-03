@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import TopStatusBar from "@/components/TopStatusBar";
 import { SYSTEM_VOICE_PERSONAS, speakWithSystemPersona } from "@/lib/systemVoices";
-import { speakElevenLabs, isElevenLabsAvailable } from "@/lib/elevenLabsAudio";
+import { speakElevenLabs } from "@/lib/elevenLabsAudio";
 
 const COMMENTARY_VOICES = [
   { id: "nPczCjzI2devNBz1zQrb", name: "Brian", desc: "Deep authoritative broadcaster", emoji: "🎙️" },
@@ -47,26 +47,81 @@ const PREVIEW_LINES_HI = [
   "Sachin wali cover drive! Master class!",
 ];
 
+/* ──── 3D Game Toggle ──── */
+function GameToggle({ enabled, onToggle, color = "green" }: { enabled: boolean; onToggle: () => void; color?: "green" | "blue" | "gold" | "red" }) {
+  const colorMap = {
+    green: { bg: "hsl(122,39%,49%)", glow: "hsl(122,39%,49%,0.4)" },
+    blue: { bg: "hsl(207,90%,54%)", glow: "hsl(207,90%,54%,0.4)" },
+    gold: { bg: "hsl(51,100%,50%)", glow: "hsl(51,100%,50%,0.4)" },
+    red: { bg: "hsl(4,90%,58%)", glow: "hsl(4,90%,58%,0.4)" },
+  };
+  const c = colorMap[color];
+  return (
+    <button onClick={onToggle} className="relative w-[52px] h-[30px] rounded-full transition-all duration-200 border-b-[3px] active:border-b-[1px] active:translate-y-[2px]"
+      style={{
+        background: enabled ? `linear-gradient(to bottom, ${c.bg}, hsl(from ${c.bg} h s calc(l - 15)))` : "linear-gradient(to bottom, hsl(var(--muted)), hsl(var(--muted-foreground) / 0.3))",
+        borderColor: enabled ? `hsl(from ${c.bg} h s calc(l - 20))` : "hsl(var(--muted-foreground) / 0.15)",
+        boxShadow: enabled ? `0 2px 12px ${c.glow}` : "none",
+      }}>
+      <motion.div
+        animate={{ x: enabled ? 22 : 2 }}
+        transition={{ type: "spring", stiffness: 600, damping: 28 }}
+        className="absolute top-[3px] w-[22px] h-[22px] rounded-full shadow-md"
+        style={{
+          background: "linear-gradient(to bottom, hsl(0 0% 100%), hsl(0 0% 90%))",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
+        }}
+      />
+    </button>
+  );
+}
+
+/* ──── Section Header ──── */
+function SectionHeader({ icon, title, expanded, onToggle, accentColor }: {
+  icon: string; title: string; expanded: boolean; onToggle: () => void; accentColor: string;
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.98 }}
+      onClick={onToggle}
+      className="w-full flex items-center gap-3 rounded-2xl p-3 border-b-[3px] transition-all"
+      style={{
+        background: `linear-gradient(135deg, hsl(222 40% 14% / 0.95), hsl(222 40% 10% / 0.98))`,
+        borderColor: `${accentColor}33`,
+        boxShadow: `0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)`,
+      }}
+    >
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center border-b-2"
+        style={{
+          background: `linear-gradient(135deg, ${accentColor}30, ${accentColor}10)`,
+          borderColor: `${accentColor}40`,
+        }}>
+        <span className="text-xl">{icon}</span>
+      </div>
+      <span className="flex-1 text-left font-game-display text-xs tracking-[0.2em]" style={{ color: accentColor }}>{title}</span>
+      <motion.span
+        animate={{ rotate: expanded ? 180 : 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        className="text-sm opacity-50"
+        style={{ color: accentColor }}
+      >▼</motion.span>
+    </motion.button>
+  );
+}
+
 interface SettingGroup {
   title: string;
   icon: string;
-  color: string;
-  items: SettingItem[];
-}
-
-interface SettingItem {
-  key: string;
-  icon: string;
-  label: string;
-  desc: string;
-  toggle: string;
+  accent: string;
+  toggleColor: "green" | "blue" | "gold" | "red";
+  items: { key: string; icon: string; label: string; desc: string; toggle: string }[];
 }
 
 export default function SettingsPage() {
   const settings = useSettings();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [expandedGroup, setExpandedGroup] = useState<string | null>("audio");
+  const [expandedGroup, setExpandedGroup] = useState<string | null>("AUDIO & SOUND");
   const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
 
   const previewSystemVoice = useCallback(async (personaId: string) => {
@@ -101,7 +156,8 @@ export default function SettingsPage() {
     {
       title: "AUDIO & SOUND",
       icon: "🔊",
-      color: "primary",
+      accent: "hsl(122,39%,49%)",
+      toggleColor: "green",
       items: [
         { key: "soundEnabled", icon: "🔊", label: "MASTER SOUND", desc: "Enable all game audio", toggle: "toggleSound" },
         { key: "batSoundEnabled", icon: "🏏", label: "BAT & BALL SFX", desc: "Bat crack, stumps, coin flip", toggle: "toggleBatSound" },
@@ -112,7 +168,8 @@ export default function SettingsPage() {
     {
       title: "COMMENTARY",
       icon: "🎙️",
-      color: "secondary",
+      accent: "hsl(207,90%,54%)",
+      toggleColor: "blue",
       items: [
         { key: "commentaryEnabled", icon: "📢", label: "LIVE COMMENTARY", desc: "Play-by-play text overlays", toggle: "toggleCommentary" },
         { key: "voiceEnabled", icon: "🎙️", label: "VOICE NARRATION", desc: "Spoken play-by-play audio", toggle: "toggleVoice" },
@@ -121,69 +178,58 @@ export default function SettingsPage() {
     {
       title: "ATMOSPHERE",
       icon: "🏟️",
-      color: "accent",
+      accent: "hsl(51,100%,50%)",
+      toggleColor: "gold",
       items: [
         { key: "crowdEnabled", icon: "🏟️", label: "CROWD SOUNDS", desc: "Cheers, gasps & applause", toggle: "toggleCrowd" },
         { key: "hapticsEnabled", icon: "📳", label: "HAPTIC FEEDBACK", desc: "Vibrations on actions", toggle: "toggleHaptics" },
-        { key: "tapCeremoniesEnabled", icon: "🎬", label: "TAP CEREMONIES", desc: "Pre/post match cards for Tap mode", toggle: "toggleTapCeremonies" },
-        { key: "arCeremoniesEnabled", icon: "📹", label: "AR CEREMONIES", desc: "Pre/post match cards for AR mode", toggle: "toggleArCeremonies" },
-        { key: "tournamentCeremoniesEnabled", icon: "🏆", label: "TOURNAMENT CEREMONIES", desc: "Pre/post match cards for Tournament mode", toggle: "toggleTournamentCeremonies" },
-        { key: "dailyCeremoniesEnabled", icon: "📅", label: "DAILY CEREMONIES", desc: "Pre/post match cards for Daily Challenge", toggle: "toggleDailyCeremonies" },
-        { key: "multiplayerCeremoniesEnabled", icon: "🤝", label: "PVP CEREMONIES", desc: "Pre/post match cards for Multiplayer", toggle: "toggleMultiplayerCeremonies" },
+        { key: "tapCeremoniesEnabled", icon: "🎬", label: "TAP CEREMONIES", desc: "Pre/post match for Tap mode", toggle: "toggleTapCeremonies" },
+        { key: "arCeremoniesEnabled", icon: "📹", label: "AR CEREMONIES", desc: "Pre/post match for AR mode", toggle: "toggleArCeremonies" },
+        { key: "tournamentCeremoniesEnabled", icon: "🏆", label: "TOURNAMENT CEREMONIES", desc: "Pre/post match for Tournaments", toggle: "toggleTournamentCeremonies" },
+        { key: "dailyCeremoniesEnabled", icon: "📅", label: "DAILY CEREMONIES", desc: "Pre/post match for Daily", toggle: "toggleDailyCeremonies" },
+        { key: "multiplayerCeremoniesEnabled", icon: "🤝", label: "PVP CEREMONIES", desc: "Pre/post match for PvP", toggle: "toggleMultiplayerCeremonies" },
       ],
     },
   ];
 
-  const groupColorMap: Record<string, string> = {
-    primary: "from-primary/15 to-primary/5 border-primary/15",
-    secondary: "from-secondary/15 to-secondary/5 border-secondary/15",
-    accent: "from-accent/15 to-accent/5 border-accent/15",
-  };
-
-  const groupAccentMap: Record<string, string> = {
-    primary: "bg-primary",
-    secondary: "bg-secondary",
-    accent: "bg-accent",
+  const cardStyle = {
+    background: "linear-gradient(135deg, hsl(222 40% 13% / 0.9), hsl(222 40% 8% / 0.95))",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden pb-24">
-      <div className="absolute inset-0 stadium-gradient pointer-events-none" />
+    <div className="min-h-screen bg-game-dark relative overflow-hidden pb-24">
+      {/* Background effects */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(222 40% 18%) 0%, hsl(222 40% 6%) 70%)" }} />
       <div className="absolute inset-0 vignette pointer-events-none" />
-      <div
-        className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
-        style={{ background: "radial-gradient(ellipse, hsl(217 91% 60% / 0.06) 0%, transparent 70%)" }}
-      />
 
       <TopStatusBar />
 
-      <div className="relative z-10 max-w-lg mx-auto px-4 pt-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-6 rounded-full bg-gradient-to-b from-primary to-primary/40" />
-            <h1 className="font-display text-xl font-black text-foreground tracking-wider">SETTINGS</h1>
+      <div className="relative z-10 max-w-lg mx-auto px-4 pt-4 space-y-4">
+        {/* Title */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-2">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center border-b-[3px]" style={{
+            background: "linear-gradient(135deg, hsl(var(--game-gold) / 0.3), hsl(var(--game-gold) / 0.1))",
+            borderColor: "hsl(var(--game-gold) / 0.4)",
+          }}>
+            <span className="text-2xl">⚙️</span>
+          </div>
+          <div>
+            <h1 className="font-game-display text-xl tracking-wider text-game-gold">SETTINGS</h1>
+            <p className="text-[10px] text-muted-foreground font-game-body tracking-wide">Customize your experience</p>
           </div>
         </motion.div>
 
-        {/* Sound setting groups */}
+        {/* Setting groups */}
         {settingGroups.map((group, gi) => (
-          <motion.div key={group.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + gi * 0.08 }} className="mb-4">
-            {/* Group header */}
-            <button
-              onClick={() => setExpandedGroup(expandedGroup === group.title ? null : group.title)}
-              className="w-full flex items-center gap-3 mb-2"
-            >
-              <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${groupColorMap[group.color]} border flex items-center justify-center`}>
-                <span className="text-base">{group.icon}</span>
-              </div>
-              <div className="flex-1 text-left">
-                <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">{group.title}</span>
-              </div>
-              <motion.span
-                animate={{ rotate: expandedGroup === group.title ? 180 : 0 }}
-                className="text-muted-foreground text-xs"
-              >▼</motion.span>
-            </button>
+          <motion.div key={group.title} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 + gi * 0.08 }}>
+            <SectionHeader
+              icon={group.icon}
+              title={group.title}
+              expanded={expandedGroup === group.title}
+              onToggle={() => setExpandedGroup(expandedGroup === group.title ? null : group.title)}
+              accentColor={group.accent}
+            />
 
             <AnimatePresence>
               {expandedGroup === group.title && (
@@ -191,225 +237,180 @@ export default function SettingsPage() {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
                   className="overflow-hidden"
                 >
-                  <div className="space-y-2 pb-2">
+                  <div className="space-y-1.5 pt-2 pb-1">
                     {group.items.map((item, i) => {
                       const isEnabled = (settings as any)[item.key];
                       return (
                         <motion.div
                           key={item.key}
-                          initial={{ opacity: 0, x: -10 }}
+                          initial={{ opacity: 0, x: -15 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.04 }}
-                          className="glass-premium rounded-xl p-3.5 flex items-center gap-3"
+                          transition={{ delay: i * 0.03 }}
+                          className="rounded-xl p-3 flex items-center gap-3 border border-[hsl(var(--border)/0.3)]"
+                          style={cardStyle}
                         >
-                          <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${groupColorMap[group.color]} border flex items-center justify-center`}>
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                            style={{ background: `${group.accent}18`, border: `1px solid ${group.accent}30` }}>
                             <span className="text-base">{item.icon}</span>
                           </div>
-                          <div className="flex-1">
-                            <span className="font-display text-[10px] font-bold text-foreground tracking-wider block">{item.label}</span>
-                            <span className="text-[8px] text-muted-foreground">{item.desc}</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="font-game-display text-[10px] tracking-wider text-foreground block">{item.label}</span>
+                            <span className="text-[8px] text-muted-foreground font-game-body">{item.desc}</span>
                           </div>
-                          <button
-                            onClick={(settings as any)[item.toggle]}
-                            className={`w-12 h-7 rounded-full relative transition-all ${
-                              isEnabled
-                                ? `bg-${group.color}/20 border border-${group.color}/40 shadow-[0_0_10px_hsl(217_91%_60%/0.15)]`
-                                : "bg-muted/40 border border-muted-foreground/10"
-                            }`}
-                            style={isEnabled ? { borderColor: `hsl(var(--${group.color}) / 0.4)`, backgroundColor: `hsl(var(--${group.color}) / 0.15)` } : {}}
-                          >
-                            <motion.div
-                              animate={{ x: isEnabled ? 20 : 2 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                              className={`w-5 h-5 rounded-full absolute top-[3px] transition-colors`}
-                              style={isEnabled ? { background: `linear-gradient(to bottom right, hsl(var(--${group.color})), hsl(var(--${group.color}) / 0.8))`, boxShadow: `0 0 8px hsl(var(--${group.color}) / 0.4)` } : { backgroundColor: 'hsl(var(--muted-foreground) / 0.3)' }}
-                            />
-                          </button>
+                          <GameToggle enabled={isEnabled} onToggle={(settings as any)[item.toggle]} color={group.toggleColor} />
                         </motion.div>
                       );
                     })}
 
-                    {/* Ambient Stadium Volume slider inside Audio group */}
+                    {/* Ambient Volume slider */}
                     {group.title === "AUDIO & SOUND" && settings.musicEnabled && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-premium rounded-xl p-3.5"
-                      >
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl p-3.5 border border-[hsl(var(--border)/0.3)]" style={cardStyle}>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-base">🏟️</span>
-                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">STADIUM AMBIENCE VOLUME</span>
-                          <span className="text-[9px] text-muted-foreground ml-auto font-mono">{Math.round(settings.ambientVolume * 100)}%</span>
+                          <span className="font-game-display text-[10px] tracking-wider text-foreground">STADIUM AMBIENCE</span>
+                          <span className="text-[10px] text-game-gold font-game-display ml-auto">{Math.round(settings.ambientVolume * 100)}%</span>
                         </div>
-                        <Slider
-                          value={[settings.ambientVolume * 100]}
-                          onValueChange={([v]) => settings.setAmbientVolume(v / 100)}
-                          max={100}
-                          min={0}
-                          step={5}
-                          className="w-full"
-                        />
+                        <Slider value={[settings.ambientVolume * 100]} onValueChange={([v]) => settings.setAmbientVolume(v / 100)} max={100} min={0} step={5} className="w-full" />
                       </motion.div>
                     )}
 
-                    {/* Voice Engine selector inside Commentary group */}
+                    {/* Voice Engine selector */}
                     {group.title === "COMMENTARY" && settings.voiceEnabled && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-premium rounded-xl p-3.5"
-                      >
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl p-3.5 border border-[hsl(var(--border)/0.3)]" style={cardStyle}>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-base">🔊</span>
-                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">VOICE ENGINE</span>
+                          <span className="font-game-display text-[10px] tracking-wider text-foreground">VOICE ENGINE</span>
                         </div>
                         <div className="grid grid-cols-3 gap-1.5">
                           {VOICE_ENGINES.map((engine) => {
                             const isActive = settings.voiceEngine === engine.id;
                             return (
-                              <button
+                              <motion.button
                                 key={engine.id}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => settings.setVoiceEngine(engine.id)}
-                                className={`p-2.5 rounded-xl text-center transition-all ${
-                                  isActive
-                                    ? "glass-premium border border-primary/30 shadow-[0_0_12px_hsl(217_91%_60%/0.15)]"
-                                    : "glass-card border border-transparent hover:border-muted-foreground/10"
-                                }`}
+                                className="p-2.5 rounded-xl text-center transition-all border-b-2"
+                                style={{
+                                  background: isActive
+                                    ? `linear-gradient(135deg, ${group.accent}25, ${group.accent}10)`
+                                    : "hsl(222 40% 12% / 0.8)",
+                                  borderColor: isActive ? `${group.accent}60` : "transparent",
+                                  boxShadow: isActive ? `0 0 12px ${group.accent}20` : "none",
+                                }}
                               >
                                 <span className="text-lg block mb-1">{engine.emoji}</span>
-                                <span className={`font-display text-[8px] font-bold block ${isActive ? "text-primary" : "text-foreground"}`}>{engine.name}</span>
-                                <span className="text-[6px] text-muted-foreground block mt-0.5">{engine.desc}</span>
-                                {isActive && (
-                                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-primary text-xs block mt-1">✓</motion.span>
-                                )}
-                              </button>
+                                <span className="font-game-display text-[8px] block" style={{ color: isActive ? group.accent : "hsl(var(--foreground))" }}>{engine.name}</span>
+                                <span className="text-[6px] text-muted-foreground block mt-0.5 font-game-body">{engine.desc}</span>
+                              </motion.button>
                             );
                           })}
                         </div>
                       </motion.div>
                     )}
 
-                    {/* Commentary Language selector */}
+                    {/* Commentary Language */}
                     {group.title === "COMMENTARY" && settings.commentaryEnabled && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-premium rounded-xl p-3.5"
-                      >
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl p-3.5 border border-[hsl(var(--border)/0.3)]" style={cardStyle}>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-base">🌐</span>
-                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">COMMENTARY LANGUAGE</span>
+                          <span className="font-game-display text-[10px] tracking-wider text-foreground">LANGUAGE</span>
                         </div>
                         <div className="grid grid-cols-3 gap-1.5">
                           {LANGUAGE_OPTIONS.map((lang) => {
                             const isActive = settings.commentaryLanguage === lang.id;
                             return (
-                              <button
+                              <motion.button
                                 key={lang.id}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => settings.setCommentaryLanguage(lang.id)}
-                                className={`p-2.5 rounded-xl text-center transition-all ${
-                                  isActive
-                                    ? "glass-premium border border-accent/30 shadow-[0_0_12px_hsl(var(--accent)/0.15)]"
-                                    : "glass-card border border-transparent hover:border-muted-foreground/10"
-                                }`}
+                                className="p-2.5 rounded-xl text-center transition-all border-b-2"
+                                style={{
+                                  background: isActive ? `${group.accent}20` : "hsl(222 40% 12% / 0.8)",
+                                  borderColor: isActive ? `${group.accent}60` : "transparent",
+                                }}
                               >
                                 <span className="text-lg block mb-1">{lang.emoji}</span>
-                                <span className={`font-display text-[8px] font-bold block ${isActive ? "text-accent" : "text-foreground"}`}>{lang.name}</span>
-                                <span className="text-[6px] text-muted-foreground block mt-0.5">{lang.desc}</span>
-                                {isActive && (
-                                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-accent text-xs block mt-1">✓</motion.span>
-                                )}
-                              </button>
+                                <span className="font-game-display text-[8px] block" style={{ color: isActive ? group.accent : "hsl(var(--foreground))" }}>{lang.name}</span>
+                                <span className="text-[6px] text-muted-foreground block mt-0.5 font-game-body">{lang.desc}</span>
+                              </motion.button>
                             );
                           })}
                         </div>
                       </motion.div>
                     )}
 
-                    {/* Voice picker inside Commentary group — only show for ElevenLabs/Auto */}
+                    {/* ElevenLabs Voices */}
                     {group.title === "COMMENTARY" && settings.voiceEnabled && settings.voiceEngine !== "system" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-premium rounded-xl p-3.5"
-                      >
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl p-3.5 border border-[hsl(var(--border)/0.3)]" style={cardStyle}>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-base">🗣️</span>
-                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">ELEVENLABS VOICE</span>
-                          <span className="text-[7px] text-muted-foreground ml-auto">tap to preview</span>
+                          <span className="font-game-display text-[10px] tracking-wider text-foreground">ELEVENLABS VOICE</span>
+                          <span className="text-[7px] text-muted-foreground ml-auto font-game-body">tap to preview</span>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                           {COMMENTARY_VOICES.map((voice) => {
                             const isActive = settings.commentaryVoice === voice.id;
                             const isPreviewing = previewingVoice === voice.id;
                             return (
-                              <button
+                              <motion.button
                                 key={voice.id}
+                                whileTap={{ scale: 0.96 }}
                                 onClick={() => settings.setCommentaryVoice(voice.id)}
-                                className={`p-2.5 rounded-xl text-left transition-all ${
-                                  isActive
-                                    ? "glass-premium border border-secondary/30 shadow-[0_0_12px_hsl(45_93%_47%/0.15)]"
-                                    : "glass-card border border-transparent hover:border-muted-foreground/10"
-                                }`}
+                                className="p-2.5 rounded-xl text-left transition-all border-b-2"
+                                style={{
+                                  background: isActive ? "hsl(51 100% 50% / 0.1)" : "hsl(222 40% 12% / 0.8)",
+                                  borderColor: isActive ? "hsl(51 100% 50% / 0.4)" : "transparent",
+                                }}
                               >
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm">{voice.emoji}</span>
                                   <div className="flex-1 min-w-0">
-                                    <span className={`font-display text-[9px] font-bold block ${isActive ? "text-secondary" : "text-foreground"}`}>{voice.name}</span>
-                                    <span className="text-[7px] text-muted-foreground truncate block">{voice.desc}</span>
+                                    <span className="font-game-display text-[9px] block" style={{ color: isActive ? "hsl(51,100%,50%)" : "hsl(var(--foreground))" }}>{voice.name}</span>
+                                    <span className="text-[7px] text-muted-foreground truncate block font-game-body">{voice.desc}</span>
                                   </div>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); previewElevenLabsVoice(voice.id); }}
-                                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
-                                      isPreviewing ? "bg-secondary/20 animate-pulse" : "bg-muted/30 hover:bg-muted/50"
-                                    }`}
+                                    className="w-6 h-6 rounded-full flex items-center justify-center transition-all"
+                                    style={{
+                                      background: isPreviewing ? "hsl(207 90% 54% / 0.3)" : "hsl(var(--muted) / 0.3)",
+                                    }}
                                   >
                                     <span className="text-[10px]">{isPreviewing ? "⏳" : "▶"}</span>
                                   </button>
-                                  {isActive && (
-                                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-secondary text-xs">✓</motion.span>
-                                  )}
                                 </div>
-                              </button>
+                              </motion.button>
                             );
                           })}
                         </div>
                       </motion.div>
                     )}
 
-                    {/* System Voice Personas preview — only show for System/Auto */}
+                    {/* System Voices */}
                     {group.title === "COMMENTARY" && settings.voiceEnabled && settings.voiceEngine !== "elevenlabs" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-premium rounded-xl p-3.5"
-                      >
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl p-3.5 border border-[hsl(var(--border)/0.3)]" style={cardStyle}>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-base">🎭</span>
-                          <span className="font-display text-[10px] font-bold text-foreground tracking-wider">SYSTEM VOICES</span>
-                          <span className="text-[7px] text-muted-foreground ml-auto">tap ▶ to preview</span>
+                          <span className="font-game-display text-[10px] tracking-wider text-foreground">SYSTEM VOICES</span>
+                          <span className="text-[7px] text-muted-foreground ml-auto font-game-body">tap ▶ to preview</span>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                           {SYSTEM_VOICE_PERSONAS.map((persona) => {
                             const isPreviewing = previewingVoice === persona.id;
                             return (
-                              <div
-                                key={persona.id}
-                                className="glass-card p-2 rounded-xl flex items-center gap-2 border border-transparent"
-                              >
+                              <div key={persona.id} className="p-2 rounded-xl flex items-center gap-2 border-b-2 border-transparent"
+                                style={{ background: "hsl(222 40% 12% / 0.8)" }}>
                                 <span className="text-sm">{persona.avatar}</span>
                                 <div className="flex-1 min-w-0">
-                                  <span className="font-display text-[9px] font-bold text-foreground block">{persona.name}</span>
-                                  <span className="text-[7px] text-muted-foreground block capitalize">{persona.style} • {persona.region}</span>
+                                  <span className="font-game-display text-[9px] text-foreground block">{persona.name}</span>
+                                  <span className="text-[7px] text-muted-foreground block capitalize font-game-body">{persona.style} • {persona.region}</span>
                                 </div>
                                 <button
                                   onClick={() => previewSystemVoice(persona.id)}
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
-                                    isPreviewing ? "bg-primary/20 animate-pulse" : "bg-muted/30 hover:bg-muted/50"
-                                  }`}
+                                  className="w-6 h-6 rounded-full flex items-center justify-center transition-all"
+                                  style={{ background: isPreviewing ? "hsl(122 39% 49% / 0.3)" : "hsl(var(--muted) / 0.3)" }}
                                 >
                                   <span className="text-[10px]">{isPreviewing ? "⏳" : "▶"}</span>
                                 </button>
@@ -426,87 +427,97 @@ export default function SettingsPage() {
           </motion.div>
         ))}
 
-        {/* Account */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-4 rounded-full bg-accent" />
-            <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">ACCOUNT</h2>
-          </div>
-          <div className="space-y-2">
-            {user ? (
-              <>
-                <div className="glass-premium rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/15 flex items-center justify-center">
-                    <span className="text-lg">📧</span>
-                  </div>
-                  <div className="flex-1">
-                    <span className="font-display text-[10px] font-bold text-foreground tracking-wider block">EMAIL</span>
-                    <span className="text-[9px] text-muted-foreground">{user.email}</span>
-                  </div>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={async () => { await signOut(); navigate("/"); }}
-                  className="w-full glass-premium rounded-xl p-4 flex items-center gap-3 text-left border border-out-red/10"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-out-red/15 to-out-red/5 border border-out-red/15 flex items-center justify-center">
-                    <span className="text-lg">🚪</span>
-                  </div>
-                  <span className="font-display text-[10px] font-bold text-out-red tracking-wider">SIGN OUT</span>
-                </motion.button>
-              </>
-            ) : (
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={() => navigate("/auth")}
-                className="w-full glass-premium rounded-xl p-4 flex items-center gap-3 text-left border border-primary/10"
-              >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/15 flex items-center justify-center">
-                  <span className="text-lg">🔐</span>
-                </div>
-                <div className="flex-1">
-                  <span className="font-display text-[10px] font-bold text-primary tracking-wider block">SIGN IN</span>
-                  <span className="text-[8px] text-muted-foreground">Save progress & compete</span>
-                </div>
-              </motion.button>
-            )}
+        {/* Account Section */}
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <SectionHeader icon="👤" title="ACCOUNT" expanded={expandedGroup === "ACCOUNT"} onToggle={() => setExpandedGroup(expandedGroup === "ACCOUNT" ? null : "ACCOUNT")} accentColor="hsl(4,90%,58%)" />
+          <AnimatePresence>
+            {expandedGroup === "ACCOUNT" && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                <div className="space-y-1.5 pt-2 pb-1">
+                  {user ? (
+                    <>
+                      <div className="rounded-xl p-3.5 flex items-center gap-3 border border-[hsl(var(--border)/0.3)]" style={cardStyle}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "hsl(207 90% 54% / 0.15)", border: "1px solid hsl(207 90% 54% / 0.3)" }}>
+                          <span className="text-lg">📧</span>
+                        </div>
+                        <div className="flex-1">
+                          <span className="font-game-display text-[10px] tracking-wider text-foreground block">EMAIL</span>
+                          <span className="text-[9px] text-muted-foreground font-game-body">{user.email}</span>
+                        </div>
+                      </div>
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={async () => { await signOut(); navigate("/"); }}
+                        className="w-full rounded-xl p-3.5 flex items-center gap-3 text-left border-b-[3px] active:border-b-[1px] active:translate-y-[2px]"
+                        style={{
+                          background: "linear-gradient(135deg, hsl(4 90% 58% / 0.15), hsl(4 90% 58% / 0.05))",
+                          borderColor: "hsl(4 90% 58% / 0.3)",
+                        }}
+                      >
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "hsl(4 90% 58% / 0.2)" }}>
+                          <span className="text-lg">🚪</span>
+                        </div>
+                        <span className="font-game-display text-[10px] tracking-wider text-game-red">SIGN OUT</span>
+                      </motion.button>
+                    </>
+                  ) : (
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => navigate("/auth")}
+                      className="w-full rounded-xl p-3.5 flex items-center gap-3 text-left border-b-[3px] active:border-b-[1px] active:translate-y-[2px]"
+                      style={{
+                        background: "linear-gradient(135deg, hsl(122 39% 49% / 0.15), hsl(122 39% 49% / 0.05))",
+                        borderColor: "hsl(122 39% 49% / 0.3)",
+                      }}
+                    >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "hsl(122 39% 49% / 0.2)" }}>
+                        <span className="text-lg">🔐</span>
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-game-display text-[10px] tracking-wider text-game-green block">SIGN IN</span>
+                        <span className="text-[8px] text-muted-foreground font-game-body">Save progress & compete</span>
+                      </div>
+                    </motion.button>
+                  )}
 
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={clearData}
-              className="w-full glass-premium rounded-xl p-4 flex items-center gap-3 text-left"
-            >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-muted-foreground/10 to-muted-foreground/5 border border-muted-foreground/10 flex items-center justify-center">
-                <span className="text-lg">🗑️</span>
-              </div>
-              <div className="flex-1">
-                <span className="font-display text-[10px] font-bold text-foreground tracking-wider block">RESET LOCAL DATA</span>
-                <span className="text-[8px] text-muted-foreground">Clear onboarding & settings</span>
-              </div>
-            </motion.button>
-          </div>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={clearData}
+                    className="w-full rounded-xl p-3.5 flex items-center gap-3 text-left border border-[hsl(var(--border)/0.3)]"
+                    style={cardStyle}
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "hsl(var(--muted-foreground) / 0.1)" }}>
+                      <span className="text-lg">🗑️</span>
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-game-display text-[10px] tracking-wider text-foreground block">RESET LOCAL DATA</span>
+                      <span className="text-[8px] text-muted-foreground font-game-body">Clear onboarding & settings</span>
+                    </div>
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* About */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-6"
+          className="rounded-2xl p-5 text-center border-b-[3px] mb-4"
+          style={{
+            ...cardStyle,
+            borderColor: "hsl(var(--game-gold) / 0.2)",
+          }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-4 rounded-full bg-muted-foreground/30" />
-            <h2 className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">ABOUT</h2>
-          </div>
-          <div className="glass-premium rounded-xl p-4 text-center">
-            <span className="text-2xl block mb-1">🏏</span>
-            <p className="font-display text-xs font-bold text-foreground tracking-wider">HAND CRICKET AR</p>
-            <p className="text-[8px] text-muted-foreground/50 font-display mt-1 tracking-widest">v3.0 • PREMIUM EDITION</p>
-            <div className="flex items-center justify-center gap-3 mt-3">
-              <div className="w-8 h-0.5 bg-gradient-to-r from-transparent to-primary/30" />
-              <span className="text-[7px] text-muted-foreground/30 font-display tracking-widest">POWERED BY AI</span>
-              <div className="w-8 h-0.5 bg-gradient-to-l from-transparent to-primary/30" />
-            </div>
+          <span className="text-3xl block mb-2">🏏</span>
+          <p className="font-game-display text-sm tracking-wider text-game-gold">HAND CRICKET AR</p>
+          <p className="text-[9px] text-muted-foreground/50 font-game-display mt-1 tracking-widest">v3.0 • PREMIUM EDITION</p>
+          <div className="flex items-center justify-center gap-3 mt-3">
+            <div className="w-10 h-[2px]" style={{ background: "linear-gradient(to right, transparent, hsl(var(--game-gold) / 0.3))" }} />
+            <span className="text-[7px] text-muted-foreground/40 font-game-display tracking-[0.3em]">POWERED BY AI</span>
+            <div className="w-10 h-[2px]" style={{ background: "linear-gradient(to left, transparent, hsl(var(--game-gold) / 0.3))" }} />
           </div>
         </motion.div>
       </div>
