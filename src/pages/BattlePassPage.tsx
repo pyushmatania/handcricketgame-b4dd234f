@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Lock, Star, Crown, Gift, Zap, Trophy, Clock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SFX as _SFX } from "@/lib/sounds";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
