@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import TopBar from "@/components/layout/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { SFX, Haptics } from "@/lib/sounds";
 
 /* ── Season config ── */
 const SEASON_END = new Date("2026-05-01T00:00:00Z");
