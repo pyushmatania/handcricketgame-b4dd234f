@@ -838,20 +838,20 @@ export default function LeaderboardPage() {
           )}
         </AnimatePresence>
 
-        {/* Your position (global only) */}
+        {/* Your position — game-styled card */}
         {mainTab === "global" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-            className="mt-5 glass-premium rounded-2xl p-4 flex items-center gap-3 border border-primary/10">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/20 flex items-center justify-center">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            className="mt-5 rounded-2xl border-2 border-game-blue/30 bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-4 flex items-center gap-3 shadow-[0_0_16px_hsl(207_90%_54%/0.12)]">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-b from-game-blue to-[hsl(207_90%_44%)] border-b-3 border-[hsl(207_90%_35%)] flex items-center justify-center shadow-[0_4px_12px_hsl(207_90%_54%/0.3)]">
               <span className="text-lg">{user ? "🏏" : "👤"}</span>
             </div>
             <div className="flex-1">
-              <p className="text-[9px] text-muted-foreground font-display tracking-[0.2em]">YOUR RANK</p>
-              <p className="font-display text-2xl font-black text-foreground" style={{ textShadow: myRank ? "0 0 15px hsl(217 91% 60% / 0.2)" : "none" }}>
+              <p className="text-[8px] text-muted-foreground font-game-display tracking-[0.2em]">YOUR RANK</p>
+              <p className="font-game-display text-2xl text-foreground" style={{ textShadow: myRank ? "0 0 15px hsl(207 90% 54% / 0.3)" : "none" }}>
                 {myRank ? `#${myRank}` : "—"}
               </p>
             </div>
-            {!user && <p className="text-[8px] text-muted-foreground font-display tracking-wider">Sign in to track</p>}
+            {!user && <p className="text-[8px] text-muted-foreground font-game-body">Sign in to track</p>}
           </motion.div>
         )}
       </div>
