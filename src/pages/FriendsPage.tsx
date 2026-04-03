@@ -314,16 +314,16 @@ export default function FriendsPage() {
           ))}
         </div>
 
-        {/* Feedback */}
+        {/* Feedback toast */}
         <AnimatePresence>
           {feedback && (
             <motion.div
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="glass-premium rounded-xl p-2.5 mb-3 text-center"
+              className="rounded-2xl border-2 border-game-green/30 bg-game-green/10 p-2.5 mb-3 text-center"
             >
-              <span className="text-[10px] font-display text-foreground">{feedback}</span>
+              <span className="text-[10px] font-game-card text-foreground">{feedback}</span>
             </motion.div>
           )}
         </AnimatePresence>
