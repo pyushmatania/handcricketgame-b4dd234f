@@ -1,6 +1,7 @@
 import { useState, useCallback, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,10 +32,10 @@ const queryClient = new QueryClient();
 function LazyPage({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-game-dark flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="font-display text-[9px] tracking-[0.25em] text-muted-foreground">LOADING</span>
+          <div className="w-8 h-8 border-2 border-game-gold border-t-transparent rounded-full animate-spin" />
+          <span className="font-game-display text-[9px] tracking-[0.25em] text-muted-foreground">LOADING</span>
         </div>
       </div>
     }>
@@ -44,21 +45,25 @@ function LazyPage({ children }: { children: React.ReactNode }) {
 }
 
 function AnimatedRoutes() {
+  const location = useLocation();
+
   return (
-    <Routes>
-      <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
-      <Route path="/play" element={<LazyPage><PageTransition><PlayPage /></PageTransition></LazyPage>} />
-      <Route path="/game/:mode" element={<LazyPage><GamePage /></LazyPage>} />
-      <Route path="/profile" element={<LazyPage><PageTransition><ProfilePage /></PageTransition></LazyPage>} />
-      <Route path="/leaderboard" element={<LazyPage><PageTransition><LeaderboardPage /></PageTransition></LazyPage>} />
-      <Route path="/auth" element={<LazyPage><PageTransition><AuthPage /></PageTransition></LazyPage>} />
-      <Route path="/settings" element={<LazyPage><PageTransition><SettingsPage /></PageTransition></LazyPage>} />
-      <Route path="/friends" element={<LazyPage><PageTransition><FriendsPage /></PageTransition></LazyPage>} />
-      <Route path="/history" element={<LazyPage><PageTransition><MatchHistoryPage /></PageTransition></LazyPage>} />
-      <Route path="/notifications" element={<LazyPage><PageTransition><NotificationsPage /></PageTransition></LazyPage>} />
-      <Route path="/shop" element={<LazyPage><PageTransition><ShopPage /></PageTransition></LazyPage>} />
-      <Route path="*" element={<LazyPage><NotFound /></LazyPage>} />
-    </Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+        <Route path="/play" element={<LazyPage><PageTransition><PlayPage /></PageTransition></LazyPage>} />
+        <Route path="/game/:mode" element={<LazyPage><GamePage /></LazyPage>} />
+        <Route path="/profile" element={<LazyPage><PageTransition><ProfilePage /></PageTransition></LazyPage>} />
+        <Route path="/leaderboard" element={<LazyPage><PageTransition><LeaderboardPage /></PageTransition></LazyPage>} />
+        <Route path="/auth" element={<LazyPage><PageTransition><AuthPage /></PageTransition></LazyPage>} />
+        <Route path="/settings" element={<LazyPage><PageTransition><SettingsPage /></PageTransition></LazyPage>} />
+        <Route path="/friends" element={<LazyPage><PageTransition><FriendsPage /></PageTransition></LazyPage>} />
+        <Route path="/history" element={<LazyPage><PageTransition><MatchHistoryPage /></PageTransition></LazyPage>} />
+        <Route path="/notifications" element={<LazyPage><PageTransition><NotificationsPage /></PageTransition></LazyPage>} />
+        <Route path="/shop" element={<LazyPage><PageTransition><ShopPage /></PageTransition></LazyPage>} />
+        <Route path="*" element={<LazyPage><PageTransition><NotFound /></PageTransition></LazyPage>} />
+      </Routes>
+    </AnimatePresence>
   );
 }
 
@@ -84,6 +89,5 @@ const App = () => {
     </QueryClientProvider>
   );
 };
-
 
 export default App;
