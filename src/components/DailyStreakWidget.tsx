@@ -1,7 +1,10 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
 
 export default function DailyStreakWidget() {
+  const { streak, todayClaimed, STREAK_REWARDS } = useDailyLogin();
+  const navigate = useNavigate();
   const { streak, todayClaimed, STREAK_REWARDS } = useDailyLogin();
 
   if (!todayClaimed) return null;
