@@ -46,6 +46,7 @@ function LazyPage({ children }: { children: React.ReactNode }) {
 
 function AnimatedRoutes() {
   const location = useLocation();
+  useTabSwipe();
 
   return (
     <AnimatePresence mode="wait">
