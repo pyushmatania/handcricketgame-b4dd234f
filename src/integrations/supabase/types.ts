@@ -360,6 +360,7 @@ export type Database = {
           equipped_avatar_frame: string | null
           equipped_bat_skin: string | null
           equipped_vs_effect: string | null
+          has_premium_pass: boolean
           high_score: number
           id: string
           invite_code: string
@@ -390,6 +391,7 @@ export type Database = {
           equipped_avatar_frame?: string | null
           equipped_bat_skin?: string | null
           equipped_vs_effect?: string | null
+          has_premium_pass?: boolean
           high_score?: number
           id?: string
           invite_code?: string
@@ -420,6 +422,7 @@ export type Database = {
           equipped_avatar_frame?: string | null
           equipped_bat_skin?: string | null
           equipped_vs_effect?: string | null
+          has_premium_pass?: boolean
           high_score?: number
           id?: string
           invite_code?: string
