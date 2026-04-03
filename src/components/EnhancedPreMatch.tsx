@@ -9,7 +9,9 @@ import {
   getPreMatchDuoIntro, getPreMatchStadiumLines, getPreMatchTossLines,
   getPreMatchStrategyLines, getPreMatchGameOnLines,
 } from "@/lib/commentaryDuo";
-import prematchBg from "@/assets/prematch-bg.jpg";
+import charBatsman from "@/assets/char-batsman.png";
+import charBowler from "@/assets/char-bowler.png";
+import GameButton from "./shared/GameButton";
 
 interface RivalryStats {
   myWins: number; theirWins: number; totalGames: number;
@@ -30,22 +32,12 @@ interface EnhancedPreMatchProps {
   onComplete: () => void;
 }
 
-// Page definitions
-type PageId = "intro" | "stadium" | "rivalry" | "toss" | "strategy" | "gameon";
+type PageId = "vs" | "toss" | "gameon";
 
 interface CeremonyPage {
   id: PageId;
   lines: CommentaryLine[];
-  voiceEnabled: boolean; // whether TTS plays on this page
-}
-
-function getDominance(stats: RivalryStats) {
-  if (!stats.totalGames) return { pct: 50, label: "EVEN" };
-  const pct = Math.round((stats.myWins / stats.totalGames) * 100);
-  if (pct >= 75) return { pct, label: "DOMINANT" };
-  if (pct >= 55) return { pct, label: "LEADING" };
-  if (pct >= 45) return { pct, label: "CONTESTED" };
-  return { pct, label: "TRAILING" };
+  voiceEnabled: boolean;
 }
 
 export default function EnhancedPreMatch({
@@ -60,26 +52,15 @@ export default function EnhancedPreMatch({
   const duo = commentators || pickMatchCommentators();
   const c1 = duo[0].name;
   const c2 = duo[1].name;
-  const hasRivalry = isPvP && rivalryStats && rivalryStats.totalGames > 0;
 
-  // Build pages
-  const pages: CeremonyPage[] = [];
-  pages.push({ id: "intro", lines: getPreMatchDuoIntro(c1, c2, playerName, opponentName), voiceEnabled: true });
-  pages.push({ id: "stadium", lines: getPreMatchStadiumLines(c1, c2, playerName), voiceEnabled: false });
-  if (hasRivalry) {
-    pages.push({ id: "rivalry", lines: [
-      { commentatorId: c1, text: `Head-to-head: ${playerName} ${rivalryStats!.myWins} - ${rivalryStats!.theirWins} ${opponentName}!`, isKeyMoment: false },
-      { commentatorId: c2, text: `${rivalryStats!.myWins > rivalryStats!.theirWins ? `${playerName} ka raaj chal raha hai!` : rivalryStats!.theirWins > rivalryStats!.myWins ? `${opponentName} is the boss right now!` : "Barabari! All square!"}`, isKeyMoment: false },
-    ], voiceEnabled: false });
-  }
-  pages.push({ id: "toss", lines: getPreMatchTossLines(c1, c2, tossWinner, battingFirst, tossWinner), voiceEnabled: true });
-  pages.push({ id: "strategy", lines: getPreMatchStrategyLines(c1, c2, playerName, opponentName, battingFirst === playerName), voiceEnabled: false });
-  pages.push({ id: "gameon", lines: getPreMatchGameOnLines(c1, c2, battingFirst), voiceEnabled: true });
+  const pages: CeremonyPage[] = [
+    { id: "vs", lines: getPreMatchDuoIntro(c1, c2, playerName, opponentName), voiceEnabled: true },
+    { id: "toss", lines: getPreMatchTossLines(c1, c2, tossWinner, battingFirst, tossWinner), voiceEnabled: true },
+    { id: "gameon", lines: getPreMatchGameOnLines(c1, c2, battingFirst), voiceEnabled: true },
+  ];
 
   const page = pages[currentPage];
-  const dominance = hasRivalry ? getDominance(rivalryStats!) : null;
 
-  // Start music & SFX on mount
   useEffect(() => {
     if (isElevenLabsAvailable()) {
       playElevenLabsMusic("Epic dramatic cricket tournament intro music, cinematic brass and drums, building excitement", 20, false);
@@ -89,22 +70,17 @@ export default function EnhancedPreMatch({
     return () => { stopMusic(); };
   }, []);
 
-  // Play TTS when page changes (only for voiced pages)
   useEffect(() => {
     if (!page || !voiceEnabled || !commentaryEnabled || !page.voiceEnabled) return;
-    const keyLines = page.lines.filter(l => l.isKeyMoment);
-    if (keyLines.length === 0) return;
     speakDuoCommentary(page.lines, duo, voiceEngine);
   }, [currentPage]);
 
-  // SFX per page
   useEffect(() => {
     if (page?.id === "toss" && soundEnabled) SFX.tossReveal();
     if (page?.id === "gameon") {
       if (soundEnabled) SFX.gameStart();
       if (crowdEnabled) CrowdSFX.roar();
     }
-    if (page?.id === "stadium" && crowdEnabled) CrowdSFX.cheer();
   }, [currentPage]);
 
   const handleTap = () => {
@@ -133,207 +109,244 @@ export default function EnhancedPreMatch({
           className="fixed inset-0 z-[70] flex flex-col overflow-hidden cursor-pointer"
           onClick={handleTap}
         >
-          {/* Background */}
-          <img src={prematchBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/80" />
+          {/* Dark gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[hsl(220_30%_8%)] via-[hsl(220_25%_12%)] to-[hsl(220_20%_6%)]" />
 
-          {/* Animated floodlights */}
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(6)].map((_, i) => (
-              <motion.div key={i}
-                animate={{ opacity: [0.08, 0.35, 0.08] }}
-                transition={{ duration: 2.5 + Math.random(), repeat: Infinity, delay: i * 0.4 }}
-                className="absolute rounded-full"
-                style={{
-                  width: 12, height: 12,
-                  top: `${3 + Math.random() * 15}%`,
-                  left: `${8 + i * 16}%`,
-                  background: i % 2 === 0 ? "hsl(var(--primary))" : "hsl(var(--secondary))",
-                  filter: "blur(4px)",
-                  boxShadow: `0 0 20px 8px ${i % 2 === 0 ? "hsl(217 91% 60% / 0.3)" : "hsl(45 93% 58% / 0.2)"}`,
-                }}
+          {/* Animated light beams */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%]"
+              style={{
+                background: "conic-gradient(from 0deg, transparent, hsl(43 96% 56% / 0.04), transparent, hsl(122 39% 49% / 0.03), transparent, transparent, transparent, transparent)",
+              }}
+            />
+            {/* Gold sparkles */}
+            {[...Array(12)].map((_, i) => (
+              <motion.div
+                key={i}
+                animate={{ opacity: [0, 1, 0], y: [0, -40, -80] }}
+                transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 3 }}
+                className="absolute w-1 h-1 rounded-full bg-game-gold"
+                style={{ left: `${10 + Math.random() * 80}%`, top: `${30 + Math.random() * 50}%`, filter: "blur(0.5px)" }}
               />
             ))}
           </div>
 
-          {/* Commentator badges - top */}
-          <div className="relative z-10 flex items-center justify-center gap-2 pt-14 pb-2">
-            {duo.map((c, i) => (
-              <div key={c.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-display font-bold tracking-wider backdrop-blur-md ${
-                i === 0 ? "bg-primary/20 text-primary border border-primary/25" : "bg-accent/20 text-accent border border-accent/25"
-              }`}>
-                <span className="text-sm">{c.avatar}</span> {c.name}
-              </div>
-            ))}
-          </div>
-
-          {/* Full-screen card content */}
-          <div className="relative z-10 flex-1 flex flex-col mx-3 mb-3 rounded-2xl backdrop-blur-md bg-black/40 border border-white/10 overflow-hidden">
-            {/* Inner glow */}
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
-
-            {/* Page content area - fills card */}
-            <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
-              <AnimatePresence mode="wait">
+          {/* Content */}
+          <div className="relative z-10 flex-1 flex flex-col">
+            <AnimatePresence mode="wait">
+              {/* ── VS SPLIT SCREEN ── */}
+              {page.id === "vs" && (
                 <motion.div
-                  key={page.id}
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="w-full space-y-5 text-center"
+                  key="vs"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex-1 flex flex-col items-center justify-center px-4"
                 >
-                  {/* Page-specific visuals */}
-                  {page.id === "intro" && (
-                    <div className="space-y-4">
-                      <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }} className="text-6xl">🏟️</motion.div>
-                      <h2 className="font-display text-2xl font-black tracking-wider text-foreground drop-shadow-lg">MATCH DAY</h2>
-                      <div className="flex items-center justify-center gap-5">
-                        <span className="font-display text-xl font-black text-primary drop-shadow-lg">{playerName}</span>
-                        <motion.span animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 1, repeat: Infinity }} className="text-secondary text-base font-display font-bold">VS</motion.span>
-                        <span className="font-display text-xl font-black text-accent drop-shadow-lg">{opponentName}</span>
-                      </div>
-                    </div>
-                  )}
+                  {/* Diagonal split */}
+                  <div className="relative w-full max-w-sm aspect-[3/4] rounded-3xl overflow-hidden border-2 border-game-gold/30 shadow-game-card">
+                    {/* Left side — Player (blue) */}
+                    <div className="absolute inset-0 w-1/2 bg-gradient-to-br from-[hsl(200_70%_25%)] to-[hsl(200_60%_15%)]" />
+                    {/* Right side — Opponent (red) */}
+                    <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-bl from-[hsl(4_60%_25%)] to-[hsl(4_50%_15%)]" />
+                    {/* Diagonal slash */}
+                    <div className="absolute inset-0" style={{
+                      background: "linear-gradient(155deg, transparent 48%, hsl(43 96% 56% / 0.8) 48%, hsl(43 96% 56% / 0.8) 52%, transparent 52%)",
+                    }} />
 
-                  {page.id === "stadium" && (
-                    <div className="space-y-4">
-                      <div className="flex justify-center gap-3">
-                        {["🔦", "🏟️", "🔦"].map((e, i) => (
-                          <motion.span key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3 }} className="text-4xl">{e}</motion.span>
-                        ))}
-                      </div>
-                      <h2 className="font-display text-base font-black tracking-[0.3em] text-secondary drop-shadow-lg">FLOODLIGHTS ON</h2>
-                      <p className="text-xs text-foreground/70 font-display">The crowd roars as the players take the field!</p>
-                    </div>
-                  )}
+                    {/* Player character */}
+                    <motion.div
+                      initial={{ x: -100, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ type: "spring", damping: 12, delay: 0.3 }}
+                      className="absolute left-0 bottom-0 w-[55%]"
+                    >
+                      <img src={charBatsman} alt="Player" className="w-full h-auto drop-shadow-[0_0_20px_hsl(200_70%_50%/0.4)]" />
+                    </motion.div>
 
-                  {page.id === "rivalry" && hasRivalry && dominance && (
-                    <div className="space-y-4">
-                      <span className="text-[10px] font-display font-bold text-out-red tracking-[0.3em]">⚔️ HEAD TO HEAD</span>
-                      <div className="flex items-center justify-center gap-10">
-                        <div className="text-center">
-                          <span className="text-[9px] text-foreground/60 font-display tracking-widest block">{playerName.toUpperCase()}</span>
-                          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }} className="font-display text-5xl font-black text-neon-green block drop-shadow-lg">{rivalryStats!.myWins}</motion.span>
-                        </div>
-                        <span className="text-foreground/30 font-display text-3xl">–</span>
-                        <div className="text-center">
-                          <span className="text-[9px] text-foreground/60 font-display tracking-widest block">{opponentName.toUpperCase()}</span>
-                          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.3 }} className="font-display text-5xl font-black text-out-red block drop-shadow-lg">{rivalryStats!.theirWins}</motion.span>
-                        </div>
-                      </div>
-                      <div className="px-4">
-                        <div className="h-3 rounded-full overflow-hidden flex bg-white/10">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${dominance.pct}%` }} transition={{ delay: 0.5, duration: 1 }} className="bg-gradient-to-r from-neon-green to-neon-green/60 rounded-l-full" />
-                          <div className="bg-gradient-to-l from-out-red to-out-red/60 rounded-r-full flex-1" />
-                        </div>
-                        <span className="text-[8px] font-display font-bold text-foreground/60 mt-1.5 block">{dominance.label}</span>
-                      </div>
-                    </div>
-                  )}
+                    {/* Opponent character */}
+                    <motion.div
+                      initial={{ x: 100, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ type: "spring", damping: 12, delay: 0.5 }}
+                      className="absolute right-0 bottom-0 w-[55%]"
+                    >
+                      <img src={charBowler} alt="Opponent" className="w-full h-auto drop-shadow-[0_0_20px_hsl(4_70%_50%/0.4)]" />
+                    </motion.div>
 
-                  {page.id === "toss" && (
-                    <div className="space-y-4">
-                      <motion.div animate={{ rotateY: [0, 720] }} transition={{ duration: 1.2 }} className="text-6xl inline-block">🪙</motion.div>
-                      <h2 className="font-display text-xl font-black text-secondary tracking-wider drop-shadow-lg">{tossWinner.toUpperCase()} WINS THE TOSS!</h2>
-                      <p className="text-sm text-foreground/80 font-display">
-                        Elects to <span className="text-primary font-bold">{battingFirst === tossWinner ? "BAT" : "BOWL"}</span> first
+                    {/* VS badge center */}
+                    <motion.div
+                      initial={{ scale: 0, rotate: -30 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", damping: 8, delay: 0.7 }}
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-b from-game-gold to-[hsl(43_96%_40%)] border-4 border-game-gold/60 flex items-center justify-center shadow-[0_0_30px_hsl(43_96%_56%/0.5)]">
+                        <span className="font-game-display text-2xl font-black text-[hsl(220_25%_12%)]">VS</span>
+                      </div>
+                    </motion.div>
+
+                    {/* Player name (bottom left) */}
+                    <motion.div
+                      initial={{ x: -50, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.9 }}
+                      className="absolute bottom-4 left-3 z-10"
+                    >
+                      <p className="font-game-display text-lg font-black text-white tracking-wider drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                        {playerName.toUpperCase()}
                       </p>
-                    </div>
-                  )}
+                      <p className="font-game-body text-[8px] text-white/60 tracking-widest">PLAYER</p>
+                    </motion.div>
 
-                  {page.id === "strategy" && (
-                    <div className="space-y-4">
-                      <div className="text-5xl">📋</div>
-                      <h2 className="font-display text-base font-black tracking-[0.2em] text-accent drop-shadow-lg">MATCH STRATEGY</h2>
-                      <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 mx-2">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">🏏</span>
-                            <span className="text-sm font-display font-bold text-primary">{battingFirst.toUpperCase()}</span>
-                            <span className="text-xs text-foreground/60 font-display">bats first</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">🎯</span>
-                            <span className="text-sm font-display font-bold text-accent">{battingFirst === playerName ? opponentName.toUpperCase() : playerName.toUpperCase()}</span>
-                            <span className="text-xs text-foreground/60 font-display">bowls first</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {page.id === "gameon" && (
-                    <div className="space-y-3">
-                      <motion.span animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.6, repeat: Infinity }} className="text-7xl block">🏏</motion.span>
-                      <motion.h2
-                        initial={{ letterSpacing: "0.1em" }}
-                        animate={{ letterSpacing: "0.5em" }}
-                        transition={{ duration: 1 }}
-                        className="font-display text-3xl font-black text-foreground drop-shadow-lg"
-                      >
-                        GAME ON!
-                      </motion.h2>
-                    </div>
-                  )}
-
-                  {/* Commentary bubbles */}
-                  <div className="space-y-2 px-1">
-                    {page.lines.map((line, i) => {
-                      const comm = duo.find(c => c.name === line.commentatorId) || duo[0];
-                      return (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: comm === duo[0] ? -20 : 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.3 + i * 0.4 }}
-                          className={`flex items-start gap-2 backdrop-blur-md rounded-xl px-3 py-2 ${
-                            comm === duo[0] ? "bg-primary/10 border border-primary/15" : "bg-accent/10 border border-accent/15"
-                          }`}
-                        >
-                          <span className="text-sm flex-shrink-0">{comm.avatar}</span>
-                          <div className="text-left">
-                            <span className={`text-[7px] font-display font-bold tracking-wider ${comm === duo[0] ? "text-primary" : "text-accent"}`}>{comm.name}</span>
-                            <p className="font-display text-[10px] font-bold text-foreground/90 leading-snug">{line.text}</p>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                    {/* Opponent name (bottom right) */}
+                    <motion.div
+                      initial={{ x: 50, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 1.0 }}
+                      className="absolute bottom-4 right-3 z-10 text-right"
+                    >
+                      <p className="font-game-display text-lg font-black text-white tracking-wider drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                        {opponentName.toUpperCase()}
+                      </p>
+                      <p className="font-game-body text-[8px] text-white/60 tracking-widest">OPPONENT</p>
+                    </motion.div>
                   </div>
+
+                  {/* Title */}
+                  <motion.h2
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 1.2 }}
+                    className="font-game-display text-xl font-black text-game-gold tracking-[0.2em] mt-4"
+                    style={{ textShadow: "0 0 30px hsl(43 96% 56% / 0.4)" }}
+                  >
+                    MATCH DAY
+                  </motion.h2>
                 </motion.div>
-              </AnimatePresence>
+              )}
+
+              {/* ── TOSS ── */}
+              {page.id === "toss" && (
+                <motion.div
+                  key="toss"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex-1 flex flex-col items-center justify-center px-6"
+                >
+                  <motion.div
+                    animate={{ rotateY: [0, 720] }}
+                    transition={{ duration: 1.2 }}
+                    className="text-7xl mb-4"
+                  >
+                    🪙
+                  </motion.div>
+                  <h2 className="font-game-display text-2xl font-black text-game-gold tracking-wider mb-2"
+                    style={{ textShadow: "0 0 30px hsl(43 96% 56% / 0.4)" }}>
+                    {tossWinner.toUpperCase()}
+                  </h2>
+                  <p className="font-game-display text-sm text-white/60 tracking-wider mb-1">WINS THE TOSS!</p>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="mt-4 px-5 py-2 rounded-full bg-gradient-to-b from-game-green/20 to-game-green/10 border border-game-green/30"
+                  >
+                    <span className="font-game-display text-sm font-bold text-game-green tracking-wider">
+                      Elects to {battingFirst === tossWinner ? "🏏 BAT" : "🎯 BOWL"} first
+                    </span>
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {/* ── GAME ON ── */}
+              {page.id === "gameon" && (
+                <motion.div
+                  key="gameon"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex-1 flex flex-col items-center justify-center px-6"
+                >
+                  <motion.span
+                    animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                    className="text-7xl block mb-4"
+                  >
+                    🏏
+                  </motion.span>
+                  <motion.h2
+                    initial={{ letterSpacing: "0.1em", scale: 0.5 }}
+                    animate={{ letterSpacing: "0.5em", scale: 1 }}
+                    transition={{ duration: 0.8, type: "spring" }}
+                    className="font-game-display text-4xl font-black text-white"
+                    style={{ textShadow: "0 0 40px hsl(43 96% 56% / 0.5), 0 4px 8px rgba(0,0,0,0.5)" }}
+                  >
+                    GAME ON!
+                  </motion.h2>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: "60%" }}
+                    transition={{ delay: 0.5, duration: 0.8 }}
+                    className="h-1 bg-gradient-to-r from-transparent via-game-gold to-transparent mt-3 rounded-full"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Commentary bubbles — always visible at bottom */}
+            <div className="px-4 pb-2 space-y-1.5">
+              {page.lines.map((line, i) => {
+                const comm = duo.find(c => c.name === line.commentatorId) || duo[0];
+                return (
+                  <motion.div
+                    key={`${currentPage}-${i}`}
+                    initial={{ opacity: 0, x: comm === duo[0] ? -20 : 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + i * 0.4 }}
+                    className={`flex items-start gap-2 rounded-xl px-3 py-2 ${
+                      comm === duo[0]
+                        ? "bg-game-green/10 border border-game-green/15"
+                        : "bg-game-gold/10 border border-game-gold/15"
+                    }`}
+                  >
+                    <span className="text-sm flex-shrink-0">{comm.avatar}</span>
+                    <div className="text-left">
+                      <span className={`text-[7px] font-game-display font-bold tracking-wider ${
+                        comm === duo[0] ? "text-game-green" : "text-game-gold"
+                      }`}>{comm.name}</span>
+                      <p className="font-game-body text-[10px] font-bold text-white/80 leading-snug">{line.text}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
 
-            {/* Bottom bar: dots + controls */}
-            <div className="relative z-10 px-4 pb-4 pt-2">
-              {/* Progress dots */}
+            {/* Bottom controls */}
+            <div className="px-4 pb-6 pt-2">
               <div className="flex justify-center gap-2 mb-3">
                 {pages.map((_, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ scale: currentPage === i ? [1, 1.3, 1] : 1 }}
-                    transition={{ duration: 1, repeat: currentPage === i ? Infinity : 0 }}
-                    className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${currentPage >= i ? "bg-primary" : "bg-white/20"}`}
-                  />
+                  <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${currentPage >= i ? "bg-game-gold" : "bg-white/15"}`} />
                 ))}
               </div>
-
-              {/* Tap hint + skip */}
               <div className="flex items-center justify-between">
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1.5 }}
-                  whileTap={{ scale: 0.95 }}
                   onClick={(e) => { e.stopPropagation(); handleSkip(); }}
-                  className="text-[11px] text-foreground/40 font-display tracking-wider underline"
+                  className="text-[11px] text-white/30 font-game-display tracking-wider underline"
                 >
                   SKIP
                 </motion.button>
                 <motion.span
                   animate={{ opacity: [0.3, 0.8, 0.3] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="text-[10px] text-foreground/50 font-display tracking-wider"
+                  className="text-[10px] text-white/40 font-game-display tracking-wider"
                 >
                   TAP TO CONTINUE →
                 </motion.span>
