@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GameState, BallResult } from "@/hooks/useHandCricket";
-import pitchStrips from "@/assets/pitch-strips.jpg";
 
 interface ScoreBoardProps {
   game: GameState;
@@ -11,7 +10,6 @@ interface ScoreBoardProps {
   isPvP?: boolean;
 }
 
-/** Split ball history into innings based on when the phase changed */
 function getCurrentInningsBalls(ballHistory: BallResult[], currentInnings: 1 | 2, innings1Balls: number): BallResult[] {
   if (currentInnings === 1) return ballHistory;
   return ballHistory.slice(innings1Balls);
@@ -28,22 +26,6 @@ function getRunRate(score: number, balls: number): string {
   return ((score / balls) * 6).toFixed(2);
 }
 
-function getStrikeRate(score: number, balls: number): string {
-  if (balls === 0) return "0.0";
-  return ((score / balls) * 100).toFixed(1);
-}
-
-function getPartnershipRuns(balls: BallResult[], isBatting: boolean): number {
-  let partnership = 0;
-  for (let i = balls.length - 1; i >= 0; i--) {
-    if (balls[i].runs === "OUT") break;
-    const r = typeof balls[i].runs === "number" ? (balls[i].runs as number) : 0;
-    if (isBatting ? r > 0 : r < 0) partnership += Math.abs(r);
-    else if (r === 0) continue;
-  }
-  return partnership;
-}
-
 function getRequiredRate(needed: number, ballsLeft: number): string | null {
   if (needed <= 0 || ballsLeft <= 0) return null;
   return ((needed / ballsLeft) * 6).toFixed(2);
@@ -58,33 +40,18 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
   const inningsBallCount = currentInningsBalls.length;
   const oversStr = getOvers(inningsBallCount);
 
-  // Current over balls (last 6 or fewer)
   const currentOverBalls = useMemo(() => {
     const overStart = Math.floor((inningsBallCount - 1) / 6) * 6;
     return currentInningsBalls.slice(Math.max(0, overStart));
   }, [currentInningsBalls, inningsBallCount]);
 
-  const overNumber = Math.floor(inningsBallCount / 6) + (inningsBallCount % 6 > 0 ? 1 : 0);
-
-  // Batting side score & RR
-  const battingScore = game.isBatting ? game.userScore : game.aiScore;
-  const battingWickets = game.isBatting ? game.userWickets : game.aiWickets;
-  const bowlingScore = game.isBatting ? game.aiScore : game.userScore;
-  const battingName = game.isBatting ? playerName : aiName;
-  const bowlingName = game.isBatting ? aiName : playerName;
-  const runRate = getRunRate(battingScore, inningsBallCount);
-  const strikeRate = getStrikeRate(battingScore, inningsBallCount);
-  const partnership = getPartnershipRuns(currentInningsBalls, game.isBatting);
-
   const config = game.config || { overs: null, wickets: 1 };
   const totalOvers = config.overs;
   const totalBallsInInnings = totalOvers ? totalOvers * 6 : null;
   const ballsLeft = totalBallsInInnings ? Math.max(0, totalBallsInInnings - inningsBallCount) : null;
-  const oversLeft = ballsLeft !== null ? getOvers(ballsLeft) : null;
 
-  // Bowling change indicator
-  const ballsInCurrentOver = inningsBallCount % 6;
-  const isNewOver = inningsBallCount > 0 && ballsInCurrentOver === 0;
+  const battingScore = game.isBatting ? game.userScore : game.aiScore;
+  const runRate = getRunRate(battingScore, inningsBallCount);
 
   const needRuns = game.target && game.isBatting && game.phase !== "finished"
     ? Math.max(0, game.target - game.userScore)
@@ -94,16 +61,20 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
     ? getRequiredRate(needRuns, ballsLeft)
     : null;
 
-  // For PvP: swap sides so "you" is always on left
-  const leftName = isPvP ? playerName : battingName;
-  const leftScore = isPvP ? game.userScore : battingScore;
-  const leftWickets = isPvP ? game.userWickets : battingWickets;
-  const leftLabel = isPvP ? (game.isBatting ? "BAT" : "BOWL") : "BAT";
-  
-  const rightName = isPvP ? aiName : bowlingName;
-  const rightScore = isPvP ? game.aiScore : bowlingScore;
-  const rightWickets = isPvP ? game.aiWickets : (game.isBatting ? game.aiWickets : game.userWickets);
-  const rightLabel = isPvP ? (!game.isBatting ? "BAT" : "BOWL") : "BOWL";
+  const chasePct = game.target ? Math.min((game.userScore / game.target) * 100, 100) : 0;
+
+  // Innings switch detection
+  const prevInningsRef = useRef(game.currentInnings);
+  const [showInningsSwitch, setShowInningsSwitch] = useState(false);
+
+  useEffect(() => {
+    if (game.currentInnings !== prevInningsRef.current && game.currentInnings === 2) {
+      prevInningsRef.current = game.currentInnings;
+      setShowInningsSwitch(true);
+      setTimeout(() => setShowInningsSwitch(false), 2800);
+    }
+    prevInningsRef.current = game.currentInnings;
+  }, [game.currentInnings]);
 
   const phaseLabel = () => {
     switch (game.phase) {
@@ -114,43 +85,8 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
     }
   };
 
-  const statusLabel = () => {
-    if (game.phase === "finished") return "";
-    return game.isBatting
-      ? game.target ? "CHASING" : "BATTING"
-      : game.target ? "DEFENDING" : "BOWLING";
-  };
-
-  const chasePct = game.target ? Math.min((game.userScore / game.target) * 100, 100) : 0;
-
-  const lastBall = currentInningsBalls.length > 0 ? currentInningsBalls[currentInningsBalls.length - 1] : null;
-  const lastBallHighlight = lastBall
-    ? lastBall.runs === "OUT" ? "wicket"
-    : typeof lastBall.runs === "number" && Math.abs(lastBall.runs) >= 6 ? "six"
-    : typeof lastBall.runs === "number" && Math.abs(lastBall.runs) >= 4 ? "four"
-    : null
-    : null;
-
-  // Innings switch detection
-  const prevInningsRef = useRef(game.currentInnings);
-  const [showInningsSwitch, setShowInningsSwitch] = useState(false);
-  const [switchFlashPhase, setSwitchFlashPhase] = useState<"flash" | "text" | "fade">("flash");
-
-  useEffect(() => {
-    if (game.currentInnings !== prevInningsRef.current && game.currentInnings === 2) {
-      prevInningsRef.current = game.currentInnings;
-      setShowInningsSwitch(true);
-      setSwitchFlashPhase("flash");
-      // Flash → text → fade sequence
-      setTimeout(() => setSwitchFlashPhase("text"), 300);
-      setTimeout(() => setSwitchFlashPhase("fade"), 2200);
-      setTimeout(() => setShowInningsSwitch(false), 2800);
-    }
-    prevInningsRef.current = game.currentInnings;
-  }, [game.currentInnings]);
-
   return (
-    <div className="space-y-1 relative">
+    <div className="space-y-1.5 relative">
       {/* INNINGS SWITCH overlay */}
       <AnimatePresence>
         {showInningsSwitch && (
@@ -158,392 +94,205 @@ export default function ScoreBoard({ game, playerName = "You", aiName = "Rohit A
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0 z-50 flex items-center justify-center rounded-xl overflow-hidden"
-            style={{ pointerEvents: "none" }}
+            className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl overflow-hidden pointer-events-none"
           >
-            {/* Flash background */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: switchFlashPhase === "flash" ? [0, 1, 0.6] : switchFlashPhase === "text" ? 0.85 : 0 }}
-              transition={{ duration: switchFlashPhase === "flash" ? 0.3 : 0.5 }}
-              className="absolute inset-0 bg-gradient-to-br from-secondary/90 via-primary/80 to-secondary/90 backdrop-blur-md"
+              animate={{ opacity: 0.9 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-gradient-to-br from-game-gold/90 via-game-green/80 to-game-gold/90 backdrop-blur-md"
             />
-            {/* Animated lines */}
-            {switchFlashPhase === "text" && (
-              <>
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="absolute top-[30%] left-0 right-0 h-px bg-white/30 origin-left"
-                />
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-                  className="absolute bottom-[30%] left-0 right-0 h-px bg-white/30 origin-right"
-                />
-              </>
-            )}
-            {/* Text content */}
             <motion.div
               initial={{ scale: 0, rotateZ: -5 }}
-              animate={{ scale: switchFlashPhase === "text" ? 1 : switchFlashPhase === "fade" ? 1.1 : 0, rotateZ: 0 }}
-              transition={{ type: "spring", damping: 12, stiffness: 200 }}
+              animate={{ scale: 1, rotateZ: 0 }}
+              exit={{ scale: 0 }}
+              transition={{ type: "spring", damping: 12 }}
               className="relative z-10 text-center"
             >
-              <motion.span
-                animate={{ scale: [1, 1.15, 1] }}
-                transition={{ duration: 0.6, repeat: 2 }}
-                className="text-3xl block mb-1"
-              >
-                🔄
-              </motion.span>
-              <p className="font-display text-xl font-black text-white tracking-[0.3em] drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">
-                INNINGS
-              </p>
-              <p className="font-display text-2xl font-black text-white tracking-[0.4em] drop-shadow-[0_0_30px_rgba(255,255,255,0.7)]">
-                SWITCH
-              </p>
-              <motion.p
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="font-display text-[10px] font-bold text-white/80 tracking-wider mt-2"
-              >
+              <motion.span animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 0.6, repeat: 3 }} className="text-3xl block mb-1">🔄</motion.span>
+              <p className="font-game-display text-xl font-black text-white tracking-[0.3em] drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">INNINGS SWITCH</p>
+              <p className="font-game-display text-[10px] font-bold text-white/80 tracking-wider mt-2">
                 {game.isBatting ? "🏏 YOU BAT NOW" : "🎯 YOU BOWL NOW"}
-              </motion.p>
+              </p>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Broadcast header */}
-      <div className="glass-premium rounded-lg px-3 py-1 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-1 h-3.5 rounded-full bg-gradient-to-b from-primary to-primary/40" />
-          <span className="text-[8px] font-display tracking-[0.2em] text-primary font-bold">{phaseLabel()}</span>
-          <span className="w-1 h-1 rounded-full bg-primary/50" />
-          <span className="text-[8px] font-display tracking-wider text-secondary font-bold">{statusLabel()}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {totalOvers && (
-            <span className="text-[7px] font-display font-bold text-muted-foreground/60 tracking-wider">
-              {totalOvers} OV
-            </span>
-          )}
-          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-out-red/10 border border-out-red/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-out-red animate-pulse" />
-            <span className="text-[7px] text-out-red font-display font-bold tracking-widest">LIVE</span>
+
+      {/* ── Main Scoreboard Card ── */}
+      <div className="rounded-2xl overflow-hidden border-2 border-game-gold/30 shadow-game-card bg-gradient-to-b from-[hsl(220_20%_18%)] to-[hsl(220_25%_12%)]">
+        {/* Header strip */}
+        <div className="flex items-center justify-between px-3 py-1 bg-gradient-to-r from-game-gold/20 via-game-gold/10 to-game-gold/20 border-b border-game-gold/20">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-3 rounded-full bg-game-green shadow-[0_0_6px_hsl(122_39%_49%/0.5)]" />
+            <span className="text-[8px] font-game-display tracking-[0.15em] text-game-gold font-bold">{phaseLabel()}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {totalOvers && <span className="text-[7px] font-game-body font-bold text-white/40">{totalOvers} OV</span>}
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-game-red/15 border border-game-red/25">
+              <div className="w-1.5 h-1.5 rounded-full bg-game-red animate-pulse" />
+              <span className="text-[7px] text-game-red font-game-display font-bold tracking-widest">LIVE</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main scorecard — cricket pitch style */}
-      <div className="glass-premium rounded-xl p-2.5 relative overflow-hidden">
-        {/* Cricket pitch photo background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <img src={pitchStrips} alt="" className="w-full h-full object-cover opacity-[0.12]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/80" />
-          {/* Green strip overlays */}
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="absolute h-full pointer-events-none" style={{
-              left: `${10 + i * 18}%`, width: '14%',
-              background: i % 2 === 0 ? 'hsl(120 35% 22% / 0.08)' : 'hsl(120 25% 15% / 0.04)',
-            }} />
-          ))}
-          {/* Crease lines */}
-          <div className="absolute top-[18%] left-[15%] right-[15%] h-px bg-[hsl(45_50%_50%/0.1)]" />
-          <div className="absolute bottom-[18%] left-[15%] right-[15%] h-px bg-[hsl(45_50%_50%/0.1)]" />
-        </div>
-
-        <div className="relative z-10">
-          {/* Batting indicator — prominent role banner */}
-          <div className="flex items-center justify-center gap-2 mb-1.5">
-            <motion.span
+        {/* Scores */}
+        <div className="px-3 py-2">
+          {/* Role banner */}
+          <div className="flex justify-center mb-2">
+            <motion.div
               key={game.isBatting ? "bat" : "bowl"}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className={`text-[8px] font-display font-black tracking-[0.25em] px-2.5 py-1 rounded-full ${
-                game.isBatting 
-                  ? "bg-secondary/15 border border-secondary/25 text-secondary" 
-                  : "bg-primary/15 border border-primary/25 text-primary"
+              className={`text-[8px] font-game-display font-black tracking-[0.2em] px-3 py-1 rounded-full border-b-2 ${
+                game.isBatting
+                  ? "bg-gradient-to-b from-game-gold/25 to-game-gold/10 border-game-gold/40 text-game-gold"
+                  : "bg-gradient-to-b from-game-green/25 to-game-green/10 border-game-green/40 text-game-green"
               }`}
             >
               {game.isBatting ? "🏏 YOU'RE BATTING" : "🎯 YOU'RE BOWLING"}
-            </motion.span>
+            </motion.div>
           </div>
 
-          {/* Score layout — two sides */}
-          <div className="flex items-center justify-between mb-1.5">
-            {/* Left side */}
+          {/* Two-side score layout */}
+          <div className="flex items-center justify-between">
+            {/* Player */}
             <div className="flex-1 text-center">
-              <div className="flex items-center justify-center gap-1 mb-0.5">
-                <span className={`text-[7px] ${leftLabel === "BAT" ? "text-secondary" : "text-primary"}`}>
-                  {leftLabel === "BAT" ? "🏏" : "🎯"}
+              <p className="text-[7px] text-white/50 font-game-display font-bold tracking-[0.15em] mb-0.5">
+                {playerName.toUpperCase().slice(0, 10)}
+              </p>
+              <motion.div key={`p-${game.userScore}`} initial={{ scale: 1.15 }} animate={{ scale: 1 }}
+                className="flex items-baseline justify-center gap-0.5">
+                <span className="font-game-display text-3xl font-black text-game-gold leading-none"
+                  style={{ textShadow: "0 0 20px hsl(43 96% 56% / 0.3), 0 2px 4px rgba(0,0,0,0.5)" }}>
+                  {game.userScore}
                 </span>
-                <p className="text-[7px] text-muted-foreground font-display font-bold tracking-[0.2em]">
-                  {leftName.toUpperCase().slice(0, 10)}
-                </p>
-              </div>
-              <motion.div
-                key={`left-${leftScore}`}
-                initial={{ scale: 1.15 }}
-                animate={{ scale: 1 }}
-                className="flex items-baseline justify-center gap-0.5"
-              >
-                <span className="font-display text-3xl font-black text-secondary leading-none"
-                  style={{ textShadow: "0 0 15px hsl(45 95% 58% / 0.2)" }}>
-                  {leftScore}
-                </span>
-                <span className="text-sm text-out-red/70 font-display font-bold">/{leftWickets}</span>
+                <span className="text-sm text-game-red/80 font-game-display font-bold">/{game.userWickets}</span>
               </motion.div>
-              <span className={`text-[6px] px-1.5 py-0.5 rounded-full font-display font-bold tracking-wider mt-0.5 inline-block ${
-                leftLabel === "BAT" ? "bg-secondary/10 border border-secondary/20 text-secondary" : "bg-primary/10 border border-primary/20 text-primary"
-              }`}>{leftLabel === "BAT" ? "🏏 BATTING" : "🎯 BOWLING"}</span>
             </div>
 
-            {/* VS / overs center */}
-            <div className="flex flex-col items-center px-2">
-              <span className="text-[8px] font-display font-black text-muted-foreground/40">VS</span>
-              <span className="text-[9px] font-display font-bold text-accent tracking-wider">
-                {oversStr} ov
-              </span>
-              {totalOvers && (
-                <span className="text-[7px] font-display text-muted-foreground/40">
-                  /{totalOvers}
-                </span>
-              )}
+            {/* Center divider */}
+            <div className="flex flex-col items-center px-3">
+              <span className="text-[8px] font-game-display font-black text-white/30">VS</span>
+              <span className="text-[9px] font-game-display font-bold text-game-green tracking-wider">{oversStr}</span>
+              {totalOvers && <span className="text-[7px] text-white/30 font-game-body">/{totalOvers} ov</span>}
             </div>
 
-            {/* Right side */}
+            {/* Opponent */}
             <div className="flex-1 text-center">
-              <div className="flex items-center justify-center gap-1 mb-0.5">
-                <span className={`text-[7px] ${rightLabel === "BAT" ? "text-secondary" : "text-primary"}`}>
-                  {rightLabel === "BAT" ? "🏏" : "🎯"}
+              <p className="text-[7px] text-white/50 font-game-display font-bold tracking-[0.15em] mb-0.5">
+                {aiName.toUpperCase().slice(0, 10)}
+              </p>
+              <motion.div key={`a-${game.aiScore}`} initial={{ scale: 1.15 }} animate={{ scale: 1 }}
+                className="flex items-baseline justify-center gap-0.5">
+                <span className="font-game-display text-3xl font-black text-white leading-none"
+                  style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
+                  {game.aiScore}
                 </span>
-                <p className="text-[7px] text-muted-foreground font-display font-bold tracking-[0.2em]">
-                  {rightName.toUpperCase().slice(0, 10)}
-                </p>
-              </div>
-              <motion.div
-                key={`right-${rightScore}`}
-                initial={{ scale: 1.15 }}
-                animate={{ scale: 1 }}
-                className="flex items-baseline justify-center gap-0.5"
-              >
-                <span className="font-display text-3xl font-black text-accent leading-none"
-                  style={{ textShadow: "0 0 15px hsl(168 80% 50% / 0.15)" }}>
-                  {rightScore}
-                </span>
-                <span className="text-sm text-out-red/70 font-display font-bold">/{rightWickets}</span>
+                <span className="text-sm text-game-red/80 font-game-display font-bold">/{game.aiWickets}</span>
               </motion.div>
-              <span className={`text-[6px] px-1.5 py-0.5 rounded-full font-display font-bold tracking-wider mt-0.5 inline-block ${
-                rightLabel === "BAT" ? "bg-secondary/10 border border-secondary/20 text-secondary" : "bg-primary/10 border border-primary/20 text-primary"
-              }`}>{rightLabel === "BAT" ? "🏏 BATTING" : "🎯 BOWLING"}</span>
             </div>
           </div>
 
-          {/* Stats strip */}
-          <div className="flex items-center justify-center gap-2 mb-1.5 flex-wrap">
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neon-green/8 border border-neon-green/15">
-              <span className="text-[6px]">🏏</span>
-              <span className="text-[7px] font-display font-bold text-neon-green">{oversStr} OV</span>
-            </div>
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/8 border border-primary/15">
-              <span className="text-[6px]">📊</span>
-              <span className="text-[7px] font-display font-bold text-muted-foreground">SR</span>
-              <span className="text-[7px] font-display font-bold text-primary">{strikeRate}</span>
-            </div>
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-accent/8 border border-accent/15">
-              <span className="text-[6px]">{game.isBatting ? "🏏" : "🎯"}</span>
-              <span className="text-[7px] font-display font-bold text-muted-foreground">CRR</span>
-              <span className="text-[7px] font-display font-bold text-accent">{runRate}</span>
+          {/* Stats pills */}
+          <div className="flex items-center justify-center gap-1.5 mt-2 flex-wrap">
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-game-green/10 border border-game-green/20">
+              <span className="text-[7px] font-game-display font-bold text-white/50">CRR</span>
+              <span className="text-[8px] font-game-display font-bold text-game-green">{runRate}</span>
             </div>
             {requiredRR && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-out-red/8 border border-out-red/15">
-                <span className="text-[6px]">🎯</span>
-                <span className="text-[7px] font-display font-bold text-muted-foreground">RRR</span>
-                <span className="text-[7px] font-display font-bold text-out-red">{requiredRR}</span>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-game-red/10 border border-game-red/20">
+                <span className="text-[7px] font-game-display font-bold text-white/50">RRR</span>
+                <span className="text-[8px] font-game-display font-bold text-game-red">{requiredRR}</span>
               </div>
             )}
           </div>
 
-          {/* Partnership */}
-          {partnership > 0 && (
-            <div className="flex items-center justify-center gap-1.5 mb-1.5">
-              <span className="text-[7px] text-muted-foreground/50 font-display tracking-wider">🤝 P'SHIP</span>
-              <span className="text-[9px] font-display font-bold text-neon-green">{partnership}</span>
-            </div>
-          )}
-
-          {/* 1st innings score if in 2nd innings */}
-          {game.currentInnings === 2 && (
-            <div className="flex items-center gap-2 mb-1.5 px-2 py-1 rounded-lg bg-muted/10 border border-muted/15">
-              <span className="text-[7px] text-muted-foreground/50 font-display tracking-wider">1ST INNINGS</span>
-              <span className="text-[9px] font-display font-bold text-muted-foreground">
-                {game.isBatting ? aiName : playerName}: {game.isBatting ? game.aiScore : game.userScore}
-              </span>
-            </div>
-          )}
-
           {/* Chase tracker */}
           {game.target && game.phase !== "finished" && game.isBatting && (
-            <div className="mb-1.5">
+            <div className="mt-2">
               <div className="flex items-center justify-between mb-0.5">
-                <div className="flex items-center gap-1">
-                  <span className="text-[7px]">🎯</span>
-                  <span className="text-[7px] font-display font-bold text-secondary tracking-wider">TARGET: {game.target}</span>
-                </div>
+                <span className="text-[7px] font-game-display font-bold text-game-gold tracking-wider">🎯 TARGET: {game.target}</span>
                 {needRuns !== null && (
-                  <motion.span key={needRuns} initial={{ scale: 1.2 }} animate={{ scale: 1 }}
-                    className="text-[7px] font-display font-bold text-primary tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
-                    NEED {needRuns} RUNS
-                    {ballsLeft !== null && ` IN ${getOvers(ballsLeft)} OV`}
-                  </motion.span>
+                  <span className="text-[7px] font-game-display font-bold text-game-green">NEED {needRuns}</span>
                 )}
               </div>
-              <div className="h-1 bg-muted/20 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-primary via-secondary to-primary"
+                  className="h-full rounded-full bg-gradient-to-r from-game-green via-game-gold to-game-green"
                   animate={{ width: `${chasePct}%` }}
                   transition={{ duration: 0.4 }}
                 />
               </div>
             </div>
           )}
+        </div>
 
-          {/* Overs remaining */}
-          {totalOvers && game.phase !== "finished" && ballsLeft !== null && ballsLeft > 0 && (
-            <div className="flex items-center justify-center gap-2 mb-1.5">
-              <span className="text-[7px] font-display text-muted-foreground/50 tracking-wider">OVERS LEFT</span>
-              <span className="text-[8px] font-display font-bold text-secondary">{oversLeft}</span>
-            </div>
-          )}
-
-          {/* Current over - ball by ball */}
-          <div className="pt-1.5 border-t border-primary/10">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[6px] text-muted-foreground font-bold tracking-[0.2em] font-display">
-                OVER {overNumber || 1}
-              </span>
-              {isNewOver && inningsBallCount > 0 && (
-                <motion.span
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-[6px] font-display font-bold text-secondary px-1 py-0.5 rounded bg-secondary/10 border border-secondary/20"
+        {/* This Over strip */}
+        <div className="px-3 py-1.5 border-t border-white/5 bg-white/[0.02]">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[6px] text-white/40 font-game-display font-bold tracking-[0.2em]">THIS OVER</span>
+            <div className="flex-1 h-px bg-white/5" />
+            <span className="text-[6px] text-white/30 font-game-body">{inningsBallCount} balls</span>
+          </div>
+          <div className="flex gap-1">
+            {currentOverBalls.map((b, i) => {
+              const isOut = b.runs === "OUT";
+              const absRuns = typeof b.runs === "number" ? Math.abs(b.runs) : 0;
+              const isSix = !isOut && absRuns >= 6;
+              const isFour = !isOut && absRuns >= 4;
+              return (
+                <motion.div
+                  key={`${game.currentInnings}-${i}`}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-game-display font-black border-b-2 ${
+                    isOut ? "bg-game-red/30 border-game-red/50 text-game-red shadow-[0_0_8px_hsl(4_90%_58%/0.3)]"
+                    : isSix ? "bg-purple-500/30 border-purple-400/50 text-purple-300 shadow-[0_0_8px_hsl(280_80%_60%/0.3)]"
+                    : isFour ? "bg-game-gold/30 border-game-gold/50 text-game-gold shadow-[0_0_8px_hsl(43_96%_56%/0.3)]"
+                    : absRuns === 0 ? "bg-white/5 border-white/10 text-white/30"
+                    : "bg-game-green/20 border-game-green/30 text-game-green"
+                  }`}
                 >
-                  🔄 BOWLING CHANGE
-                </motion.span>
-              )}
-              <div className="flex-1 h-px bg-gradient-to-r from-primary/10 to-transparent" />
-              <span className="text-[6px] text-muted-foreground/40 font-display">{inningsBallCount} BALLS</span>
-            </div>
-            <div className="flex gap-1 flex-wrap">
-              {currentOverBalls.length === 0 && (
-                <span className="text-[7px] text-muted-foreground/30 font-display italic">No balls bowled yet</span>
-              )}
-              {currentOverBalls.map((b, i) => {
-                const isOut = b.runs === "OUT";
-                const absRuns = typeof b.runs === "number" ? Math.abs(b.runs) : 0;
-                const isSix = !isOut && absRuns >= 6;
-                const isFour = !isOut && absRuns >= 4;
-                const isDot = !isOut && absRuns === 0;
-                return (
-                  <motion.div
-                    key={`${game.currentInnings}-${i}`}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: i * 0.02 }}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-display font-bold border shrink-0 ${
-                      isOut ? "bg-out-red/20 border-out-red/40 text-out-red"
-                      : isSix ? "bg-primary/20 border-primary/40 text-primary"
-                      : isFour ? "bg-secondary/20 border-secondary/40 text-secondary"
-                      : isDot ? "bg-muted/15 border-muted/30 text-muted-foreground/50"
-                      : "bg-accent/15 border-accent/30 text-accent"
-                    }`}
-                  >
-                    {isOut ? "W" : absRuns > 0 ? absRuns : "•"}
-                  </motion.div>
-                );
-              })}
-              {currentOverBalls.length > 0 && currentOverBalls.length < 6 && (
-                <>
-                  {Array.from({ length: 6 - currentOverBalls.length }).map((_, i) => (
-                    <div key={`empty-${i}`} className="w-6 h-6 rounded-full border border-dashed border-muted/15 shrink-0" />
-                  ))}
-                </>
-              )}
-            </div>
+                  {isOut ? "W" : absRuns > 0 ? absRuns : "•"}
+                </motion.div>
+              );
+            })}
+            {currentOverBalls.length < 6 && Array.from({ length: 6 - currentOverBalls.length }).map((_, i) => (
+              <div key={`e-${i}`} className="w-7 h-7 rounded-full border border-dashed border-white/10" />
+            ))}
           </div>
         </div>
       </div>
-
-      {/* Last ball highlight banner */}
-      <AnimatePresence>
-        {lastBallHighlight && game.phase !== "finished" && (
-          <motion.div
-            key={`flash-${game.ballHistory.length}`}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: "spring", damping: 12 }}
-            className={`text-center py-1 rounded-lg text-[10px] font-display font-black tracking-wider ${
-              lastBallHighlight === "wicket"
-                ? "bg-out-red/15 border border-out-red/25 text-out-red"
-                : lastBallHighlight === "six"
-                ? "bg-primary/15 border border-primary/25 text-primary"
-                : "bg-secondary/15 border border-secondary/25 text-secondary"
-            }`}
-          >
-            {lastBallHighlight === "wicket" ? "🔴 WICKET!" : lastBallHighlight === "six" ? "🔥 SIX!" : "💥 FOUR!"}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Result banner */}
       <AnimatePresence>
         {game.phase === "finished" && game.result && (
           <motion.div
-            initial={{ scale: 0.3, opacity: 0, rotateX: 90 }}
-            animate={{ scale: 1, opacity: 1, rotateX: 0 }}
-            exit={{ scale: 0.3, opacity: 0 }}
-            transition={{ type: "spring", damping: 10, stiffness: 150 }}
-            className="relative overflow-hidden rounded-xl"
-          >
-            <div className={`text-center py-3 font-display font-black text-lg relative overflow-hidden ${
+            initial={{ scale: 0.3, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", damping: 10 }}
+            className={`rounded-2xl text-center py-3 font-game-display font-black text-lg border-2 border-b-4 ${
               game.result === "win"
-                ? "bg-gradient-to-br from-primary/20 via-primary/10 to-neon-green/10 text-primary border border-primary/20"
+                ? "bg-gradient-to-b from-game-green/30 to-game-green/10 border-game-green/40 text-game-green"
                 : game.result === "loss"
-                ? "bg-gradient-to-br from-out-red/15 via-out-red/10 to-out-red/5 text-out-red border border-out-red/20"
-                : "bg-gradient-to-br from-secondary/15 via-secondary/10 to-secondary/5 text-secondary border border-secondary/20"
-            } rounded-xl`}>
-              {game.result === "win" && (
-                <>
-                  {[...Array(6)].map((_, i) => (
-                    <motion.div key={i}
-                      initial={{ y: 0, x: 0, opacity: 1 }}
-                      animate={{ y: [0, -60 - Math.random() * 40], x: [(i - 3) * 15, (i - 3) * 30], opacity: [1, 0], rotate: [0, Math.random() * 360] }}
-                      transition={{ duration: 1.8, delay: i * 0.08, repeat: Infinity, repeatDelay: 2.5 }}
-                      className="absolute top-1/2 left-1/2 text-sm"
-                    >{["🎉", "⭐", "🏆", "✨", "🎊", "🏏"][i]}</motion.div>
-                  ))}
-                </>
-              )}
-              <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.2, 1] }} transition={{ delay: 0.2, duration: 0.5 }} className="text-2xl block mb-0.5">
-                {game.result === "win" ? "🏆" : game.result === "loss" ? "💔" : "🤝"}
-              </motion.span>
-              <span className="relative z-10 tracking-widest text-base" style={{ textShadow: "0 0 30px currentColor" }}>
-                {game.result === "win" && `${playerName.toUpperCase()} WINS!`}
-                {game.result === "loss" && `${aiName.toUpperCase()} WINS!`}
-                {game.result === "draw" && "IT'S A DRAW!"}
-              </span>
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-[10px] font-normal text-muted-foreground mt-0.5 relative z-10">
-                <span className="text-secondary font-bold">{playerName} {game.userScore}/{game.userWickets}</span>
-                <span className="mx-2">vs</span>
-                <span className="text-accent font-bold">{aiName} {game.aiScore}/{game.aiWickets}</span>
-              </motion.p>
-            </div>
+                ? "bg-gradient-to-b from-game-red/20 to-game-red/10 border-game-red/30 text-game-red"
+                : "bg-gradient-to-b from-game-gold/20 to-game-gold/10 border-game-gold/30 text-game-gold"
+            }`}
+          >
+            <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.3, 1] }} className="text-2xl block mb-0.5">
+              {game.result === "win" ? "🏆" : game.result === "loss" ? "💔" : "🤝"}
+            </motion.span>
+            <span className="tracking-widest text-base" style={{ textShadow: "0 0 20px currentColor" }}>
+              {game.result === "win" && `${playerName.toUpperCase()} WINS!`}
+              {game.result === "loss" && `${aiName.toUpperCase()} WINS!`}
+              {game.result === "draw" && "IT'S A DRAW!"}
+            </span>
+            <p className="text-[10px] font-normal text-white/60 mt-0.5">
+              <span className="text-game-gold font-bold">{playerName} {game.userScore}/{game.userWickets}</span>
+              <span className="mx-2">vs</span>
+              <span className="text-white font-bold">{aiName} {game.aiScore}/{game.aiWickets}</span>
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
