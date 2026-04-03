@@ -587,7 +587,7 @@ function ImmersiveScoreStrip({ game, playerName = "You", aiName = "Rohit AI" }: 
     : null;
 
   return (
-    <div className="bg-card/80 backdrop-blur-xl rounded-xl border border-glass px-3 py-2">
+    <div className="rounded-2xl border-2 border-game-gold/30 shadow-game-card bg-gradient-to-b from-[hsl(220_20%_18%)] to-[hsl(220_25%_12%)] px-3 py-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="text-center">
