@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Lock, Star, Crown, Gift, Zap, Trophy, Clock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SFX, Haptics } from "@/lib/sounds";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -269,9 +270,13 @@ export default function BattlePassPage() {
       setPurchasing(false);
       return;
     }
+    SFX.coinSpend();
+    Haptics.coinSpend();
     setCoins((c) => c - 500);
     setIsPremium(true);
     setPurchasing(false);
+    SFX.levelUp();
+    Haptics.success();
     toast({ title: "🎉 Premium Pass Unlocked!", description: "You now have access to all premium rewards." });
   }, [user, coins, purchasing, toast]);
 
@@ -294,6 +299,8 @@ export default function BattlePassPage() {
     : 100;
 
   const handleClaim = (key: string, reward: PassReward["free"]) => {
+    SFX.rewardClaim();
+    Haptics.rewardClaim();
     setClaimingReward(reward);
     setClaimed((prev) => new Set(prev).add(key));
   };

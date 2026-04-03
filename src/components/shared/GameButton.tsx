@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { SFX, Haptics } from "@/lib/sounds";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
 
 interface GameButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -41,6 +42,12 @@ export default function GameButton({
     ? { whileTap: { scale: 0.95 }, whileHover: { scale: 1.02 } }
     : {};
 
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    SFX.tap();
+    Haptics.light();
+    props.onClick?.(e);
+  };
+
   return (
     <Wrapper
       className={cn(
@@ -51,6 +58,7 @@ export default function GameButton({
       )}
       {...(motionProps as any)}
       {...props}
+      onClick={handleClick}
     >
       {icon && <span className="text-xl">{icon}</span>}
       {children}

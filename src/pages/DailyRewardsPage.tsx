@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { SFX, Haptics } from "@/lib/sounds";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
@@ -165,6 +166,8 @@ export default function DailyRewardsPage() {
 
   const handleDayClaim = (day: DayReward) => {
     if (day.day === cycleDay && todayClaimed) {
+      SFX.chestOpen();
+      Haptics.chestOpen();
       setOpeningReward(day);
     }
   };

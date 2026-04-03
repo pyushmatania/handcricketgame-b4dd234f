@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import BadgeNotif from "@/components/shared/Badge";
 import { cn } from "@/lib/utils";
+import { SFX, Haptics } from "@/lib/sounds";
 
 const NAV_ITEMS = [
   { path: "/shop", label: "Shop", icon: "🎁", accent: "hsl(291,47%,51%)" },
@@ -43,7 +44,7 @@ export default function BottomNav() {
               return (
                 <motion.button
                   key={item.path}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => { SFX.navTap(); Haptics.navTap(); navigate(item.path); }}
                   whileTap={{ scale: 0.85 }}
                   className={cn(
                     "relative flex flex-col items-center gap-0.5 pt-2 pb-1",

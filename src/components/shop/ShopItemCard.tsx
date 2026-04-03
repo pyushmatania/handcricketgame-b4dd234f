@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { SFX, Haptics } from "@/lib/sounds";
 
 interface ShopItemCardProps {
   name: string;
@@ -59,7 +60,7 @@ export default function ShopItemCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 25 }}
-      onClick={onClick}
+      onClick={() => { SFX.tap(); Haptics.light(); onClick(); }}
       className={`relative rounded-2xl border-2 overflow-hidden cursor-pointer active:scale-[0.96] transition-transform ${r.border} ${equipped ? r.glow : ""}`}
     >
       {/* Rarity stripe */}
