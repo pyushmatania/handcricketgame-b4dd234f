@@ -792,39 +792,41 @@ export default function LeaderboardPage() {
                       })}
                     </motion.div>
                   )}
-                  {/* List */}
+                  {/* Ranked list */}
                   <div className="space-y-2">
                     {rest.map((player, i) => {
                       const isMe = user && player.user_id === user.id;
                       const winRate = player.total_matches > 0 ? Math.round((player.wins / player.total_matches) * 100) : 0;
                       const tier = getRankTier(player);
                       return (
-                        <motion.div key={player.user_id} initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.04 }}
+                        <motion.div key={player.user_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.04, type: "spring", stiffness: 300, damping: 25 }}
                           onClick={() => { if (mainTab === "friends" && !isMe) setPreviewFriendId(player.user_id); }}
-                          className={`glass-premium rounded-xl p-3 flex items-center gap-3 ${isMe ? "border border-primary/25 shadow-[0_0_15px_hsl(217_91%_60%/0.1)]" : ""} ${mainTab === "friends" && !isMe ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}>
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-display font-black text-xs ${isMe ? "bg-gradient-to-br from-primary/20 to-primary/10 text-primary" : "bg-muted/40 text-muted-foreground"}`}>
+                          className={`rounded-2xl border-2 p-3 flex items-center gap-3 bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] ${isMe ? "border-game-blue/40 shadow-[0_0_16px_hsl(207_90%_54%/0.15)]" : "border-[hsl(222_25%_22%/0.5)]"} ${mainTab === "friends" && !isMe ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}>
+                          {/* Rank number */}
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-game-display text-xs border-b-2 ${
+                            isMe ? "bg-gradient-to-b from-game-blue to-[hsl(207_90%_44%)] text-white border-[hsl(207_90%_35%)]" : "bg-game-dark text-muted-foreground border-[hsl(222_25%_18%)]"
+                          }`}>
                             #{i + 4}
                           </div>
                           <PlayerAvatar avatarUrl={player.avatar_url} avatarIndex={player.avatar_index ?? 0} size="sm" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className={`font-display text-[11px] font-bold ${isMe ? "text-primary" : "text-foreground"}`}>
-                                {player.display_name}{isMe && <span className="text-[7px] text-primary/60 ml-1">(YOU)</span>}
+                              <span className={`font-game-card text-xs font-bold ${isMe ? "text-game-blue" : "text-foreground"}`}>
+                                {player.display_name}{isMe && <span className="text-[7px] text-game-blue/60 ml-1">(YOU)</span>}
                               </span>
-                              <span className={`text-[7px] ${tier.color} font-display`}>{tier.emoji}</span>
-                              {mainTab === "friends" && !isMe && <span className="text-[7px] text-primary/40 font-display">›</span>}
+                              <span className={`text-[7px] ${tier.color} font-game-display`}>{tier.emoji}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[8px] text-muted-foreground font-display">{player.total_matches} matches • {winRate}% WR</span>
-                              {(player.xp ?? 0) > 0 && <span className="text-[6px] text-primary/60 font-display">✨{player.xp}</span>}
+                              <span className="text-[8px] text-muted-foreground font-game-body">{player.total_matches} matches • {winRate}% WR</span>
+                              {(player.xp ?? 0) > 0 && <span className="text-[6px] text-game-blue/60 font-game-display">✨{player.xp}</span>}
                             </div>
                           </div>
                           {sparklines[player.user_id]?.length > 0 && (
                             <FormSparkline results={sparklines[player.user_id]} />
                           )}
                           <div className="text-right">
-                            <span className="font-display text-lg font-black text-secondary block leading-none">{getScore(player)}</span>
-                            <span className="text-[6px] text-muted-foreground font-display tracking-widest">{SORT_OPTIONS[sortBy].label}</span>
+                            <span className="font-game-display text-lg text-game-gold block leading-none">{getScore(player)}</span>
+                            <span className="text-[6px] text-muted-foreground font-game-display tracking-widest">{SORT_OPTIONS[sortBy].label}</span>
                           </div>
                         </motion.div>
                       );
