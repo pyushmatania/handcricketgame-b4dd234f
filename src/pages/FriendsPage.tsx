@@ -254,54 +254,59 @@ export default function FriendsPage() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden pb-24">
-      <div className="absolute inset-0 stadium-gradient pointer-events-none" />
-      <div className="absolute inset-0 vignette pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(222_55%_10%)] to-background pointer-events-none" />
       <TopStatusBar />
 
       <div className="relative z-10 max-w-lg mx-auto px-4 pt-4">
+        {/* Header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-6 rounded-full bg-gradient-to-b from-primary to-primary/40" />
-            <h1 className="font-display text-xl font-black text-foreground tracking-wider">FRIENDS</h1>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-game-blue to-[hsl(207_90%_44%)] border-b-3 border-[hsl(207_90%_35%)] flex items-center justify-center text-lg shadow-[0_4px_12px_hsl(207_90%_54%/0.3)]">
+              👥
+            </div>
+            <div>
+              <h1 className="font-game-title text-lg text-foreground">Friends</h1>
+              <span className="text-[8px] text-muted-foreground font-game-display tracking-[0.2em]">PLAY TOGETHER</span>
+            </div>
           </div>
         </motion.div>
 
-        {/* My invite code */}
+        {/* My invite code — game card */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-premium rounded-xl p-3 mb-4 flex items-center justify-between"
+          className="rounded-2xl border-2 border-game-gold/30 bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-3.5 mb-4 flex items-center justify-between shadow-[0_0_16px_hsl(51_100%_50%/0.1)]"
         >
           <div>
-            <span className="text-[8px] text-muted-foreground font-display tracking-widest block">YOUR INVITE CODE</span>
-            <span className="font-display text-lg font-black text-primary tracking-[0.2em]">{myCode}</span>
+            <span className="text-[8px] text-muted-foreground font-game-display tracking-widest block">YOUR INVITE CODE</span>
+            <span className="font-game-display text-lg text-game-gold tracking-[0.2em]">{myCode}</span>
           </div>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={copyCode}
-            className="px-3 py-2 rounded-xl glass-card text-[9px] font-display font-bold text-primary tracking-wider"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-b from-game-gold to-[hsl(43_96%_42%)] border-b-2 border-[hsl(43_96%_32%)] text-game-dark font-game-display text-[8px] tracking-wider shadow-[0_2px_8px_hsl(51_100%_50%/0.3)] active:translate-y-[1px] active:border-b-0"
           >
             📋 COPY
           </motion.button>
         </motion.div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-4 glass-card rounded-xl p-1">
+        {/* Tabs — game-styled */}
+        <div className="flex gap-1 mb-4 bg-game-dark/80 rounded-2xl p-1 border border-[hsl(222_25%_22%/0.5)]">
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 py-2 rounded-lg font-display text-[9px] font-bold tracking-widest transition-all flex items-center justify-center gap-1 relative ${
+              className={`flex-1 py-2.5 rounded-xl font-game-display text-[8px] tracking-widest transition-all flex items-center justify-center gap-1 relative ${
                 tab === t.key
-                  ? "bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground"
+                  ? "bg-gradient-to-b from-game-blue to-[hsl(207_90%_44%)] text-white border-b-2 border-[hsl(207_90%_35%)] shadow-[0_2px_8px_hsl(207_90%_54%/0.3)]"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <span className="text-xs">{t.icon}</span>
               {t.label}
               {t.badge && t.badge > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-out-red text-white text-[7px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-game-red border-2 border-game-dark text-white text-[7px] font-game-display flex items-center justify-center">
                   {t.badge}
                 </span>
               )}
@@ -309,16 +314,16 @@ export default function FriendsPage() {
           ))}
         </div>
 
-        {/* Feedback */}
+        {/* Feedback toast */}
         <AnimatePresence>
           {feedback && (
             <motion.div
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="glass-premium rounded-xl p-2.5 mb-3 text-center"
+              className="rounded-2xl border-2 border-game-green/30 bg-game-green/10 p-2.5 mb-3 text-center"
             >
-              <span className="text-[10px] font-display text-foreground">{feedback}</span>
+              <span className="text-[10px] font-game-card text-foreground">{feedback}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -328,42 +333,64 @@ export default function FriendsPage() {
           {tab === "friends" && (
             <motion.div key="friends" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {friends.length === 0 ? (
-                <div className="glass-premium rounded-xl p-8 text-center">
-                  <span className="text-3xl block mb-2">👥</span>
-                  <span className="font-display text-xs font-bold text-muted-foreground tracking-wider">NO FRIENDS YET</span>
-                  <p className="text-[9px] text-muted-foreground/60 mt-1">Add friends to play together!</p>
+                <div className="rounded-2xl border-2 border-[hsl(222_25%_22%/0.5)] bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-8 text-center">
+                  <span className="text-4xl block mb-3">👥</span>
+                  <span className="font-game-title text-sm text-foreground">No Friends Yet</span>
+                  <p className="text-[9px] text-muted-foreground font-game-body mt-1">Add friends to play together!</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {friends.map((f, i) => {
                     const winRate = f.total_matches > 0 ? Math.round((f.wins / f.total_matches) * 100) : 0;
+                    const isHotStreak = (f.current_streak ?? 0) >= 3;
                     return (
                       <motion.div
                         key={f.user_id}
-                        initial={{ opacity: 0, x: -10 }}
+                        initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="glass-premium rounded-xl p-3 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+                        transition={{ delay: i * 0.06, type: "spring", stiffness: 300, damping: 25 }}
+                        className="rounded-2xl border-2 border-[hsl(222_25%_22%/0.5)] bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-3 flex items-center gap-3 cursor-pointer active:scale-[0.97] transition-transform"
                         onClick={() => setSelectedFriend(f)}
                       >
-                        <PlayerAvatar avatarUrl={f.avatar_url} avatarIndex={f.avatar_index ?? 0} size="sm" />
+                        {/* Avatar with streak indicator */}
+                        <div className="relative">
+                          <div className={`rounded-full border-2 ${isHotStreak ? "border-game-red shadow-[0_0_10px_hsl(4_90%_58%/0.3)]" : "border-[hsl(222_25%_22%)]"}`}>
+                            <PlayerAvatar avatarUrl={f.avatar_url} avatarIndex={f.avatar_index ?? 0} size="sm" />
+                          </div>
+                          {isHotStreak && (
+                            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-game-red border-2 border-game-dark flex items-center justify-center">
+                              <span className="text-[7px]">🔥</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-display text-[11px] font-bold text-foreground block truncate">{f.display_name}</span>
-                            <span className="text-[7px] text-primary/40 font-display">›</span>
+                            <span className="font-game-card text-xs font-bold text-foreground truncate">{f.display_name}</span>
+                            {f.rank_tier && (
+                              <span className="text-[7px] font-game-display text-game-gold">{f.rank_tier === "Diamond" ? "💎" : f.rank_tier === "Gold" ? "🥇" : f.rank_tier === "Silver" ? "🥈" : "🏅"}</span>
+                            )}
                           </div>
-                          <span className="text-[8px] text-muted-foreground">{f.wins}W {f.losses}L • {winRate}% WR</span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[8px] text-muted-foreground font-game-body">{f.wins}W {f.losses}L</span>
+                            <span className="text-[8px] text-game-green font-game-display">{winRate}%</span>
+                          </div>
                         </div>
+
+                        {/* Battle button */}
                         <motion.button
                           whileTap={{ scale: 0.85 }}
                           onClick={(e) => { e.stopPropagation(); setChallengeTargetId(f.user_id); }}
-                          className="px-3 py-2 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display text-[8px] font-bold tracking-wider"
+                          className="px-3 py-2 rounded-xl bg-gradient-to-b from-game-red to-[hsl(4_90%_45%)] border-b-2 border-[hsl(4_90%_35%)] text-white font-game-display text-[7px] tracking-wider shadow-[0_2px_8px_hsl(4_90%_58%/0.3)] active:translate-y-[1px] active:border-b-0"
                         >
-                          LET'S BATTLE
+                          ⚔️ BATTLE
                         </motion.button>
-                        <div className="text-right">
-                          <span className="font-display text-sm font-black text-secondary block leading-none">{f.high_score}</span>
-                          <span className="text-[6px] text-muted-foreground font-display tracking-widest">HIGH</span>
+
+                        {/* High score */}
+                        <div className="text-right min-w-[40px]">
+                          <span className="font-game-display text-sm text-game-gold block leading-none">{f.high_score}</span>
+                          <span className="text-[6px] text-muted-foreground font-game-display tracking-widest">HIGH</span>
                         </div>
                       </motion.div>
                     );
@@ -379,36 +406,37 @@ export default function FriendsPage() {
               {incoming.length > 0 && (
                 <>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-4 rounded-full bg-neon-green" />
-                    <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">INCOMING</span>
+                    <div className="w-8 h-8 rounded-lg bg-game-green/15 border border-game-green/25 flex items-center justify-center text-sm">📥</div>
+                    <span className="font-game-display text-[8px] text-muted-foreground tracking-[0.25em]">INCOMING</span>
                   </div>
                   <div className="space-y-2 mb-4">
-                    {incoming.map((r) => (
-                      <div key={r.id} className="glass-premium rounded-xl p-3 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-neon-green/10 border border-neon-green/20 flex items-center justify-center">
-                          <span className="text-sm">👤</span>
+                    {incoming.map((r, i) => (
+                      <motion.div key={r.id} initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
+                        className="rounded-2xl border-2 border-game-green/20 bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-3 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-game-green/10 border border-game-green/20 flex items-center justify-center">
+                          <span className="text-lg">👤</span>
                         </div>
                         <div className="flex-1">
-                          <span className="font-display text-[11px] font-bold text-foreground block">{r.from_name}</span>
-                          <span className="text-[8px] text-muted-foreground">wants to be friends</span>
+                          <span className="font-game-card text-xs font-bold text-foreground block">{r.from_name}</span>
+                          <span className="text-[8px] text-muted-foreground font-game-body">wants to be friends</span>
                         </div>
                         <div className="flex gap-1.5">
                           <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => acceptRequest(r.id)}
-                            className="px-3 py-1.5 rounded-lg bg-neon-green/20 border border-neon-green/30 text-[8px] font-display font-bold text-neon-green tracking-wider"
+                            className="px-3 py-2 rounded-xl bg-gradient-to-b from-game-green to-[hsl(122_39%_38%)] border-b-2 border-[hsl(122_39%_30%)] text-white font-game-display text-[7px] tracking-wider active:translate-y-[1px]"
                           >
                             ✓ ACCEPT
                           </motion.button>
                           <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => rejectRequest(r.id)}
-                            className="px-2 py-1.5 rounded-lg bg-out-red/10 border border-out-red/20 text-[8px] font-display font-bold text-out-red tracking-wider"
+                            className="px-2.5 py-2 rounded-xl bg-game-dark border-2 border-game-red/30 text-game-red font-game-display text-[7px] tracking-wider"
                           >
                             ✕
                           </motion.button>
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </>
@@ -417,20 +445,20 @@ export default function FriendsPage() {
               {outgoing.length > 0 && (
                 <>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-4 rounded-full bg-secondary" />
-                    <span className="font-display text-[9px] font-bold text-muted-foreground tracking-[0.25em]">SENT</span>
+                    <div className="w-8 h-8 rounded-lg bg-game-gold/15 border border-game-gold/25 flex items-center justify-center text-sm">📤</div>
+                    <span className="font-game-display text-[8px] text-muted-foreground tracking-[0.25em]">SENT</span>
                   </div>
                   <div className="space-y-2">
                     {outgoing.map((r) => (
-                      <div key={r.id} className="glass-premium rounded-xl p-3 flex items-center gap-3 opacity-60">
-                        <div className="w-9 h-9 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center">
-                          <span className="text-sm">📤</span>
+                      <div key={r.id} className="rounded-2xl border-2 border-[hsl(222_25%_22%/0.3)] bg-gradient-to-b from-[hsl(222_40%_13%/0.6)] to-[hsl(222_40%_8%/0.7)] p-3 flex items-center gap-3 opacity-60">
+                        <div className="w-10 h-10 rounded-xl bg-game-gold/10 border border-game-gold/15 flex items-center justify-center">
+                          <span className="text-lg">📤</span>
                         </div>
                         <div className="flex-1">
-                          <span className="font-display text-[11px] font-bold text-foreground block">{r.to_name}</span>
-                          <span className="text-[8px] text-muted-foreground">pending...</span>
+                          <span className="font-game-card text-xs font-bold text-foreground block">{r.to_name}</span>
+                          <span className="text-[8px] text-muted-foreground font-game-body">pending...</span>
                         </div>
-                        <span className="text-[8px] text-secondary font-display">⏳</span>
+                        <span className="text-[9px] text-game-gold font-game-display">⏳</span>
                       </div>
                     ))}
                   </div>
@@ -438,9 +466,9 @@ export default function FriendsPage() {
               )}
 
               {incoming.length === 0 && outgoing.length === 0 && (
-                <div className="glass-premium rounded-xl p-8 text-center">
-                  <span className="text-3xl block mb-2">📩</span>
-                  <span className="font-display text-xs font-bold text-muted-foreground tracking-wider">NO REQUESTS</span>
+                <div className="rounded-2xl border-2 border-[hsl(222_25%_22%/0.5)] bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-8 text-center">
+                  <span className="text-4xl block mb-3">📩</span>
+                  <span className="font-game-title text-sm text-foreground">No Requests</span>
                 </div>
               )}
             </motion.div>
@@ -450,8 +478,8 @@ export default function FriendsPage() {
           {tab === "add" && (
             <motion.div key="add" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
               {/* By invite code */}
-              <div className="glass-premium rounded-xl p-4">
-                <span className="text-[9px] font-display font-bold text-muted-foreground tracking-widest block mb-2">ADD BY INVITE CODE</span>
+              <div className="rounded-2xl border-2 border-[hsl(222_25%_22%/0.5)] bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-4">
+                <span className="text-[8px] font-game-display text-muted-foreground tracking-widest block mb-3">ADD BY INVITE CODE</span>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -459,13 +487,13 @@ export default function FriendsPage() {
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                     placeholder="ENTER CODE"
                     maxLength={8}
-                    className="flex-1 bg-muted/30 border border-border/50 rounded-xl px-3 py-2.5 text-sm text-foreground font-display tracking-widest placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-all text-center"
+                    className="flex-1 bg-game-dark border-2 border-[hsl(222_25%_22%)] rounded-xl px-3 py-2.5 text-sm text-foreground font-game-display tracking-widest placeholder:text-muted-foreground/30 focus:outline-none focus:border-game-blue/50 transition-all text-center"
                   />
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={addByCode}
                     disabled={loading || inviteCode.length < 4}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-display font-bold text-[9px] tracking-wider disabled:opacity-40"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-b from-game-green to-[hsl(122_39%_38%)] border-b-2 border-[hsl(122_39%_30%)] text-white font-game-display text-[8px] tracking-wider disabled:opacity-40 active:translate-y-[1px]"
                   >
                     ADD
                   </motion.button>
@@ -473,22 +501,22 @@ export default function FriendsPage() {
               </div>
 
               {/* By search */}
-              <div className="glass-premium rounded-xl p-4">
-                <span className="text-[9px] font-display font-bold text-muted-foreground tracking-widest block mb-2">SEARCH BY NAME</span>
+              <div className="rounded-2xl border-2 border-[hsl(222_25%_22%/0.5)] bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-4">
+                <span className="text-[8px] font-game-display text-muted-foreground tracking-widest block mb-3">SEARCH BY NAME</span>
                 <div className="flex gap-2 mb-3">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Player name..."
-                    className="flex-1 bg-muted/30 border border-border/50 rounded-xl px-3 py-2.5 text-sm text-foreground font-body placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-all"
+                    className="flex-1 bg-game-dark border-2 border-[hsl(222_25%_22%)] rounded-xl px-3 py-2.5 text-sm text-foreground font-game-body placeholder:text-muted-foreground/30 focus:outline-none focus:border-game-blue/50 transition-all"
                     onKeyDown={(e) => e.key === "Enter" && searchPlayers()}
                   />
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={searchPlayers}
                     disabled={loading || !searchQuery.trim()}
-                    className="px-4 py-2.5 rounded-xl glass-card border border-primary/20 text-primary font-display font-bold text-[9px] tracking-wider disabled:opacity-40"
+                    className="px-4 py-2.5 rounded-xl bg-game-dark border-2 border-game-blue/30 text-game-blue font-game-display text-[9px] disabled:opacity-40"
                   >
                     🔍
                   </motion.button>
@@ -499,21 +527,21 @@ export default function FriendsPage() {
                       const alreadyFriend = friends.some(f => f.user_id === p.user_id);
                       const alreadySent = outgoing.some(o => o.to_user_id === p.user_id);
                       return (
-                        <div key={p.user_id} className="flex items-center gap-3 p-2 rounded-xl glass-card">
+                        <div key={p.user_id} className="flex items-center gap-3 p-2.5 rounded-xl bg-game-dark/60 border border-[hsl(222_25%_22%/0.4)]">
                           <PlayerAvatar avatarUrl={p.avatar_url} avatarIndex={p.avatar_index ?? 0} size="sm" />
                           <div className="flex-1">
-                            <span className="font-display text-[10px] font-bold text-foreground block">{p.display_name}</span>
-                            <span className="text-[7px] text-muted-foreground">{p.wins}W • {p.total_matches} matches</span>
+                            <span className="font-game-card text-[10px] font-bold text-foreground block">{p.display_name}</span>
+                            <span className="text-[7px] text-muted-foreground font-game-body">{p.wins}W • {p.total_matches} matches</span>
                           </div>
                           {alreadyFriend ? (
-                            <span className="text-[8px] text-neon-green font-display">✓ FRIENDS</span>
+                            <span className="text-[8px] text-game-green font-game-display">✓ FRIENDS</span>
                           ) : alreadySent ? (
-                            <span className="text-[8px] text-secondary font-display">⏳ SENT</span>
+                            <span className="text-[8px] text-game-gold font-game-display">⏳ SENT</span>
                           ) : (
                             <motion.button
                               whileTap={{ scale: 0.9 }}
                               onClick={() => sendRequest(p.user_id)}
-                              className="px-2.5 py-1.5 rounded-lg bg-primary/20 border border-primary/30 text-[8px] font-display font-bold text-primary"
+                              className="px-3 py-1.5 rounded-xl bg-gradient-to-b from-game-green to-[hsl(122_39%_38%)] border-b-2 border-[hsl(122_39%_30%)] text-white font-game-display text-[7px] tracking-wider"
                             >
                               + ADD
                             </motion.button>
@@ -529,34 +557,39 @@ export default function FriendsPage() {
         </AnimatePresence>
       </div>
       {challengeTargetId && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center p-4">
-          <div className="w-full max-w-sm glass-premium rounded-3xl p-4 space-y-3 border border-primary/30 shadow-[0_0_40px_hsl(217_91%_60%/0.2)]">
-            <p className="font-display text-xs text-foreground font-black tracking-wider">Which game should we play?</p>
-            <p className="text-[9px] text-muted-foreground">Send a battle invite with your chosen format.</p>
+        <div className="fixed inset-0 z-50 bg-[hsl(222_47%_4%/0.85)] backdrop-blur-md flex items-end justify-center p-4">
+          <motion.div
+            initial={{ y: 200, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="w-full max-w-sm rounded-3xl border-2 border-game-red/30 bg-gradient-to-b from-[hsl(222_40%_13%)] to-[hsl(222_40%_8%)] p-5 space-y-3 shadow-[0_0_30px_hsl(4_90%_58%/0.15)]"
+          >
+            <p className="font-game-title text-base text-foreground">Choose Battle Mode</p>
+            <p className="text-[9px] text-muted-foreground font-game-body">Send a battle invite with your chosen format.</p>
             {([
-              { key: "ar", icon: "📸", subtitle: "Futuristic AR showdown" },
-              { key: "tap", icon: "⚡", subtitle: "Arcade speed challenge" },
-              { key: "tournament", icon: "🏆", subtitle: "Championship clash" },
-            ] as { key: GameType; icon: string; subtitle: string }[]).map((mode) => (
-              <button
+              { key: "ar", icon: "📸", label: "AR Mode", subtitle: "Futuristic AR showdown", color: "from-game-purple to-[hsl(291_47%_40%)]" },
+              { key: "tap", icon: "⚡", label: "Tap Mode", subtitle: "Arcade speed challenge", color: "from-game-blue to-[hsl(207_90%_44%)]" },
+              { key: "tournament", icon: "🏆", label: "Tournament", subtitle: "Championship clash", color: "from-game-gold to-[hsl(43_96%_42%)]" },
+            ] as { key: GameType; icon: string; label: string; subtitle: string; color: string }[]).map((mode) => (
+              <motion.button
                 key={mode.key}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   void challengeFriend(challengeTargetId, mode.key);
                   setChallengeTargetId(null);
                 }}
-                className="w-full p-3 rounded-2xl text-left bg-gradient-to-r from-primary/20 to-accent/10 border border-primary/30 font-display tracking-wider transition-transform active:scale-[0.98]"
+                className={`w-full p-3.5 rounded-2xl text-left bg-gradient-to-r ${mode.color} border-b-3 border-[hsl(222_25%_15%)] active:translate-y-[1px] transition-transform`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-background/40 border border-primary/30 flex items-center justify-center text-xl">{mode.icon}</div>
+                  <div className="w-11 h-11 rounded-xl bg-[hsl(222_47%_6%/0.4)] border border-white/10 flex items-center justify-center text-xl">{mode.icon}</div>
                   <div>
-                    <p className="text-xs font-bold uppercase">{mode.key}</p>
-                    <p className="text-[10px] text-muted-foreground">{mode.subtitle}</p>
+                    <p className="text-sm font-game-display text-white tracking-wider">{mode.label}</p>
+                    <p className="text-[9px] text-white/60 font-game-body">{mode.subtitle}</p>
                   </div>
                 </div>
-              </button>
+              </motion.button>
             ))}
-            <button onClick={() => setChallengeTargetId(null)} className="w-full py-2 text-xs text-muted-foreground">Cancel</button>
-          </div>
+            <button onClick={() => setChallengeTargetId(null)} className="w-full py-2.5 text-xs text-muted-foreground font-game-body hover:text-foreground transition-colors">Cancel</button>
+          </motion.div>
         </div>
       )}
 
