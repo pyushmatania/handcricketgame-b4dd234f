@@ -441,48 +441,55 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden pb-24">
-      <div className="absolute inset-0 stadium-gradient pointer-events-none" />
-      <div className="absolute inset-0 vignette pointer-events-none" />
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
-        style={{ background: "radial-gradient(ellipse, hsl(45 93% 58% / 0.05) 0%, transparent 70%)" }} />
+      <div className="absolute inset-0 bg-gradient-to-b from-[hsl(222_55%_10%)] to-background pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse, hsl(51 100% 50% / 0.04) 0%, transparent 70%)" }} />
       <TopStatusBar />
 
       <div className="relative z-10 max-w-lg mx-auto px-4 pt-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-3">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-6 rounded-full bg-gradient-to-b from-secondary to-secondary/40" />
-              <h1 className="font-display text-xl font-black text-foreground tracking-wider">LEADERBOARD</h1>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-game-gold to-[hsl(43_96%_42%)] border-b-3 border-[hsl(43_96%_32%)] flex items-center justify-center text-lg shadow-[0_4px_12px_hsl(51_100%_50%/0.3)]">
+                🏆
+              </div>
+              <div>
+                <h1 className="font-game-title text-lg text-foreground">Leaderboard</h1>
+                <span className="text-[8px] text-muted-foreground font-game-display tracking-[0.2em]">COMPETE & CLIMB</span>
+              </div>
             </div>
             {myStats && <RankBadge stats={myStats} compact />}
           </div>
         </motion.div>
 
-        {/* Scrollable tab bar */}
-        <div className="flex gap-1 mb-3 glass-card rounded-xl p-1 overflow-x-auto no-scrollbar">
+        {/* Scrollable tab bar — game-styled */}
+        <div className="flex gap-1 mb-4 bg-game-dark/80 rounded-2xl p-1 overflow-x-auto no-scrollbar border border-[hsl(222_25%_22%/0.5)]">
           {mainTabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setMainTab(t.key)}
-              className={`shrink-0 px-3 py-2 rounded-lg font-display text-[8px] font-bold tracking-widest transition-all flex items-center gap-1 ${
+              className={`shrink-0 px-3 py-2.5 rounded-xl font-game-display text-[7px] tracking-widest transition-all flex items-center gap-1 ${
                 mainTab === t.key
-                  ? "bg-gradient-to-r from-secondary/20 to-secondary/10 text-secondary border border-secondary/20"
-                  : "text-muted-foreground"
+                  ? "bg-gradient-to-b from-game-gold to-[hsl(43_96%_42%)] text-game-dark border-b-2 border-[hsl(43_96%_32%)] shadow-[0_2px_8px_hsl(51_100%_50%/0.3)] font-bold"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <span className="text-xs">{t.icon}</span>
+              <span className="text-sm">{t.icon}</span>
               {t.label}
             </button>
           ))}
         </div>
 
-        {/* Sort options (for global & friends) */}
+        {/* Sort options — game-styled chips */}
         {(mainTab === "global" || mainTab === "friends") && (
-          <div className="flex gap-1 mb-4 overflow-x-auto no-scrollbar">
+          <div className="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar">
             {SORT_OPTIONS.map((opt, i) => (
               <button key={opt.key} onClick={() => setSortBy(i)}
-                className={`shrink-0 px-2.5 py-1.5 rounded-lg font-display text-[7px] font-bold tracking-widest transition-all ${
-                  sortBy === i ? "bg-primary/10 text-primary border border-primary/15" : "text-muted-foreground/50"
+                className={`shrink-0 px-3 py-2 rounded-xl font-game-display text-[7px] tracking-widest transition-all border ${
+                  sortBy === i
+                    ? "bg-game-blue/15 text-game-blue border-game-blue/30 shadow-[0_0_8px_hsl(207_90%_54%/0.15)]"
+                    : "text-muted-foreground/60 border-transparent hover:text-muted-foreground"
                 }`}>
                 {opt.icon} {opt.label}
               </button>
@@ -721,99 +728,105 @@ export default function LeaderboardPage() {
                   {/* Player of the Week with confetti */}
                   <PotwWithConfetti player={playerOfWeek} loading={potwLoading} />
 
-                  {/* Top 3 podium */}
+                  {/* Top 3 podium — Supercell style */}
                   {top3.length >= 3 && (
-                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex items-end justify-center gap-3 mb-5">
+                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex items-end justify-center gap-2 mb-6 pt-4">
                       {[top3[1], top3[0], top3[2]].map((p, i) => {
-                        const heights = ["h-28", "h-36", "h-24"];
-                        const sizes = ["text-3xl", "text-4xl", "text-2xl"];
+                        const heights = ["h-24", "h-32", "h-20"];
                         const rank = i === 0 ? 2 : i === 1 ? 1 : 3;
                         const isMe = user && p.user_id === user.id;
                         const tier = getRankTier(p);
-                        const glows = [
-                          "shadow-[0_0_15px_hsl(192_91%_70%/0.15)]",
-                          "shadow-[0_0_25px_hsl(45_93%_58%/0.25)]",
-                          "shadow-[0_0_10px_hsl(30_70%_55%/0.1)]",
+                        const podiumBorders = [
+                          "border-[hsl(210_10%_70%)] from-[hsl(210_10%_70%/0.2)] to-[hsl(210_10%_50%/0.05)]",
+                          "border-game-gold from-[hsl(51_100%_50%/0.25)] to-[hsl(43_96%_42%/0.08)]",
+                          "border-[hsl(25_60%_50%)] from-[hsl(25_60%_50%/0.15)] to-[hsl(25_60%_40%/0.05)]",
                         ];
-                        const podiumColors = [
-                          "from-accent/15 to-accent/5",
-                          "from-score-gold/15 to-score-gold/5",
-                          "from-secondary/10 to-secondary/5",
+                        const podiumGlows = [
+                          "shadow-[0_0_16px_hsl(210_10%_70%/0.2)]",
+                          "shadow-[0_0_30px_hsl(51_100%_50%/0.3)]",
+                          "shadow-[0_0_12px_hsl(25_60%_50%/0.15)]",
                         ];
+                        const crownSize = ["text-xl", "text-3xl", "text-lg"];
+                        const crowns = ["🥈", "👑", "🥉"];
                         return (
                           <motion.div key={p.user_id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 + i * 0.1 }}
+                            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ delay: 0.2 + i * 0.12, type: "spring", stiffness: 200, damping: 20 }}
                             className={`flex flex-col items-center ${mainTab === "friends" && !isMe ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}
                             onClick={() => { if (mainTab === "friends" && !isMe) setPreviewFriendId(p.user_id); }}>
+                            {/* Crown/medal floating above */}
                             <motion.span
-                              animate={{ y: [0, -3, 0] }}
-                              transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                              className={`${sizes[i]} mb-1`}>{getBadge(rank)}</motion.span>
-                            <div className="mb-1 relative">
-                              <PlayerAvatar avatarUrl={p.avatar_url} avatarIndex={p.avatar_index ?? 0} size="sm" />
+                              animate={{ y: [0, -4, 0] }}
+                              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.4, ease: "easeInOut" }}
+                              className={`${crownSize[i]} mb-1 drop-shadow-lg`}>{crowns[i]}</motion.span>
+                            {/* Avatar */}
+                            <div className="mb-1.5 relative">
+                              <div className={`rounded-full border-2 ${i === 1 ? "border-game-gold shadow-[0_0_12px_hsl(51_100%_50%/0.4)]" : i === 0 ? "border-[hsl(210_10%_70%)]" : "border-[hsl(25_60%_50%)]"}`}>
+                                <PlayerAvatar avatarUrl={p.avatar_url} avatarIndex={p.avatar_index ?? 0} size="sm" />
+                              </div>
                               {(p.current_streak ?? 0) >= 3 && (
-                                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-out-red/90 flex items-center justify-center">
-                                  <span className="text-[6px] text-white font-display font-black">🔥</span>
+                                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-game-red border-2 border-game-dark flex items-center justify-center">
+                                  <span className="text-[7px] text-white font-game-display">🔥</span>
                                 </div>
                               )}
                             </div>
-                            <div className={`w-20 ${heights[i]} rounded-t-2xl glass-premium border ${isMe ? "border-primary/30" : "border-primary/10"} flex flex-col items-center justify-end pb-2 px-2 ${glows[i]} bg-gradient-to-t ${podiumColors[i]} relative overflow-hidden`}>
-                              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.4 + i * 0.1, type: "spring" }}
-                                className="font-display text-xl font-black text-secondary leading-none" style={{ textShadow: "0 0 15px hsl(45 93% 58% / 0.3)" }}>{getScore(p)}</motion.span>
-                              <span className="text-[6px] text-muted-foreground font-display tracking-widest mt-0.5">{SORT_OPTIONS[sortBy].label}</span>
+                            {/* Podium pillar */}
+                            <div className={`w-[5.5rem] ${heights[i]} rounded-t-2xl border-2 border-b-4 bg-gradient-to-t ${podiumBorders[i]} ${podiumGlows[i]} flex flex-col items-center justify-center px-2 relative overflow-hidden`}>
+                              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                              <span className={`font-game-display text-2xl ${i === 1 ? "text-game-gold" : "text-foreground"}`} style={{ textShadow: i === 1 ? "0 0 15px hsl(51 100% 50% / 0.4)" : "none" }}>
+                                {getScore(p)}
+                              </span>
+                              <span className="text-[6px] text-muted-foreground font-game-display tracking-widest">{SORT_OPTIONS[sortBy].label}</span>
                               {(p.xp ?? 0) > 0 && (
-                                <span className="text-[5px] text-primary/70 font-display mt-0.5">✨{p.xp}</span>
+                                <span className="text-[6px] text-game-blue font-game-display mt-0.5">✨{p.xp}</span>
                               )}
                             </div>
-                            <div className="w-20 glass-card border-t-0 rounded-b-xl py-1.5 text-center">
-                              <span className={`text-[7px] font-display font-bold block truncate px-1 ${isMe ? "text-primary" : "text-foreground"}`}>{p.display_name}{isMe && " ★"}</span>
-                              <span className={`text-[6px] ${tier.color} font-display`}>{tier.emoji} {tier.name}</span>
+                            {/* Name plate */}
+                            <div className={`w-[5.5rem] rounded-b-xl py-1.5 text-center border-x-2 border-b-2 ${i === 1 ? "border-game-gold/40 bg-game-gold/5" : i === 0 ? "border-[hsl(210_10%_70%/0.3)] bg-[hsl(210_10%_70%/0.03)]" : "border-[hsl(25_60%_50%/0.3)] bg-[hsl(25_60%_50%/0.03)]"}`}>
+                              <span className={`text-[8px] font-game-card font-bold block truncate px-1 ${isMe ? "text-game-blue" : "text-foreground"}`}>{p.display_name}{isMe && " ★"}</span>
+                              <span className={`text-[6px] ${tier.color} font-game-display`}>{tier.emoji} {tier.name}</span>
                             </div>
                           </motion.div>
                         );
                       })}
                     </motion.div>
                   )}
-
-                  {/* List */}
+                  {/* Ranked list */}
                   <div className="space-y-2">
                     {rest.map((player, i) => {
                       const isMe = user && player.user_id === user.id;
                       const winRate = player.total_matches > 0 ? Math.round((player.wins / player.total_matches) * 100) : 0;
                       const tier = getRankTier(player);
                       return (
-                        <motion.div key={player.user_id} initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.04 }}
+                        <motion.div key={player.user_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.04, type: "spring", stiffness: 300, damping: 25 }}
                           onClick={() => { if (mainTab === "friends" && !isMe) setPreviewFriendId(player.user_id); }}
-                          className={`glass-premium rounded-xl p-3 flex items-center gap-3 ${isMe ? "border border-primary/25 shadow-[0_0_15px_hsl(217_91%_60%/0.1)]" : ""} ${mainTab === "friends" && !isMe ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}>
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-display font-black text-xs ${isMe ? "bg-gradient-to-br from-primary/20 to-primary/10 text-primary" : "bg-muted/40 text-muted-foreground"}`}>
+                          className={`rounded-2xl border-2 p-3 flex items-center gap-3 bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] ${isMe ? "border-game-blue/40 shadow-[0_0_16px_hsl(207_90%_54%/0.15)]" : "border-[hsl(222_25%_22%/0.5)]"} ${mainTab === "friends" && !isMe ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}>
+                          {/* Rank number */}
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-game-display text-xs border-b-2 ${
+                            isMe ? "bg-gradient-to-b from-game-blue to-[hsl(207_90%_44%)] text-white border-[hsl(207_90%_35%)]" : "bg-game-dark text-muted-foreground border-[hsl(222_25%_18%)]"
+                          }`}>
                             #{i + 4}
                           </div>
                           <PlayerAvatar avatarUrl={player.avatar_url} avatarIndex={player.avatar_index ?? 0} size="sm" />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className={`font-display text-[11px] font-bold ${isMe ? "text-primary" : "text-foreground"}`}>
-                                {player.display_name}{isMe && <span className="text-[7px] text-primary/60 ml-1">(YOU)</span>}
+                              <span className={`font-game-card text-xs font-bold ${isMe ? "text-game-blue" : "text-foreground"}`}>
+                                {player.display_name}{isMe && <span className="text-[7px] text-game-blue/60 ml-1">(YOU)</span>}
                               </span>
-                              <span className={`text-[7px] ${tier.color} font-display`}>{tier.emoji}</span>
-                              {mainTab === "friends" && !isMe && <span className="text-[7px] text-primary/40 font-display">›</span>}
+                              <span className={`text-[7px] ${tier.color} font-game-display`}>{tier.emoji}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[8px] text-muted-foreground font-display">{player.total_matches} matches • {winRate}% WR</span>
-                              {(player.xp ?? 0) > 0 && <span className="text-[6px] text-primary/60 font-display">✨{player.xp}</span>}
+                              <span className="text-[8px] text-muted-foreground font-game-body">{player.total_matches} matches • {winRate}% WR</span>
+                              {(player.xp ?? 0) > 0 && <span className="text-[6px] text-game-blue/60 font-game-display">✨{player.xp}</span>}
                             </div>
                           </div>
                           {sparklines[player.user_id]?.length > 0 && (
                             <FormSparkline results={sparklines[player.user_id]} />
                           )}
                           <div className="text-right">
-                            <span className="font-display text-lg font-black text-secondary block leading-none">{getScore(player)}</span>
-                            <span className="text-[6px] text-muted-foreground font-display tracking-widest">{SORT_OPTIONS[sortBy].label}</span>
+                            <span className="font-game-display text-lg text-game-gold block leading-none">{getScore(player)}</span>
+                            <span className="text-[6px] text-muted-foreground font-game-display tracking-widest">{SORT_OPTIONS[sortBy].label}</span>
                           </div>
                         </motion.div>
                       );
@@ -825,20 +838,20 @@ export default function LeaderboardPage() {
           )}
         </AnimatePresence>
 
-        {/* Your position (global only) */}
+        {/* Your position — game-styled card */}
         {mainTab === "global" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-            className="mt-5 glass-premium rounded-2xl p-4 flex items-center gap-3 border border-primary/10">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/20 flex items-center justify-center">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            className="mt-5 rounded-2xl border-2 border-game-blue/30 bg-gradient-to-b from-[hsl(222_40%_13%/0.9)] to-[hsl(222_40%_8%/0.95)] p-4 flex items-center gap-3 shadow-[0_0_16px_hsl(207_90%_54%/0.12)]">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-b from-game-blue to-[hsl(207_90%_44%)] border-b-3 border-[hsl(207_90%_35%)] flex items-center justify-center shadow-[0_4px_12px_hsl(207_90%_54%/0.3)]">
               <span className="text-lg">{user ? "🏏" : "👤"}</span>
             </div>
             <div className="flex-1">
-              <p className="text-[9px] text-muted-foreground font-display tracking-[0.2em]">YOUR RANK</p>
-              <p className="font-display text-2xl font-black text-foreground" style={{ textShadow: myRank ? "0 0 15px hsl(217 91% 60% / 0.2)" : "none" }}>
+              <p className="text-[8px] text-muted-foreground font-game-display tracking-[0.2em]">YOUR RANK</p>
+              <p className="font-game-display text-2xl text-foreground" style={{ textShadow: myRank ? "0 0 15px hsl(207 90% 54% / 0.3)" : "none" }}>
                 {myRank ? `#${myRank}` : "—"}
               </p>
             </div>
-            {!user && <p className="text-[8px] text-muted-foreground font-display tracking-wider">Sign in to track</p>}
+            {!user && <p className="text-[8px] text-muted-foreground font-game-body">Sign in to track</p>}
           </motion.div>
         )}
       </div>
