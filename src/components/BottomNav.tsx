@@ -44,7 +44,7 @@ export default function BottomNav() {
               return (
                 <motion.button
                   key={item.path}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => { SFX.navTap(); Haptics.navTap(); navigate(item.path); }}
                   whileTap={{ scale: 0.85 }}
                   className={cn(
                     "relative flex flex-col items-center gap-0.5 pt-2 pb-1",

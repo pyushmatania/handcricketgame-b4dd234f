@@ -42,6 +42,12 @@ export default function GameButton({
     ? { whileTap: { scale: 0.95 }, whileHover: { scale: 1.02 } }
     : {};
 
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    SFX.tap();
+    Haptics.light();
+    props.onClick?.(e);
+  };
+
   return (
     <Wrapper
       className={cn(
@@ -52,6 +58,7 @@ export default function GameButton({
       )}
       {...(motionProps as any)}
       {...props}
+      onClick={handleClick}
     >
       {icon && <span className="text-xl">{icon}</span>}
       {children}
