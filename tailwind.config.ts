@@ -15,6 +15,12 @@ export default {
         display: ["Orbitron", "sans-serif"],
         body: ["Rajdhani", "sans-serif"],
         heading: ["Exo 2", "sans-serif"],
+        "game-display": ["Bungee", "sans-serif"],
+        "game-display-3d": ["Bungee Shade", "sans-serif"],
+        "game-title": ["Lilita One", "sans-serif"],
+        "game-body": ["Nunito", "sans-serif"],
+        "game-card": ["Fredoka", "sans-serif"],
+        "game-mono": ["Rubik", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
