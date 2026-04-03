@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import BadgeNotif from "@/components/shared/Badge";
 import { cn } from "@/lib/utils";
+import { SFX, Haptics } from "@/lib/sounds";
 
 const NAV_ITEMS = [
   { path: "/shop", label: "Shop", icon: "🎁", accent: "hsl(291,47%,51%)" },
