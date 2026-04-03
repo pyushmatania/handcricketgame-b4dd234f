@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS has_premium_pass boolean NOT NULL DEFAULT false;

@@ -1,8 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Lock, Star, Crown, Gift, Zap, Trophy, Clock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import TopBar from "@/components/layout/TopBar";
 import BottomNav from "@/components/BottomNav";
 
@@ -222,13 +225,55 @@ function TierCard({
 /* ── Main Page ── */
 export default function BattlePassPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const countdown = useCountdown(SEASON_END);
   const [isPremium, setIsPremium] = useState(false);
+  const [coins, setCoins] = useState(0);
+  const [currentXp, setCurrentXp] = useState(0);
   const [claimed, setClaimed] = useState<Set<string>>(new Set());
   const [claimingReward, setClaimingReward] = useState<PassReward["free"] | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
 
-  // Mock XP — in production read from profile
-  const currentXp = 1200;
+  // Load profile
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("xp, coins, has_premium_pass")
+        .eq("user_id", user.id)
+        .single();
+      if (data) {
+        setCurrentXp(data.xp ?? 0);
+        setCoins(data.coins ?? 0);
+        setIsPremium(!!(data as any).has_premium_pass);
+      }
+    };
+    load();
+  }, [user]);
+
+  const handlePurchasePremium = useCallback(async () => {
+    if (!user || purchasing) return;
+    if (coins < 500) {
+      toast({ title: "Not enough coins", description: "You need 500 coins to unlock the Premium Pass.", variant: "destructive" });
+      return;
+    }
+    setPurchasing(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ coins: coins - 500, has_premium_pass: true } as any)
+      .eq("user_id", user.id);
+    if (error) {
+      toast({ title: "Purchase failed", description: error.message, variant: "destructive" });
+      setPurchasing(false);
+      return;
+    }
+    setCoins((c) => c - 500);
+    setIsPremium(true);
+    setPurchasing(false);
+    toast({ title: "🎉 Premium Pass Unlocked!", description: "You now have access to all premium rewards." });
+  }, [user, coins, purchasing, toast]);
 
   const currentTier = useMemo(() => {
     let t = 0;
@@ -336,10 +381,11 @@ export default function BattlePassPage() {
               boxShadow: "0 4px 0 hsl(36 80% 30%), 0 6px 20px hsl(45 93% 58% / 0.25)",
             }}
             whileTap={{ scale: 0.97, y: 2 }}
-            onClick={() => setIsPremium(true)}
+            onClick={handlePurchasePremium}
+            disabled={purchasing}
           >
             <Crown className="w-4 h-4" />
-            UNLOCK PREMIUM PASS — 500 Coins
+            {purchasing ? "PURCHASING..." : `UNLOCK PREMIUM PASS — 500 Coins (${coins} available)`}
           </motion.button>
         )}
         {isPremium && (
