@@ -15,7 +15,8 @@ export default function DailyStreakWidget() {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.12 }}
-      className="mb-4"
+      className="mb-4 cursor-pointer"
+      onClick={() => navigate("/daily-rewards")}
     >
       <div className="flex items-center gap-2 mb-2">
         <div className="w-1 h-4 rounded-full bg-secondary" />
