@@ -295,6 +295,8 @@ export default function BattlePassPage() {
     : 100;
 
   const handleClaim = (key: string, reward: PassReward["free"]) => {
+    SFX.rewardClaim();
+    Haptics.rewardClaim();
     setClaimingReward(reward);
     setClaimed((prev) => new Set(prev).add(key));
   };
